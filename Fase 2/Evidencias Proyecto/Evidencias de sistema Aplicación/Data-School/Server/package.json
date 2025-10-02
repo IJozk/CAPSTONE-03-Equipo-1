@@ -1,0 +1,37 @@
+{
+  "name": "data-school-backend",
+  "version": "1.0.0",
+  "description": "Backend con Node, Express, TypeScript y Supabase",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "lint": "eslint . --ext .ts"
+  },
+  "keywords": [
+    "express",
+    "typescript",
+    "supabase",
+    "postgres",
+    "backend"
+  ],
+  "author": "Team Data School",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "pg": "^8.11.5",
+    "@supabase/supabase-js": "^2.44.3"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.7.4",
+    "eslint": "^9.10.0",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.6.3"
+  }
+}
