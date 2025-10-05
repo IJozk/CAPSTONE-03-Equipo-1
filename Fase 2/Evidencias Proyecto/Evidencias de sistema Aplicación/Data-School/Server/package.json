@@ -4,7 +4,7 @@
   "description": "Backend con Node, Express, TypeScript y Supabase",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "dev": "ts-node-dev --respawn --transpile-only -r tsconfig-paths/register src/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "lint": "eslint . --ext .ts"
@@ -19,11 +19,11 @@
   "author": "Team Data School",
   "license": "MIT",
   "dependencies": {
+    "@supabase/supabase-js": "^2.44.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "pg": "^8.11.5",
-    "@supabase/supabase-js": "^2.44.3"
+    "pg": "^8.11.5"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
@@ -32,6 +32,7 @@
     "eslint": "^9.10.0",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.6.3"
   }
 }

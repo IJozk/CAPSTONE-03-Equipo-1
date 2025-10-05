@@ -1,14 +1,14 @@
-import { Router } from 'express';
-// Import controllers here
-// import userController from '../controllers/userController';
+import { Router } from 'express'
+import authRoutes from './auth.routes'
 
-const router = Router();
+const router = Router()
 
-// Example route
+// Rutas de autenticación
+router.use('/auth', authRoutes)
+
+// Ruta de estado
 router.get('/status', (_req, res) => {
-  res.json({ status: 'ok' });
-});
+  res.json({ status: 'ok' })
+})
 
-// Add more routes here
-
-export default router;
+export default router
