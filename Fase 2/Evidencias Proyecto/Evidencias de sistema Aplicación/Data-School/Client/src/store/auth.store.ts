@@ -30,7 +30,7 @@ export const useAuthStore = defineStore('auth', {
     /**
      * Verificar si el usuario es UTP
      */
-    isUTP: (state): boolean => state.user?.role === 'UTP',
+    isAdministrativo: (state): boolean => state.user?.role === 'ADMINISTRATIVO',
 
     /**
      * Verificar si el usuario es profesor

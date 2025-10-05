@@ -6,7 +6,7 @@ export class AuthController {
   // Registro de usuario
   async register(req: Request, res: Response) {
     try {
-      const { email, password } = req.body as RegisterDto
+      const { email, password, role, colegio_id } = req.body as RegisterDto
 
       // Validar campos requeridos
       if (!email || !password) {
@@ -25,6 +25,45 @@ export class AuthController {
         return res.status(400).json({
           error: error.message
         })
+      }
+
+      // Crear registro en tabla User
+      if (data.user) {
+        const { data: userData, error: userError } = await supabase
+          .from('User')
+          .insert({
+            auth_user_id: data.user.id,
+            email_address: data.user.email!,
+            role: role || 'ESTUDIANTE_APODERADO',
+            colegio_id: colegio_id || null,
+            is_active: true,
+            profile_completed: false
+          })
+          .select()
+          .single()
+
+        if (userError) {
+          console.error('Error creando usuario en tabla User:', {
+            code: userError.code,
+            message: userError.message,
+            details: userError.details,
+            hint: userError.hint
+          })
+
+          // Si falla la creación del usuario en la tabla User (y no es duplicado)
+          if (userError.code !== '23505') {
+            return res.status(500).json({
+              error: 'Error al crear usuario en el sistema',
+              details: userError.message,
+              debug: {
+                code: userError.code,
+                hint: userError.hint
+              }
+            })
+          }
+        } else {
+          console.log('Usuario creado exitosamente en tabla User:', userData)
+        }
       }
 
       // Verificar si requiere confirmación de email

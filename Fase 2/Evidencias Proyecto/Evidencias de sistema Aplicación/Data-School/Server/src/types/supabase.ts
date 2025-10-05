@@ -1687,7 +1687,6 @@ export type Database = {
           email_address: string
           is_active: boolean | null
           last_login: string | null
-          password: string | null
           profile_completed: boolean | null
           role: Database["public"]["Enums"]["user_role_enum"] | null
           updated_at: string | null
@@ -1700,7 +1699,6 @@ export type Database = {
           email_address: string
           is_active?: boolean | null
           last_login?: string | null
-          password?: string | null
           profile_completed?: boolean | null
           role?: Database["public"]["Enums"]["user_role_enum"] | null
           updated_at?: string | null
@@ -1713,7 +1711,6 @@ export type Database = {
           email_address?: string
           is_active?: boolean | null
           last_login?: string | null
-          password?: string | null
           profile_completed?: boolean | null
           role?: Database["public"]["Enums"]["user_role_enum"] | null
           updated_at?: string | null
@@ -1896,7 +1893,12 @@ export type Database = {
         | "EXAMEN"
         | "PROYECTO"
         | "PARTICIPACION"
-      user_role_enum: "ESTUDIANTE" | "PROFESOR" | "ADMINISTRATIVO" | "TUTOR"
+      user_role_enum:
+        | "ESTUDIANTE_APODERADO"
+        | "PROFESOR"
+        | "ADMINISTRATIVO"
+        | "DIRECTOR"
+        | "ADMINISTRADOR"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2056,7 +2058,13 @@ export const Constants = {
         "PROYECTO",
         "PARTICIPACION",
       ],
-      user_role_enum: ["ESTUDIANTE", "PROFESOR", "ADMINISTRATIVO", "TUTOR"],
+      user_role_enum: [
+        "ESTUDIANTE_APODERADO",
+        "PROFESOR",
+        "ADMINISTRATIVO",
+        "DIRECTOR",
+        "ADMINISTRADOR",
+      ],
     },
   },
 } as const
