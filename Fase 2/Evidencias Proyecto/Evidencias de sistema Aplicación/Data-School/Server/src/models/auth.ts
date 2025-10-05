@@ -28,3 +28,11 @@ export interface UserResponse {
   email: string
   created_at: string
 }
+
+export interface ForgotPasswordDto {
+  email: string
+}
+
+export interface ResetPasswordDto {
+  password: string
+}

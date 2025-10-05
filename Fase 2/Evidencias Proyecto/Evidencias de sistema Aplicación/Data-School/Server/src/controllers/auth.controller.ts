@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
 import { supabase } from '@/config/supabase'
-import { RegisterDto, LoginDto } from '@/models/auth'
+import { RegisterDto, LoginDto, ForgotPasswordDto, ResetPasswordDto } from '@/models/auth'
 
 export class AuthController {
   // Registro de usuario
@@ -144,6 +144,87 @@ export class AuthController {
       })
     } catch (error) {
       console.error('Error al obtener usuario:', error)
+      return res.status(500).json({
+        error: 'Error interno del servidor'
+      })
+    }
+  }
+
+  // Solicitar recuperación de contraseña
+  async forgotPassword(req: Request, res: Response) {
+    try {
+      const { email } = req.body as ForgotPasswordDto
+
+      if (!email) {
+        return res.status(400).json({
+          error: 'Email es requerido'
+        })
+      }
+
+      // Enviar email de recuperación
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password`
+      })
+
+      if (error) {
+        return res.status(400).json({
+          error: error.message
+        })
+      }
+
+      return res.status(200).json({
+        message: 'Se ha enviado un email con instrucciones para recuperar tu contraseña'
+      })
+    } catch (error) {
+      console.error('Error en forgot password:', error)
+      return res.status(500).json({
+        error: 'Error interno del servidor'
+      })
+    }
+  }
+
+  // Resetear contraseña (requiere token del email)
+  async resetPassword(req: Request, res: Response) {
+    try {
+      const { password } = req.body as ResetPasswordDto
+      const authHeader = req.headers.authorization
+
+      if (!authHeader) {
+        return res.status(401).json({
+          error: 'Token no proporcionado'
+        })
+      }
+
+      if (!password) {
+        return res.status(400).json({
+          error: 'Contraseña es requerida'
+        })
+      }
+
+      if (password.length < 6) {
+        return res.status(400).json({
+          error: 'La contraseña debe tener al menos 6 caracteres'
+        })
+      }
+
+      const token = authHeader.replace('Bearer ', '')
+
+      // Actualizar contraseña usando el token del email
+      const { error } = await supabase.auth.updateUser({
+        password
+      })
+
+      if (error) {
+        return res.status(400).json({
+          error: error.message
+        })
+      }
+
+      return res.status(200).json({
+        message: 'Contraseña actualizada exitosamente'
+      })
+    } catch (error) {
+      console.error('Error en reset password:', error)
       return res.status(500).json({
         error: 'Error interno del servidor'
       })
