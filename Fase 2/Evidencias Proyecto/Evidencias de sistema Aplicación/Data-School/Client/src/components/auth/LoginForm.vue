@@ -203,7 +203,6 @@ const handleSubmit = async () => {
  * Manejar clic en "Olvidaste tu contraseña"
  */
 const handleForgotPassword = () => {
-  // TODO: Implementar recuperación de contraseña
-  alert('Funcionalidad de recuperación de contraseña en desarrollo');
+  router.push('/forgot-password');
 };
 </script>

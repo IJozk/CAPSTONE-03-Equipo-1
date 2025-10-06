@@ -17,11 +17,46 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: () => import('@/pages/ForgotPassword.vue'),
+    meta: {
+      requiresGuest: true, // Solo accesible sin autenticación
+    },
+  },
+  {
+    path: '/reset-password',
+    name: 'ResetPassword',
+    component: () => import('@/pages/ResetPassword.vue'),
+    meta: {
+      requiresGuest: true, // Solo accesible sin autenticación
+    },
+  },
+  {
     path: '/dashboard',
     name: 'Dashboard',
     component: () => import('@/pages/Dashboard.vue'),
     meta: {
       requiresAuth: true, // Requiere autenticación
+    },
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: () => import('@/pages/Register.vue'),
+    meta: {
+      requiresAuth: true, // Requiere autenticación
+      requiresAdmin: true // Solo administradores
+    },
+  },
+  // RUTA TEMPORAL DE DESARROLLO - Para revisar el formulario sin autenticación
+  // TODO: ELIMINAR en producción
+  {
+    path: '/register-preview',
+    name: 'RegisterPreview',
+    component: () => import('@/pages/Register.vue'),
+    meta: {
+      // Sin guards - acceso público para desarrollo
     },
   },
   // Ruta 404 - cualquier ruta no definida redirige a login
@@ -39,7 +74,7 @@ const router = createRouter({
 
 /**
  * Navigation Guard global
- * Se ejecuta antes de cada navegación para verificar autenticación
+ * Se ejecuta antes de cada navegación para verificar autenticación y permisos
  */
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore();
@@ -52,6 +87,12 @@ router.beforeEach((to, from, next) => {
   // Rutas que requieren autenticación
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     next('/login');
+    return;
+  }
+
+  // Rutas solo para administradores
+  if (to.meta.requiresAdmin && !authStore.isAdmin) {
+    next('/dashboard'); // Redirigir a dashboard si no es admin
     return;
   }
 

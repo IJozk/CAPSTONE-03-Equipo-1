@@ -1,5 +1,11 @@
 import apiClient from './api.config';
-import type { LoginCredentials, AuthResponse } from '@/types/auth.types';
+import type {
+  LoginCredentials,
+  AuthResponse,
+  RegisterDTO,
+  ForgotPasswordResponse,
+  ResetPasswordResponse
+} from '@/types/auth.types';
 
 class AuthService {
   /**
@@ -41,6 +47,104 @@ class AuthService {
    */
   isAuthenticated(): boolean {
     return !!this.getToken();
+  }
+
+  /**
+   * Register: registra un nuevo usuario (solo administradores)
+   * @param userData - Datos del usuario a registrar
+   * @returns Datos del usuario creado y token JWT
+   */
+  async register(userData: RegisterDTO): Promise<AuthResponse> {
+    try {
+      // El token del admin se envía automáticamente por el interceptor
+      const response = await apiClient.post<AuthResponse>('/auth/register', {
+        email: userData.email,
+        password: userData.password,
+        role: userData.role,
+        nombre_completo: userData.nombre_completo,
+        rut: userData.rut,
+        colegio_id: userData.colegio_id,
+        telefono: userData.telefono || null
+      });
+      return response.data;
+    } catch (error: any) {
+      // Manejar errores específicos
+      if (error.response?.status === 400) {
+        const message = error.response.data.message || 'Error de validación';
+        throw new Error(message);
+      }
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        throw new Error('No tienes permisos para registrar usuarios');
+      }
+      throw new Error(error.response?.data?.message || 'Error al registrar usuario');
+    }
+  }
+
+  /**
+   * Forgot Password: solicita recuperación de contraseña
+   * @param email - Email del usuario
+   * @returns Mensaje de confirmación
+   */
+  async forgotPassword(email: string): Promise<ForgotPasswordResponse> {
+    try {
+      const response = await apiClient.post<ForgotPasswordResponse>('/auth/forgot-password', {
+        email
+      });
+      return response.data;
+    } catch (error: any) {
+      // Manejar errores específicos
+      if (error.response?.status === 404) {
+        // Por seguridad, no revelar si el email existe
+        return {
+          message: 'Si el correo existe, recibirás un enlace de recuperación',
+          email
+        };
+      }
+      if (error.response?.status === 429) {
+        throw new Error('Demasiados intentos. Intenta nuevamente más tarde');
+      }
+      throw new Error(error.response?.data?.message || 'Error al enviar correo de recuperación');
+    }
+  }
+
+  /**
+   * Reset Password: restablece la contraseña con token
+   * @param token - Token de recuperación desde URL
+   * @param newPassword - Nueva contraseña
+   * @returns Mensaje de confirmación
+   */
+  async resetPassword(token: string, newPassword: string): Promise<ResetPasswordResponse> {
+    try {
+      const response = await apiClient.post<ResetPasswordResponse>('/auth/reset-password', {
+        token,
+        newPassword
+      });
+      return response.data;
+    } catch (error: any) {
+      // Manejar errores específicos
+      if (error.response?.status === 400) {
+        const message = error.response.data.message || '';
+        if (message.toLowerCase().includes('token') || message.toLowerCase().includes('expirado')) {
+          throw new Error('El enlace ha expirado o es inválido');
+        }
+        throw new Error(message);
+      }
+      throw new Error(error.response?.data?.message || 'Error al restablecer contraseña');
+    }
+  }
+
+  /**
+   * Validate Reset Token: verifica si un token es válido (opcional)
+   * @param token - Token a validar
+   * @returns true si es válido, false si no
+   */
+  async validateResetToken(token: string): Promise<boolean> {
+    try {
+      await apiClient.post('/auth/validate-reset-token', { token });
+      return true;
+    } catch (error) {
+      return false;
+    }
   }
 }
 
