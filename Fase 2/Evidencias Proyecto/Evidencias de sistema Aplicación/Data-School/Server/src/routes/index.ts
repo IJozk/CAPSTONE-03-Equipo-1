@@ -1,14 +1,24 @@
-import { Router } from 'express';
-// Import controllers here
-// import userController from '../controllers/userController';
+import { Router } from 'express'
+import authRoutes from './auth.routes'
+import protectedRoutes from './protected.routes'
+import devRoutes from './dev.routes'
 
-const router = Router();
+const router = Router()
 
-// Example route
+// Rutas de autenticación
+router.use('/auth', authRoutes)
+
+// Rutas protegidas
+router.use('/protected', protectedRoutes)
+
+// Rutas de desarrollo (solo en dev)
+if (process.env.NODE_ENV !== 'production') {
+  router.use('/dev', devRoutes)
+}
+
+// Ruta de estado
 router.get('/status', (_req, res) => {
-  res.json({ status: 'ok' });
-});
+  res.json({ status: 'ok' })
+})
 
-// Add more routes here
-
-export default router;
+export default router
