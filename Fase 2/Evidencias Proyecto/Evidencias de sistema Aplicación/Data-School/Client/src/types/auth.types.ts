@@ -55,6 +55,15 @@ export interface RegisterDTO {
   rut: string;
   colegio_id: string;
   telefono?: string;
+  // Campos opcionales según rol
+  titulo_profesional?: string;
+  especialidad?: string;
+  fecha_contratacion?: string; // ISO date
+  fecha_nacimiento?: string; // ISO date
+  direccion?: string;
+  genero?: string;
+  cargo?: string;
+  area_id?: string;
 }
 
 // Errores de validación para formulario de registro
@@ -67,6 +76,15 @@ export interface RegisterValidationErrors {
   role?: string;
   colegio_id?: string;
   telefono?: string;
+  // Campos por rol
+  titulo_profesional?: string;
+  especialidad?: string;
+  fecha_contratacion?: string;
+  fecha_nacimiento?: string;
+  direccion?: string;
+  genero?: string;
+  cargo?: string;
+  area_id?: string;
 }
 
 // Opciones para select de roles

@@ -1,5 +1,28 @@
 <template>
   <form @submit.prevent="handleSubmit" class="space-y-5">
+    <!-- Rol (primero) -->
+    <div>
+      <label for="role" class="block text-sm font-medium text-gray-700 mb-2">
+        Rol *
+      </label>
+      <select
+        id="role"
+        v-model="formData.role"
+        :class="inputClass('role')"
+        @blur="validateField('role')"
+        @change="onRoleChange"
+      >
+        <option value="">Seleccionar rol</option>
+        <option v-for="roleOption in filteredRoleOptions" :key="roleOption.value" :value="roleOption.value">
+          {{ roleOption.label }}
+        </option>
+      </select>
+      <p v-if="formData.role && selectedRoleDescription" class="mt-1 text-xs text-gray-500">
+        {{ selectedRoleDescription }}
+      </p>
+      <p v-if="errors.role" class="mt-1 text-sm text-red-600">{{ errors.role }}</p>
+    </div>
+
     <!-- Email -->
     <div>
       <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
@@ -134,31 +157,73 @@
       <p v-if="errors.confirmPassword" class="mt-1 text-sm text-red-600">{{ errors.confirmPassword }}</p>
     </div>
 
-    <!-- Rol -->
-    <div>
-      <label for="role" class="block text-sm font-medium text-gray-700 mb-2">
-        Rol *
-      </label>
-      <select
-        id="role"
-        v-model="formData.role"
-        :class="inputClass('role')"
-        @blur="validateField('role')"
-        @change="clearFieldError('role')"
-      >
-        <option value="">Seleccionar rol</option>
-        <option
-          v-for="roleOption in roleOptions"
-          :key="roleOption.value"
-          :value="roleOption.value"
-        >
-          {{ roleOption.label }}
-        </option>
-      </select>
-      <p v-if="formData.role && selectedRoleDescription" class="mt-1 text-xs text-gray-500">
-        {{ selectedRoleDescription }}
-      </p>
-      <p v-if="errors.role" class="mt-1 text-sm text-red-600">{{ errors.role }}</p>
+    <!-- Campos dinámicos según rol -->
+    <!-- Profesor -->
+    <div v-if="formData.role === UserRole.PROFESOR" class="space-y-4">
+      <div>
+        <label for="titulo_profesional" class="block text-sm font-medium text-gray-700 mb-2">Título Profesional *</label>
+        <input id="titulo_profesional" v-model="formData.titulo_profesional" type="text" :class="inputClass('titulo_profesional')" @blur="validateField('titulo_profesional')" />
+        <p v-if="errors.titulo_profesional" class="mt-1 text-sm text-red-600">{{ errors.titulo_profesional }}</p>
+      </div>
+
+      <div>
+        <label for="especialidad" class="block text-sm font-medium text-gray-700 mb-2">Especialidad *</label>
+        <input id="especialidad" v-model="formData.especialidad" type="text" :class="inputClass('especialidad')" @blur="validateField('especialidad')" />
+        <p v-if="errors.especialidad" class="mt-1 text-sm text-red-600">{{ errors.especialidad }}</p>
+      </div>
+
+      <div>
+        <label for="fecha_contratacion" class="block text-sm font-medium text-gray-700 mb-2">Fecha de Contratación *</label>
+        <input id="fecha_contratacion" v-model="formData.fecha_contratacion" type="date" :class="inputClass('fecha_contratacion')" @blur="validateField('fecha_contratacion')" />
+        <p v-if="errors.fecha_contratacion" class="mt-1 text-sm text-red-600">{{ errors.fecha_contratacion }}</p>
+      </div>
+    </div>
+
+    <!-- Estudiante / Apoderado -->
+    <div v-if="formData.role === UserRole.ESTUDIANTE_APODERADO" class="space-y-4">
+      <div>
+        <label for="fecha_nacimiento" class="block text-sm font-medium text-gray-700 mb-2">Fecha de Nacimiento *</label>
+        <input id="fecha_nacimiento" v-model="formData.fecha_nacimiento" type="date" :class="inputClass('fecha_nacimiento')" @blur="validateField('fecha_nacimiento')" />
+        <p v-if="errors.fecha_nacimiento" class="mt-1 text-sm text-red-600">{{ errors.fecha_nacimiento }}</p>
+      </div>
+
+      <div>
+        <label for="direccion" class="block text-sm font-medium text-gray-700 mb-2">Dirección *</label>
+        <input id="direccion" v-model="formData.direccion" type="text" :class="inputClass('direccion')" @blur="validateField('direccion')" />
+        <p v-if="errors.direccion" class="mt-1 text-sm text-red-600">{{ errors.direccion }}</p>
+      </div>
+
+      <div>
+        <label for="genero" class="block text-sm font-medium text-gray-700 mb-2">Género *</label>
+        <select id="genero" v-model="formData.genero" :class="inputClass('genero')" @blur="validateField('genero')">
+          <option value="">Seleccionar</option>
+          <option value="male">Masculino</option>
+          <option value="female">Femenino</option>
+          <option value="other">Otro</option>
+        </select>
+        <p v-if="errors.genero" class="mt-1 text-sm text-red-600">{{ errors.genero }}</p>
+      </div>
+    </div>
+
+    <!-- Admin / Administrativo (comparten campos) -->
+    <div v-if="formData.role === UserRole.ADMINISTRADOR || formData.role === UserRole.ADMINISTRATIVO" class="space-y-4">
+      <div>
+        <label for="cargo" class="block text-sm font-medium text-gray-700 mb-2">Cargo *</label>
+        <input id="cargo" v-model="formData.cargo" type="text" :class="inputClass('cargo')" @blur="validateField('cargo')" />
+        <p v-if="errors.cargo" class="mt-1 text-sm text-red-600">{{ errors.cargo }}</p>
+      </div>
+
+      <div>
+        <label for="area_id" class="block text-sm font-medium text-gray-700 mb-2">Área ID *</label>
+        <input id="area_id" v-model="formData.area_id" type="text" :class="inputClass('area_id')" @blur="validateField('area_id')" placeholder="UUID del área" />
+        <p v-if="errors.area_id" class="mt-1 text-sm text-red-600">{{ errors.area_id }}</p>
+      </div>
+
+      <div>
+        <label for="fecha_contratacion_admin" class="block text-sm font-medium text-gray-700 mb-2">Fecha de Contratación *</label>
+        <input id="fecha_contratacion_admin" v-model="formData.fecha_contratacion" type="date" :class="inputClass('fecha_contratacion')" @blur="validateField('fecha_contratacion')" />
+        <p v-if="errors.fecha_contratacion" class="mt-1 text-sm text-red-600">{{ errors.fecha_contratacion }}</p>
+      </div>
     </div>
 
     <!-- Colegio ID -->
@@ -286,24 +351,19 @@ const authStore = useAuthStore();
 // Opciones de roles con descripciones
 const roleOptions: RoleOption[] = [
   {
-    value: UserRole.ADMINISTRADOR,
-    label: 'Administrador',
-    description: 'Acceso total al sistema, gestión de usuarios y configuración'
-  },
-  {
-    value: UserRole.DIRECTOR,
-    label: 'Director',
-    description: 'Acceso a dashboards, reportes y gestión académica general'
-  },
-  {
-    value: UserRole.UTP,
-    label: 'UTP (Jefe Técnico)',
-    description: 'Gestión académica, curricular y pedagógica'
-  },
-  {
     value: UserRole.PROFESOR,
     label: 'Profesor',
     description: 'Gestión de clases, evaluaciones, asistencia y notas'
+  },
+  {
+    value: UserRole.ADMINISTRATIVO,
+    label: 'Administrativo',
+    description: 'Tareas administrativas y soporte del colegio'
+  },
+  {
+    value: UserRole.ADMINISTRADOR,
+    label: 'Admin',
+    description: 'Acceso total al sistema, gestión de usuarios y configuración'
   },
   {
     value: UserRole.ESTUDIANTE_APODERADO,
@@ -321,7 +381,16 @@ const formData = ref<RegisterDTO>({
   nombre_completo: '',
   rut: '',
   colegio_id: '',
-  telefono: ''
+  telefono: '',
+  // campos opcionales
+  titulo_profesional: undefined,
+  especialidad: undefined,
+  fecha_contratacion: undefined,
+  fecha_nacimiento: undefined,
+  direccion: undefined,
+  genero: undefined,
+  cargo: undefined,
+  area_id: undefined
 });
 
 // UI state
@@ -343,7 +412,17 @@ const isFormValid = computed(() => {
     formData.value.nombre_completo &&
     formData.value.rut &&
     formData.value.role &&
-    formData.value.colegio_id;
+    formData.value.colegio_id &&
+    // campos específicos según rol
+    (formData.value.role === UserRole.PROFESOR
+      ? !!(formData.value.titulo_profesional && formData.value.especialidad && formData.value.fecha_contratacion)
+      : true) &&
+    (formData.value.role === UserRole.ESTUDIANTE_APODERADO
+      ? !!(formData.value.fecha_nacimiento && formData.value.direccion && formData.value.genero)
+      : true) &&
+    (formData.value.role === UserRole.ADMINISTRADOR || formData.value.role === UserRole.ADMINISTRATIVO
+      ? !!(formData.value.cargo && formData.value.area_id && formData.value.fecha_contratacion)
+      : true);
 
   const hasNoErrors = Object.keys(errors.value).length === 0;
 
@@ -445,6 +524,62 @@ const validateField = (field: keyof RegisterDTO) => {
       }
       break;
     }
+    case 'titulo_profesional': {
+      if (formData.value.role === UserRole.PROFESOR) {
+        if (!formData.value.titulo_profesional) errors.value.titulo_profesional = 'El título profesional es requerido';
+        else delete errors.value.titulo_profesional;
+      }
+      break;
+    }
+    case 'especialidad': {
+      if (formData.value.role === UserRole.PROFESOR) {
+        if (!formData.value.especialidad) errors.value.especialidad = 'La especialidad es requerida';
+        else delete errors.value.especialidad;
+      }
+      break;
+    }
+    case 'fecha_contratacion': {
+      if (formData.value.role === UserRole.PROFESOR || formData.value.role === UserRole.ADMINISTRADOR || formData.value.role === UserRole.ADMINISTRATIVO) {
+        if (!formData.value.fecha_contratacion) errors.value.fecha_contratacion = 'Fecha de contratación requerida';
+        else delete errors.value.fecha_contratacion;
+      }
+      break;
+    }
+    case 'fecha_nacimiento': {
+      if (formData.value.role === UserRole.ESTUDIANTE_APODERADO) {
+        if (!formData.value.fecha_nacimiento) errors.value.fecha_nacimiento = 'Fecha de nacimiento requerida';
+        else delete errors.value.fecha_nacimiento;
+      }
+      break;
+    }
+    case 'direccion': {
+      if (formData.value.role === UserRole.ESTUDIANTE_APODERADO) {
+        if (!formData.value.direccion) errors.value.direccion = 'Dirección requerida';
+        else delete errors.value.direccion;
+      }
+      break;
+    }
+    case 'genero': {
+      if (formData.value.role === UserRole.ESTUDIANTE_APODERADO) {
+        if (!formData.value.genero) errors.value.genero = 'Género requerido';
+        else delete errors.value.genero;
+      }
+      break;
+    }
+    case 'cargo': {
+      if (formData.value.role === UserRole.ADMINISTRADOR || formData.value.role === UserRole.ADMINISTRATIVO) {
+        if (!formData.value.cargo) errors.value.cargo = 'Cargo requerido';
+        else delete errors.value.cargo;
+      }
+      break;
+    }
+    case 'area_id': {
+      if (formData.value.role === UserRole.ADMINISTRADOR || formData.value.role === UserRole.ADMINISTRATIVO) {
+        if (!formData.value.area_id) errors.value.area_id = 'Área requerida';
+        else delete errors.value.area_id;
+      }
+      break;
+    }
   }
 };
 
@@ -460,6 +595,38 @@ const handleRutInput = (event: Event) => {
   const formatted = formatRUT(input.value);
   formData.value.rut = formatted;
   clearFieldError('rut');
+};
+
+// Cuando cambia el rol, limpiar errores y algunos campos no relevantes
+const onRoleChange = () => {
+  // limpiar errores de campos específicos
+  delete errors.value.titulo_profesional;
+  delete errors.value.especialidad;
+  delete errors.value.fecha_contratacion;
+  delete errors.value.fecha_nacimiento;
+  delete errors.value.direccion;
+  delete errors.value.genero;
+  delete errors.value.cargo;
+  delete errors.value.area_id;
+
+  // resetear campos que no aplican
+  if (formData.value.role !== UserRole.PROFESOR) {
+    formData.value.titulo_profesional = undefined;
+    formData.value.especialidad = undefined;
+    formData.value.fecha_contratacion = undefined;
+  }
+
+  if (formData.value.role !== UserRole.ESTUDIANTE_APODERADO) {
+    formData.value.fecha_nacimiento = undefined;
+    formData.value.direccion = undefined;
+    formData.value.genero = undefined;
+  }
+
+  if (!(formData.value.role === UserRole.ADMINISTRADOR || formData.value.role === UserRole.ADMINISTRATIVO)) {
+    formData.value.cargo = undefined;
+    formData.value.area_id = undefined;
+    formData.value.fecha_contratacion = undefined;
+  }
 };
 
 // Manejar input de password (calcular fortaleza)
@@ -504,13 +671,29 @@ const getStrengthTextColor = (): string => {
 // Manejar submit
 const handleSubmit = async () => {
   // Validar todos los campos
+  validateField('role');
   validateField('email');
   validateField('nombre_completo');
   validateField('rut');
   validateField('password');
   validateField('confirmPassword');
-  validateField('role');
   validateField('colegio_id');
+  // Validaciones específicas según rol
+  if (formData.value.role === UserRole.PROFESOR) {
+    validateField('titulo_profesional');
+    validateField('especialidad');
+    validateField('fecha_contratacion');
+  }
+  if (formData.value.role === UserRole.ESTUDIANTE_APODERADO) {
+    validateField('fecha_nacimiento');
+    validateField('direccion');
+    validateField('genero');
+  }
+  if (formData.value.role === UserRole.ADMINISTRADOR || formData.value.role === UserRole.ADMINISTRATIVO) {
+    validateField('cargo');
+    validateField('area_id');
+    validateField('fecha_contratacion');
+  }
   if (formData.value.telefono) {
     validateField('telefono');
   }
@@ -537,9 +720,21 @@ const resetForm = () => {
     rut: '',
     colegio_id: '',
     telefono: ''
+  ,
+    titulo_profesional: undefined,
+    especialidad: undefined,
+    fecha_contratacion: undefined,
+    fecha_nacimiento: undefined,
+    direccion: undefined,
+    genero: undefined,
+    cargo: undefined,
+    area_id: undefined
   };
   errors.value = {};
   passwordStrength.value = 'weak';
   authStore.clearRegisterState();
 };
+
+// Filtrar opciones (mostrar en el orden solicitado por el usuario)
+const filteredRoleOptions = roleOptions;
 </script>
