@@ -1,7 +1,13 @@
+import type { Database } from '@/types/supabase'
+
+type UserRole = Database['public']['Enums']['user_role_enum']
+
 // DTOs para las peticiones de autenticación
 export interface RegisterDto {
   email: string
   password: string
+  role?: UserRole // Rol opcional, por defecto será ESTUDIANTE
+  colegio_id?: string
 }
 
 export interface LoginDto {
@@ -27,4 +33,12 @@ export interface UserResponse {
   id: string
   email: string
   created_at: string
+}
+
+export interface ForgotPasswordDto {
+  email: string
+}
+
+export interface ResetPasswordDto {
+  password: string
 }
