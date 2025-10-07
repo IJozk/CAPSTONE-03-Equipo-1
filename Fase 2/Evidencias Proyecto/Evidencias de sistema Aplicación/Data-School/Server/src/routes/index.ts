@@ -1,12 +1,16 @@
 import { Router } from 'express'
 import authRoutes from './auth.routes'
 import protectedRoutes from './protected.routes'
+import schoolRoutes from './school.routes'
 import devRoutes from './dev.routes'
 
 const router = Router()
 
 // Rutas de autenticación
 router.use('/auth', authRoutes)
+
+// Rutas de colegio
+router.use('/school', schoolRoutes)
 
 // Rutas protegidas
 router.use('/protected', protectedRoutes)

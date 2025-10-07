@@ -27,7 +27,13 @@ export class AuthController {
       // Registrar usuario con Supabase Auth
       const { data, error } = await supabase.auth.signUp({
         email,
-        password
+        password,
+        options: {
+          emailRedirectTo: undefined,
+          data: {
+            email_confirm: false
+          }
+        }
       })
 
       if (error) {
