@@ -53,7 +53,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="border-l-4 border-primary-500 pl-4">
             <p class="text-sm text-gray-600 font-medium">Nombre</p>
-            <p class="text-lg font-semibold text-gray-900">{{ authStore.userName }}</p>
+            <p class="text-lg font-semibold text-gray-900">{{ authStore.user?.nombre_completo }}</p>
           </div>
           <div class="border-l-4 border-primary-500 pl-4">
             <p class="text-sm text-gray-600 font-medium">Rol</p>

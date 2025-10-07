@@ -105,10 +105,12 @@ import QuickActions from '@/components/dashboard/admin/QuickActions.vue';
 import RecentActivity from '@/components/dashboard/admin/RecentActivity.vue';
 import SystemAlerts from '@/components/dashboard/admin/SystemAlerts.vue';
 import CourseSummary from '@/components/dashboard/admin/CourseSummary.vue';
+import { useSchoolStore } from '@/store/school.store';
 
 // Stores
 const adminStore = useAdminStore();
 const authStore = useAuthStore();
+const schoolStore = useSchoolStore();
 
 // Computed properties
 const loading = computed(() => adminStore.loading);
@@ -150,5 +152,6 @@ const handleIgnoreAlert = async (alertId: number) => {
 onMounted(async () => {
   // Cargar todos los datos del dashboard en paralelo
   await adminStore.loadDashboardData();
+  await schoolStore.fetchSchoolInfo();
 });
 </script>
