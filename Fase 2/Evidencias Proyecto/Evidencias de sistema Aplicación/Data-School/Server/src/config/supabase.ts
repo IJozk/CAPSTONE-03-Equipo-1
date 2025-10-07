@@ -14,7 +14,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
 
 // Cliente admin para operaciones que necesitan bypassear RLS
-// ⚠️ SOLO usar en backend, NUNCA exponer este cliente al frontend
 export const supabaseAdmin = supabaseServiceRoleKey
   ? createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
       auth: {

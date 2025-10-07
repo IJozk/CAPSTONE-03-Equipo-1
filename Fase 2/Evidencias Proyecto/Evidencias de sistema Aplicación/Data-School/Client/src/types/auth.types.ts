@@ -9,8 +9,8 @@ export enum UserRole {
 
 // Datos del usuario autenticado
 export interface User {
-  user_id: string;
-  email_address: string;
+  id: string;
+  email: string;
   role: UserRole;
   profile_completed: boolean;
   colegio_id: string | null;
