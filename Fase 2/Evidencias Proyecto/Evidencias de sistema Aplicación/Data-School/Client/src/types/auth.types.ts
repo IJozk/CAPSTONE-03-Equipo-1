@@ -15,6 +15,43 @@ export interface User {
   profile_completed: boolean;
   colegio_id: string | null;
   nombre_completo?: string;
+  admin_profile?: {
+    nombre_completo: string;
+    rut: string;
+    telefono?: string;
+    direccion?: string;
+    genero?: string;
+    fecha_nacimiento?: string; // ISO date
+  };
+  profesor_profile?: {
+    nombre_completo: string;
+    rut: string;
+    titulo_profesional: string;
+    especialidad?: string;
+    fecha_contratacion: string; // ISO date
+    telefono?: string;
+    direccion?: string;
+    genero?: string;
+    fecha_nacimiento?: string; // ISO date
+  };
+  estudiante_profile?: {
+    nombre_completo: string;
+    rut: string;
+    fecha_nacimiento: string; // ISO date
+    genero?: string;
+    direccion?: string;
+    telefono?: string;
+    curso_id?: string; // Curso actual
+  };
+  apoderado_profile?: {
+    nombre_completo: string;
+    rut: string;
+    telefono?: string;
+    direccion?: string;
+    genero?: string;
+    fecha_nacimiento?: string; // ISO date
+  };
+  created_at?: string; // ISO date
 }
 
 // Credenciales para login

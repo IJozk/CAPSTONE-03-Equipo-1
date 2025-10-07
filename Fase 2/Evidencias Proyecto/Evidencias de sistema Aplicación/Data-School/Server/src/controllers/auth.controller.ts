@@ -152,6 +152,85 @@ export class AuthController {
         })
       }
 
+      // Obtener información adicional del usuario desde la tabla User
+      let adminData = null;
+      let adminError = null;
+
+      if (userData.role === 'ADMINISTRADOR' || userData.role === 'ADMINISTRATIVO' || userData.role === 'DIRECTOR') {
+        // Obtener información adicional del usuario desde la tabla User
+        const client = supabaseAdmin || supabase;
+        const result = await client
+          .from('Administrativo')
+          .select('nombre_completo, cargo, rut, telefono, area_id, fecha_contratacion')
+          .eq('user_id', userData.user_id)
+          .single();
+        
+        adminData = result.data;
+        adminError = result.error;
+
+        if (adminError || !adminData) {
+          console.log(result)
+          console.log(userData.user_id)
+          console.error('Error obteniendo datos de administrativo:', adminError)
+          return res.status(404).json({
+            error: 'Perfil de administrativo no encontrado en el sistema'
+          })
+        }
+      }
+
+      // Obtener información adicional del usuario de rol profesor
+      let teacherData = null;
+      let teacherError = null;
+
+      if (userData.role === 'PROFESOR') {
+        // Obtener información adicional del usuario desde la tabla User
+        const client = supabaseAdmin || supabase;
+        const result = await client
+          .from('Profesor')
+          .select('nombre_completo, titulo_profesional, especialidad, rut, telefono, fecha_contratacion')
+          .eq('user_id', userData.user_id)
+          .single();
+        
+        teacherData = result.data;
+        teacherError = result.error;
+
+        if (teacherError || !teacherData) {
+          console.log(result)
+          console.log(userData.user_id)
+          console.error('Error obteniendo datos de administrativo:', teacherError)
+          return res.status(404).json({
+            error: 'Perfil de administrativo no encontrado en el sistema'
+          })
+        }
+      }
+
+      // Obtener información adicional del usuario de rol estudiante
+      let studentData = null;
+      let studentError = null;
+
+      if (userData.role === 'ESTUDIANTE_APODERADO') {
+          // Obtener información adicional del usuario desde la tabla User
+        const client = supabaseAdmin || supabase;
+        const result = await client
+          .from('Profesor')
+          .select('nombre_completo, rut, telefono, fecha_nacimiento, genero, direccion')
+          .eq('user_id', userData.user_id)
+          .single();
+        
+        studentData = result.data;
+        studentError = result.error;
+
+        if (studentError || !studentData) {
+          console.log(result)
+          console.log(userData.user_id)
+          console.error('Error obteniendo datos de administrativo:', studentError)
+          return res.status(404).json({
+            error: 'Perfil de administrativo no encontrado en el sistema'
+          })
+        }
+      }
+
+
       // Verificar si el usuario está activo
       if (!userData.is_active) {
         return res.status(403).json({
@@ -168,7 +247,11 @@ export class AuthController {
           role: userData.role,
           colegio_id: userData.colegio_id,
           profile_completed: userData.profile_completed,
-          created_at: data.user.created_at
+          created_at: data.user.created_at,
+          // Información adicional para administrativos
+          ...(userData.role === 'ADMINISTRADOR' && !adminError && adminData
+            ? { admin_profile: adminData }
+            : {})
         },
         session: data.session
       })
