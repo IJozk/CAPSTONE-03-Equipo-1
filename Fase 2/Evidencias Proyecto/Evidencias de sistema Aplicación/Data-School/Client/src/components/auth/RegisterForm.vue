@@ -313,7 +313,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeMount } from 'vue';
 import { useAuthStore } from '@/store/auth.store';
 import {
   validateEmail,
@@ -328,6 +328,7 @@ import {
 import type { RegisterDTO, RegisterValidationErrors, RoleOption } from '@/types/auth.types';
 import { UserRole } from '@/types/auth.types';
 import { useSchoolStore } from '@/store/school.store';
+import { before } from 'node:test';
 
 const authStore = useAuthStore();
 const schoolStore = useSchoolStore();
@@ -412,6 +413,11 @@ const isFormValid = computed(() => {
 
   return hasAllRequired && hasNoErrors;
 });
+
+function verify_data(){
+  console.log(schoolStore.schoolInfo);
+  console.log(formData)
+}
 
 const selectedRoleDescription = computed(() => {
   const role = roleOptions.find(r => r.value === formData.value.role);
@@ -571,6 +577,7 @@ const validateField = (field: keyof RegisterDTO) => {
 const clearFieldError = (field: keyof RegisterValidationErrors) => {
   delete errors.value[field];
   authStore.clearRegisterState();
+  verify_data();
 };
 
 // Manejar input de RUT (formateo automático)
@@ -723,6 +730,17 @@ onMounted(() => {
   // Inicializar colegio_id si está disponible en el store
   if (schoolStore.schoolInfo?.colegio_id) {
     formData.value.colegio_id = schoolStore.schoolInfo.colegio_id;
+    console.log("Colegio ID seteado:", formData.value.colegio_id);
+  }
+});
+
+onBeforeMount(() => {
+  // Limpiar estado de registro al montar el componente
+  authStore.clearRegisterState();
+  // Inicializar colegio_id si está disponible en el store
+  if (schoolStore.schoolInfo?.colegio_id) {
+    formData.value.colegio_id = schoolStore.schoolInfo.colegio_id;
+    console.log("Colegio ID seteado:", formData.value.colegio_id);
   }
 });
 

@@ -76,7 +76,7 @@ export const useAuthStore = defineStore('auth', {
      * Obtener el nombre del usuario para mostrar en la UI
      */
     userName: (state): string => {
-      return state.user?.nombre_completo || state.user?.email_address || '';
+      return state.user?.admin_profile?.nombre_completo || state.user?.email || '';
     },
   },
 
