@@ -183,14 +183,24 @@ const handleSubmit = async () => {
 
     // Redireccionar según el rol del usuario
     const role = authStore.userRole;
-    if (role === 'ADMINISTRADOR' || role === 'DIRECTOR') {
-      router.push('/dashboard');
-    } else if (role === 'PROFESOR') {
-      router.push('/dashboard/profesor');
-    } else if (role === 'ESTUDIANTE_APODERADO') {
-      router.push('/dashboard/estudiante');
-    } else {
-      router.push('/dashboard');
+
+    // Sistema de redirección mejorado basado en roles específicos
+    switch(role) {
+      case 'ADMINISTRADOR':
+        router.push('/admin/dashboard');
+        break;
+      case 'DIRECTOR':
+      case 'UTP':
+        router.push('/director/dashboard');
+        break;
+      case 'PROFESOR':
+        router.push('/teacher/dashboard');
+        break;
+      case 'ESTUDIANTE_APODERADO':
+        router.push('/student/dashboard');
+        break;
+      default:
+        router.push('/dashboard');
     }
   } catch (error: any) {
     loginError.value = error.message || 'Error al iniciar sesión';
