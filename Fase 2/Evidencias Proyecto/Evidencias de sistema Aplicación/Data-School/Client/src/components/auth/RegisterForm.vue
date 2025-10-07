@@ -226,24 +226,6 @@
       </div>
     </div>
 
-    <!-- Colegio ID -->
-    <div>
-      <label for="colegio_id" class="block text-sm font-medium text-gray-700 mb-2">
-        ID del Colegio *
-      </label>
-      <input
-        id="colegio_id"
-        v-model="formData.colegio_id"
-        type="text"
-        :class="inputClass('colegio_id')"
-        placeholder="UUID del colegio"
-        @blur="validateField('colegio_id')"
-        @input="clearFieldError('colegio_id')"
-      />
-      <p class="mt-1 text-xs text-gray-500">Ingresa el UUID del colegio</p>
-      <p v-if="errors.colegio_id" class="mt-1 text-sm text-red-600">{{ errors.colegio_id }}</p>
-    </div>
-
     <!-- Teléfono (opcional) -->
     <div>
       <label for="telefono" class="block text-sm font-medium text-gray-700 mb-2">
@@ -280,7 +262,7 @@
         <div class="flex-1">
           <p class="text-sm font-medium text-green-800">Usuario registrado exitosamente</p>
           <p class="text-sm text-green-700 mt-1">
-            <strong>{{ authStore.registerState.registeredUser?.email_address }}</strong>
+            <strong>{{ authStore.registerState.registeredUser?.email }}</strong>
           </p>
         </div>
       </div>
@@ -331,7 +313,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/store/auth.store';
 import {
   validateEmail,
@@ -345,8 +327,10 @@ import {
 } from '@/utils/validators';
 import type { RegisterDTO, RegisterValidationErrors, RoleOption } from '@/types/auth.types';
 import { UserRole } from '@/types/auth.types';
+import { useSchoolStore } from '@/store/school.store';
 
 const authStore = useAuthStore();
+const schoolStore = useSchoolStore();
 
 // Opciones de roles con descripciones
 const roleOptions: RoleOption[] = [
@@ -734,6 +718,13 @@ const resetForm = () => {
   passwordStrength.value = 'weak';
   authStore.clearRegisterState();
 };
+
+onMounted(() => {
+  // Inicializar colegio_id si está disponible en el store
+  if (schoolStore.schoolInfo?.colegio_id) {
+    formData.value.colegio_id = schoolStore.schoolInfo.colegio_id;
+  }
+});
 
 // Filtrar opciones (mostrar en el orden solicitado por el usuario)
 const filteredRoleOptions = roleOptions;
