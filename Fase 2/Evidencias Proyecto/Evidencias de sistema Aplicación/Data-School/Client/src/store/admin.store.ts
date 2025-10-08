@@ -232,9 +232,10 @@ export const useAdminStore = defineStore('admin', {
       }
     },
 
-    /**
-     * Limpiar el error
-     */
+    setError(message: string) {
+      this.error = message;
+    },
+    
     clearError() {
       this.error = null;
     },

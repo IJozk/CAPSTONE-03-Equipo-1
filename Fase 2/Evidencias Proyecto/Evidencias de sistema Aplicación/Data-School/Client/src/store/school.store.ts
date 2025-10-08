@@ -15,14 +15,14 @@ export const useSchoolStore = defineStore('school', {
          * Acción para obtener la información del colegio
          */
         async fetchSchoolInfo() {
-        this.loading = true;
-        this.error = null;
-            try {
-            this.schoolInfo = await SchoolService.getSchoolInfo();
-        } catch (error: any) {
-            this.error = error.message || 'Error al cargar la información del colegio';
-        }
-            this.loading = false;   
+            this.loading = true;
+            this.error = null;
+                try {
+                this.schoolInfo = await SchoolService.getSchoolInfo();
+            } catch (error: any) {
+                this.error = error.message || 'Error al cargar la información del colegio';
+            }
+                this.loading = false;   
         }
     }   
 });
