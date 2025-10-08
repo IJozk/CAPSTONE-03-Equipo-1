@@ -10,9 +10,4 @@
 <li>
   <b>Jira: </b>https://data-school.atlassian.net/jira/software/projects/SCRUM/boards/1?atlOrigin=eyJpIjoiMDhmZDg5NGU2OTZmNGQ3MjliOGE3ODBkOGIyNGFlOTgiLCJwIjoiaiJ9
 </li>
-<li>
-  <b>PlayList: <a href="https://open.spotify.com/playlist/3UwParjdnNZg33deHxxrIT?si=a83f366c47b744cd" target="_blank">
-                  Listen on Spotify
-               </a> 🎵
-</li>
 </body>
