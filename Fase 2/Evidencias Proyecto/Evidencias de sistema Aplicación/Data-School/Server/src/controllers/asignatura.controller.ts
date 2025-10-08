@@ -432,4 +432,103 @@ export class AsignaturaController {
       })
     }
   }
+
+  /**
+   * Obtener asignaturas por curso
+   */
+  async getByCurso(req: Request, res: Response) {
+    try {
+      const { curso_id } = req.params
+
+      if (!curso_id) {
+        return res.status(400).json({
+          error: 'ID de curso es requerido'
+        })
+      }
+
+      const client = supabaseAdmin || supabase
+      const { data, error } = await client
+        .from('Asignatura')
+        .select(`
+          *,
+          Profesor:profesor_id (
+            profesor_id,
+            nombre_completo,
+            especialidad
+          )
+        `)
+        .eq('curso_id', curso_id)
+        .eq('estado_activo', true)
+        .order('nombre', { ascending: true })
+
+      if (error) {
+        console.error('Error obteniendo asignaturas por curso:', error)
+        return res.status(500).json({
+          error: 'Error al obtener asignaturas',
+          details: error.message
+        })
+      }
+
+      return res.status(200).json({
+        message: 'Asignaturas del curso obtenidas exitosamente',
+        data: data || [],
+        count: data?.length || 0
+      })
+    } catch (error) {
+      console.error('Error en getByCurso:', error)
+      return res.status(500).json({
+        error: 'Error interno del servidor'
+      })
+    }
+  }
+
+  /**
+   * Obtener asignaturas por profesor
+   */
+  async getByProfesor(req: Request, res: Response) {
+    try {
+      const { profesor_id } = req.params
+
+      if (!profesor_id) {
+        return res.status(400).json({
+          error: 'ID de profesor es requerido'
+        })
+      }
+
+      const client = supabaseAdmin || supabase
+      const { data, error } = await client
+        .from('Asignatura')
+        .select(`
+          *,
+          Curso:curso_id (
+            curso_id,
+            nombre,
+            nivel,
+            paralelo
+          )
+        `)
+        .eq('profesor_id', profesor_id)
+        .eq('estado_activo', true)
+        .order('nombre', { ascending: true })
+
+      if (error) {
+        console.error('Error obteniendo asignaturas por profesor:', error)
+        return res.status(500).json({
+          error: 'Error al obtener asignaturas',
+          details: error.message
+        })
+      }
+
+      return res.status(200).json({
+        message: 'Asignaturas del profesor obtenidas exitosamente',
+        data: data || [],
+        count: data?.length || 0
+      })
+    } catch (error) {
+      console.error('Error en getByProfesor:', error)
+      return res.status(500).json({
+        error: 'Error interno del servidor'
+      })
+    }
+  }
 }

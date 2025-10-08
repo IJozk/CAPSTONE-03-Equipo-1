@@ -210,7 +210,7 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useTeacherStore } from '@/store/teacher.store';
-import teacherService from '@/services/teacher.service';
+import teacherService from '@/services/teachertools.service';
 import type { Student, Evaluation } from '@/types/teacher.types';
 
 const route = useRoute();

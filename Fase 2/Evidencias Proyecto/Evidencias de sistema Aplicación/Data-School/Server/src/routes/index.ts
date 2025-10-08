@@ -8,6 +8,8 @@ import profesorRoutes from './profesor.router'
 import estudianteRoutes from './estudiante.router'
 import administrativoRoutes from './administrativo.router'
 import tutorRoutes from './tutor.router'
+import asignaturaRoutes from './asignatura.router'
+import cursoRoutes from './curso.router'
 
 const router = Router()
 
@@ -25,6 +27,10 @@ router.use('/profesores', profesorRoutes)
 router.use('/estudiantes', estudianteRoutes)
 router.use('/administrativos', administrativoRoutes)
 router.use('/tutores', tutorRoutes)
+
+// Rutas CRUD de entidades académicas
+router.use('/asignaturas', asignaturaRoutes)
+router.use('/cursos', cursoRoutes)
 
 // Rutas protegidas
 router.use('/protected', protectedRoutes)

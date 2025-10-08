@@ -32,6 +32,7 @@ import type {
 } from '@/types/teacher.types';
 
 class TeacherService {
+
   // ========== DASHBOARD ==========
 
   /**
