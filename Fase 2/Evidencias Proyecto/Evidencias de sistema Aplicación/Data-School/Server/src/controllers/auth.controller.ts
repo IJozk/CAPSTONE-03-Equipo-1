@@ -199,10 +199,11 @@ export class AuthController {
 
         // Solo advertir si no existe el perfil, pero permitir el login
         if (teacherError || !teacherData) {
-          console.warn('⚠️ Usuario profesor sin perfil completo:', {
-            user_id: userData.user_id,
-            role: userData.role,
-            error: teacherError?.message
+          console.log(result)
+          console.log(userData.user_id)
+          console.error('Error obteniendo datos de profesor:', teacherError)
+          return res.status(404).json({
+            error: 'Perfil de profesor no encontrado en el sistema'
           })
           // No retornar error - permitir login sin perfil completo
         }
@@ -259,16 +260,11 @@ export class AuthController {
             : {}),
           // Información adicional para profesores
           ...(userData.role === 'PROFESOR' && !teacherError && teacherData
-            ? { profesor_profile: teacherData }
-            : {}),
-          // Información adicional para estudiantes
-          ...(userData.role === 'ESTUDIANTE_APODERADO' && !studentError && studentData
-            ? { estudiante_profile: studentData }
+            ? { teacher_profile: teacherData }
             : {})
         },
         session: data.session,
-        token: data.session?.access_token,
-        expiresIn: data.session?.expires_in
+        token: data.session?.access_token
       })
     } catch (error) {
       console.error('Error en login:', error)
