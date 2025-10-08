@@ -148,10 +148,17 @@ const handleIgnoreAlert = async (alertId: number) => {
   }
 };
 
-// Lifecycle hooks
 onMounted(async () => {
-  // Cargar todos los datos del dashboard en paralelo
-  await adminStore.loadDashboardData();
-  await schoolStore.fetchSchoolInfo();
+  try {
+    // Cargar todos los datos del dashboard en paralelo
+    await Promise.all([
+      adminStore.loadDashboardData(),
+      schoolStore.fetchSchoolInfo()
+    ]);
+  } catch (error) {
+    console.error('Error al cargar datos del dashboard:', error);
+    adminStore.setError('Error al cargar los datos del dashboard. Por favor, intente nuevamente.');
+  }
 });
+
 </script>

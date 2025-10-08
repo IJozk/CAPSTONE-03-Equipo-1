@@ -29,15 +29,17 @@
               <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre Completo</th>
               <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
               <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha de Registro</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado Estudiante</th>
               <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
-            <tr v-for="student in studentStore.studentList" :key="student.id">
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ student.id }}</td>
+            <tr v-for="student in studentStore.estudiantes" :key="student.user_id">
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ student.user_id }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ student.nombre_completo }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ student.email }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ student.created_at }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ student.estado_activo }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                 <button class="text-blue-600 hover:text-blue-900 mr-4">Editar</button>
                 <button class="text-red-600 hover:text-red-900">Eliminar</button>
@@ -54,12 +56,17 @@
 <script setup lang="ts">
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { useStudentStore } from '@/store/student.store';
+import { on } from 'events';
 import { onMounted } from 'vue';
 
 const studentStore = useStudentStore();
 
-onMounted(() => {
-  studentStore.fetchStudents();
+onMounted(async () => {
+  try {
+    await studentStore.fetchEstudiantes();
+  } catch (error) {
+    console.error('Error fetching students:', error);
+  }
 });
 
 

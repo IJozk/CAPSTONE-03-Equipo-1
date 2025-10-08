@@ -19,7 +19,7 @@ class UserService {
 
         if (usertype === 'ESTUDIANTE') {
             try {
-                const response = await apiClient.get<User[]>('/users/estudiantes'); 
+                const response = await apiClient.get<User[]>('/estudiantes'); 
                 return response.data;
             } catch (error: any) {
                 throw new Error(
@@ -29,7 +29,7 @@ class UserService {
         }
         else if (usertype === 'PROFESOR') {
             try {
-                const response = await apiClient.get<User[]>('/users/profesores'); 
+                const response = await apiClient.get<User[]>('/profesores'); 
                 return response.data;
             } catch (error: any) {
                 throw new Error(
@@ -39,7 +39,7 @@ class UserService {
         }
         else if (usertype === 'TUTOR') {
             try {
-                const response = await apiClient.get<User[]>('/users/tutores'); 
+                const response = await apiClient.get<User[]>('/tutores'); 
                 return response.data;
             } catch (error: any) {
                 throw new Error(
@@ -49,7 +49,7 @@ class UserService {
         }
         else { // ADMINISTRATIVO
             try {
-                const response = await apiClient.get<User[]>('/users/administrativos'); 
+                const response = await apiClient.get<User[]>('/administrativos'); 
                 return response.data;
             } catch (error: any) {
                 throw new Error(

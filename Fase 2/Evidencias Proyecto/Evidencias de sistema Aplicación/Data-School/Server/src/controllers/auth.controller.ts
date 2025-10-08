@@ -127,6 +127,8 @@ export class AuthController {
       })
 
       if (error) {
+        console.log('Credenciales inválidas', error)
+
         return res.status(401).json({
           error: 'Credenciales inválidas'
         })
@@ -164,17 +166,18 @@ export class AuthController {
           .select('nombre_completo, cargo, rut, telefono, area_id, fecha_contratacion')
           .eq('user_id', userData.user_id)
           .single();
-        
+
         adminData = result.data;
         adminError = result.error;
 
+        // Solo advertir si no existe el perfil, pero permitir el login
         if (adminError || !adminData) {
-          console.log(result)
-          console.log(userData.user_id)
-          console.error('Error obteniendo datos de administrativo:', adminError)
-          return res.status(404).json({
-            error: 'Perfil de administrativo no encontrado en el sistema'
+          console.warn('Usuario administrativo sin perfil completo:', {
+            user_id: userData.user_id,
+            role: userData.role,
+            error: adminError?.message
           })
+          // No retornar error - permitir login sin perfil completo
         }
       }
 
@@ -190,17 +193,18 @@ export class AuthController {
           .select('nombre_completo, titulo_profesional, especialidad, rut, telefono, fecha_contratacion')
           .eq('user_id', userData.user_id)
           .single();
-        
+
         teacherData = result.data;
         teacherError = result.error;
 
+        // Solo advertir si no existe el perfil, pero permitir el login
         if (teacherError || !teacherData) {
-          console.log(result)
-          console.log(userData.user_id)
-          console.error('Error obteniendo datos de administrativo:', teacherError)
-          return res.status(404).json({
-            error: 'Perfil de administrativo no encontrado en el sistema'
+          console.warn('⚠️ Usuario profesor sin perfil completo:', {
+            user_id: userData.user_id,
+            role: userData.role,
+            error: teacherError?.message
           })
+          // No retornar error - permitir login sin perfil completo
         }
       }
 
@@ -209,24 +213,25 @@ export class AuthController {
       let studentError = null;
 
       if (userData.role === 'ESTUDIANTE_APODERADO') {
-          // Obtener información adicional del usuario desde la tabla User
+          // Obtener información adicional del usuario desde la tabla Estudiante
         const client = supabaseAdmin || supabase;
         const result = await client
-          .from('Profesor')
+          .from('Estudiante')
           .select('nombre_completo, rut, telefono, fecha_nacimiento, genero, direccion')
           .eq('user_id', userData.user_id)
           .single();
-        
+
         studentData = result.data;
         studentError = result.error;
 
+        // Solo advertir si no existe el perfil, pero permitir el login
         if (studentError || !studentData) {
-          console.log(result)
-          console.log(userData.user_id)
-          console.error('Error obteniendo datos de administrativo:', studentError)
-          return res.status(404).json({
-            error: 'Perfil de administrativo no encontrado en el sistema'
+          console.warn('⚠️ Usuario estudiante sin perfil completo:', {
+            user_id: userData.user_id,
+            role: userData.role,
+            error: studentError?.message
           })
+          // No retornar error - permitir login sin perfil completo
         }
       }
 
@@ -249,11 +254,21 @@ export class AuthController {
           profile_completed: userData.profile_completed,
           created_at: data.user.created_at,
           // Información adicional para administrativos
-          ...(userData.role === 'ADMINISTRADOR' && !adminError && adminData
+          ...((userData.role === 'ADMINISTRADOR' || userData.role === 'ADMINISTRATIVO' || userData.role === 'DIRECTOR') && !adminError && adminData
             ? { admin_profile: adminData }
+            : {}),
+          // Información adicional para profesores
+          ...(userData.role === 'PROFESOR' && !teacherError && teacherData
+            ? { profesor_profile: teacherData }
+            : {}),
+          // Información adicional para estudiantes
+          ...(userData.role === 'ESTUDIANTE_APODERADO' && !studentError && studentData
+            ? { estudiante_profile: studentData }
             : {})
         },
-        session: data.session
+        session: data.session,
+        token: data.session?.access_token,
+        expiresIn: data.session?.expires_in
       })
     } catch (error) {
       console.error('Error en login:', error)
@@ -424,10 +439,14 @@ export class AuthController {
         })
       }
 
-      // Registrar usuario con Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      // Usar supabaseAdmin para crear usuarios sin confirmación de email
+      const client = supabaseAdmin || supabase
+
+      // Registrar usuario con Supabase Auth Admin API (auto-confirmar email)
+      const { data: authData, error: authError } = await client.auth.admin.createUser({
         email,
-        password
+        password,
+        email_confirm: true // Auto-confirmar email - usuario puede hacer login inmediatamente
       })
 
       if (authError) {
@@ -441,8 +460,6 @@ export class AuthController {
           error: 'Error al crear usuario de autenticación'
         })
       }
-
-      const client = supabaseAdmin || supabase
 
       // Crear registro en tabla User
       const { data: userData, error: userError } = await client
@@ -499,8 +516,7 @@ export class AuthController {
           role: 'PROFESOR',
           colegio_id: colegio_id
         },
-        profesor: profesorData,
-        session: authData.session
+        profesor: profesorData
       })
     } catch (error) {
       console.error('Error en registro de profesor:', error)
@@ -537,9 +553,11 @@ export class AuthController {
 
       // Si se proporciona email y password, crear cuenta de autenticación
       if (email && password) {
-        const { data: authData, error: authError } = await supabase.auth.signUp({
+        // Usar admin API para crear usuario sin confirmación de email
+        const { data: authData, error: authError } = await client.auth.admin.createUser({
           email,
-          password
+          password,
+          email_confirm: true // Auto-confirmar email
         })
 
         if (authError) {
@@ -747,10 +765,14 @@ export class AuthController {
         })
       }
 
-      // Registrar usuario con Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      // Usar supabaseAdmin para crear usuarios sin confirmación de email
+      const client = supabaseAdmin || supabase
+
+      // Registrar usuario con Supabase Auth Admin API (auto-confirmar email)
+      const { data: authData, error: authError } = await client.auth.admin.createUser({
         email,
-        password
+        password,
+        email_confirm: true // Auto-confirmar email
       })
 
       if (authError) {
@@ -764,8 +786,6 @@ export class AuthController {
           error: 'Error al crear usuario de autenticación'
         })
       }
-
-      const client = supabaseAdmin || supabase
 
       // Crear registro en tabla User
       const { data: userData, error: userError } = await client
@@ -822,8 +842,7 @@ export class AuthController {
           role: role,
           colegio_id: colegio_id
         },
-        administrativo: adminData,
-        session: authData.session
+        administrativo: adminData
       })
     } catch (error) {
       console.error('Error en registro de administrativo:', error)

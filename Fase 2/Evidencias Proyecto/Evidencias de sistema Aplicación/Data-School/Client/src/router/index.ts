@@ -212,6 +212,72 @@ const routes: RouteRecordRaw[] = [
     }
   },
 
+  // ==========================================
+  // RUTAS DEL PROFESOR
+  // ==========================================
+  {
+    path: '/teacher',
+    redirect: '/teacher/dashboard',
+    meta: {
+      requiresAuth: true,
+      requiresRole: ['PROFESOR']
+    }
+  },
+  {
+    path: '/teacher/dashboard',
+    name: 'TeacherDashboard',
+    component: () => import('@/pages/teacher/Dashboard.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresRole: ['PROFESOR'],
+      title: 'Panel del Profesor'
+    }
+  },
+
+  // ==========================================
+  // RUTAS DEL ESTUDIANTE_APODERADO
+  // ==========================================
+  {
+    path: '/student',
+    redirect: '/student/dashboard',
+    meta: {
+      requiresAuth: true,
+      requiresRole: ['ESTUDIANTE_APODERADO']
+    }
+  },
+  {
+    path: '/student/dashboard',
+    name: 'StudentDashboard',
+    component: () => import('@/pages/student/Dashboard.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresRole: ['ESTUDIANTE_APODERADO'],
+      title: 'Panel del Estudiante'
+    }
+  },
+
+  // ==========================================
+  // RUTAS DEL ADMINISTRATIVO
+  // ==========================================
+  {
+    path: '/administrativo',
+    redirect: '/administrativo/dashboard',
+    meta: {
+      requiresAuth: true,
+      requiresRole: ['ADMINISTRATIVO']
+    }
+  },
+  {
+    path: '/administrativo/dashboard',
+    name: 'AdministrativoDashboard',
+    component: () => import('@/pages/administrativo/Dashboard.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresRole: ['ADMINISTRATIVO'],
+      title: 'Panel Administrativo'
+    }
+  },
+
   // Ruta 404 - cualquier ruta no definida redirige a login
   {
     path: '/:pathMatch(.*)*',
@@ -234,7 +300,9 @@ router.beforeEach((to, from, next) => {
 
   // Restaurar sesión desde localStorage si no está cargada
   if (!authStore.isAuthenticated) {
+
     authStore.restoreSession();
+
   }
 
   // Rutas que requieren autenticación
@@ -252,6 +320,7 @@ router.beforeEach((to, from, next) => {
     const userRole = authStore.userRole;
 
     if (!requiredRoles.includes(userRole as string)) {
+
       // Redirigir al dashboard correcto según rol
       if (userRole === 'ESTUDIANTE_APODERADO') {
         next('/student/dashboard');
@@ -259,7 +328,9 @@ router.beforeEach((to, from, next) => {
         next('/admin/dashboard');
       } else if (userRole === 'PROFESOR') {
         next('/teacher/dashboard');
-      } else if (userRole === 'DIRECTOR' || userRole === 'UTP') {
+      } else if (userRole === 'ADMINISTRATIVO') {
+        next('/administrativo/dashboard');
+      } else if (userRole === 'DIRECTOR') {
         next('/director/dashboard');
       } else {
         next('/dashboard');
@@ -270,12 +341,14 @@ router.beforeEach((to, from, next) => {
 
   // Rutas solo para administradores (backward compatibility)
   if (to.meta.requiresAdmin && !authStore.isAdmin) {
+
     next('/dashboard');
     return;
   }
 
   // Rutas solo para invitados (si está autenticado, redirigir a dashboard correspondiente)
   if (to.meta.requiresGuest && authStore.isAuthenticated) {
+    console.log('ℹ️ Usuario ya autenticado en ruta de invitado, redirigiendo a dashboard');
     const userRole = authStore.userRole;
     if (userRole === 'ESTUDIANTE_APODERADO') {
       next('/student/dashboard');
@@ -283,7 +356,9 @@ router.beforeEach((to, from, next) => {
       next('/admin/dashboard');
     } else if (userRole === 'PROFESOR') {
       next('/teacher/dashboard');
-    } else if (userRole === 'DIRECTOR' || userRole === 'UTP') {
+    } else if (userRole === 'ADMINISTRATIVO') {
+      next('/administrativo/dashboard');
+    } else if (userRole === 'DIRECTOR') {
       next('/director/dashboard');
     } else {
       next('/dashboard');
@@ -291,7 +366,6 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  // Permitir navegación
   next();
 });
 
