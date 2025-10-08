@@ -165,7 +165,25 @@ export interface AttendanceReport {
   };
 }
 
+export interface Profesor {
+  user_id: string;
+  profesor_id: string;
+  nombre_completo: string;
+  rut: string;
+  titulo_profesional: string;
+  especialidad: string;
+  fecha_contratacion: string; // ISO date
+  estado_activo: boolean;
+  telefono?: string;
+  direccion?: string;
+  genero?: string;
+  fecha_nacimiento?: string; // ISO date
+  created_at?: string; // ISO date
+}
+
 export interface TeacherState {
+  profesores: Profesor[],
+  currentProfesor: Profesor,
   dashboard: TeacherDashboard | null;
   subjects: Subject[];
   currentSubject: Subject | null;
@@ -211,4 +229,20 @@ export interface ObservationFormData {
   categoria: ObservationCategory;
   descripcion: string;
   asignatura_id?: string;
+}
+
+export interface Teacher {
+  user_id: string;
+  profesor_id: string;
+  nombre_completo: string;
+  rut: string;
+  titulo_profesional: string;
+  especialidad: string;
+  fecha_contratacion: string; // ISO date
+  estado_activo: boolean;
+  telefono?: string;
+  direccion?: string;
+  genero?: string;
+  fecha_nacimiento?: string; // ISO date
+  created_at?: string; // ISO date
 }

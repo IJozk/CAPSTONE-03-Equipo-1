@@ -1,28 +1,51 @@
-/**
- * teacher.store.ts
- * Store de Pinia para gestionar el estado del módulo de profesores
- */
-
 import { defineStore } from 'pinia';
-import teacherService from '@/services/teacher.service';
+import profesorService from '@/services/profesor.service';
+import teacherToolsService from '@/services/teachertools.service';
 import type {
-  TeacherState,
+  Profesor,
+  CreateProfesorDTO,
+  UpdateProfesorDTO,
+  UserQueryParams
+} from '@/types/users.types';
+import type {
   TeacherDashboard,
   Subject,
   Student,
   Evaluation,
-  EvaluationFormData,
   Grade,
-  GradeFormData,
   Observation,
-  ObservationFormData,
   Schedule,
-  Upcoming,
-  AttendanceFormData
+  Upcoming
 } from '@/types/teacher.types';
+
+interface TeacherState {
+  // Admin: gestión de profesores
+  profesores: Profesor[];
+  currentProfesor: Profesor | null;
+
+  // Teacher: datos del dashboard y herramientas
+  dashboard: TeacherDashboard | null;
+  subjects: Subject[];
+  currentSubject: Subject | null;
+  currentSubjectStudents: Student[];
+  evaluations: Evaluation[];
+  currentEvaluation: Evaluation | null;
+  grades: Grade[];
+  observations: Observation[];
+  schedule: Schedule[];
+  upcoming: Upcoming | null;
+
+  loading: boolean;
+  error: string | null;
+}
 
 export const useTeacherStore = defineStore('teacher', {
   state: (): TeacherState => ({
+    // Admin
+    profesores: [],
+    currentProfesor: null,
+
+    // Teacher
     dashboard: null,
     subjects: [],
     currentSubject: null,
@@ -33,145 +56,196 @@ export const useTeacherStore = defineStore('teacher', {
     observations: [],
     schedule: [],
     upcoming: null,
+
     loading: false,
     error: null
   }),
 
   getters: {
-    /**
-     * Nombre completo del profesor
-     */
-    teacherName: (state): string => {
-      return state.dashboard?.profesor.nombre_completo || '';
+    // ========== ADMIN GETTERS ==========
+    // Profesores activos
+    profesoresActivos: (state) => state.profesores.filter(p => p.estado_activo),
+
+    // Profesores inactivos
+    profesoresInactivos: (state) => state.profesores.filter(p => !p.estado_activo),
+
+    // Contar profesores activos
+    totalActivos: (state) => state.profesores.filter(p => p.estado_activo).length,
+
+    // Obtener profesor por ID
+    getProfesorById: (state) => (id: string) => {
+      return state.profesores.find(p => p.profesor_id === id);
     },
 
-    /**
-     * Especialidad del profesor
-     */
-    teacherSpecialty: (state): string => {
-      return state.dashboard?.profesor.especialidad || '';
-    },
+    // ========== TEACHER DASHBOARD GETTERS ==========
+    teacherName: (state) => state.dashboard?.profesor?.nombre_completo || '',
+    teacherSpecialty: (state) => state.dashboard?.profesor?.especialidad || '',
+    totalSubjects: (state) => state.dashboard?.stats?.total_asignaturas || 0,
+    totalStudents: (state) => state.dashboard?.stats?.total_estudiantes || 0,
+    totalCourses: (state) => state.dashboard?.stats?.total_cursos || 0,
+    pendingEvaluations: (state) => state.dashboard?.stats?.evaluaciones_pendientes_revision || 0,
+    pendingAttendance: (state) => state.dashboard?.stats?.asistencias_por_registrar_hoy || 0,
+    generalAverage: (state) => state.dashboard?.stats?.promedio_general_asignaturas || 0,
 
-    /**
-     * Total de asignaturas que imparte
-     */
-    totalSubjects: (state): number => {
-      return state.subjects.length;
-    },
-
-    /**
-     * Total de estudiantes en todas las asignaturas
-     */
-    totalStudents: (state): number => {
-      return state.dashboard?.stats.total_estudiantes || 0;
-    },
-
-    /**
-     * Evaluaciones pendientes de revisión
-     */
-    pendingEvaluations: (state): number => {
-      return state.dashboard?.stats.evaluaciones_pendientes_revision || 0;
-    },
-
-    /**
-     * Asistencias por registrar hoy
-     */
-    pendingAttendance: (state): number => {
-      return state.dashboard?.stats.asistencias_por_registrar_hoy || 0;
-    },
-
-    /**
-     * Promedio general de todas las asignaturas
-     */
-    generalAverage: (state): number => {
-      return state.dashboard?.stats.promedio_general_asignaturas || 0;
-    },
-
-    /**
-     * Clases de hoy
-     */
-    todayClasses: (state) => {
-      return state.upcoming?.clases_hoy || [];
-    },
-
-    /**
-     * Evaluaciones próximas
-     */
-    upcomingEvaluations: (state) => {
-      return state.upcoming?.evaluaciones_proximas || [];
-    },
-
-    /**
-     * Buscar asignatura por nombre
-     */
-    subjectByName: (state) => {
-      return (name: string) => {
-        return state.subjects.find(s => s.nombre === name);
-      };
-    },
-
-    /**
-     * Buscar asignatura por ID
-     */
-    subjectById: (state) => {
-      return (id: string) => {
-        return state.subjects.find(s => s.asignatura_id === id);
-      };
-    },
-
-    /**
-     * Observaciones filtradas por tipo
-     */
-    observationsByType: (state) => {
-      return (tipo: 'positiva' | 'negativa') => {
-        return state.observations.filter(o => o.tipo === tipo);
-      };
-    },
-
-    /**
-     * Total de observaciones positivas
-     */
-    totalPositiveObservations: (state): number => {
-      return state.observations.filter(o => o.tipo === 'positiva').length;
-    },
-
-    /**
-     * Total de observaciones negativas
-     */
-    totalNegativeObservations: (state): number => {
-      return state.observations.filter(o => o.tipo === 'negativa').length;
-    },
-
-    /**
-     * Evaluaciones urgentes (menos de 3 días)
-     */
-    urgentEvaluations: (state) => {
-      return state.upcoming?.evaluaciones_proximas.filter(e => e.dias_restantes < 3) || [];
-    },
-
-    /**
-     * Obtiene el horario de un día específico
-     */
-    scheduleByDay: (state) => {
-      return (day: number) => {
-        return state.schedule.filter(s => s.dia_semana === day);
-      };
-    }
+    // Upcoming classes and evaluations
+    todayClasses: (state) => state.upcoming?.clases_hoy || [],
+    upcomingEvaluations: (state) => state.upcoming?.evaluaciones_proximas || []
   },
 
   actions: {
-    // ========== DASHBOARD ==========
-
+    // ========== ADMIN ACTIONS ==========
     /**
-     * Carga el dashboard del profesor
+     * Obtener todos los profesores
      */
-    async fetchDashboard(): Promise<void> {
+    async fetchProfesores(params?: UserQueryParams) {
       this.loading = true;
       this.error = null;
       try {
-        this.dashboard = await teacherService.getDashboard();
+        this.profesores = await profesorService.getAll(params);
       } catch (error: any) {
-        this.error = error.response?.data?.message || 'Error al cargar el dashboard';
+        this.error = error.message || 'Error al cargar profesores';
+        console.error('Error fetching profesores:', error);
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Obtener profesor por ID
+     */
+    async fetchProfesorById(id: string) {
+      this.loading = true;
+      this.error = null;
+      try {
+        this.currentProfesor = await profesorService.getById(id);
+      } catch (error: any) {
+        this.error = error.message || 'Error al cargar profesor';
+        console.error('Error fetching profesor:', error);
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Crear nuevo profesor
+     */
+    async createProfesor(data: CreateProfesorDTO) {
+      this.loading = true;
+      this.error = null;
+      try {
+        const newProfesor = await profesorService.create(data);
+        this.profesores.push(newProfesor);
+        return newProfesor;
+      } catch (error: any) {
+        this.error = error.message || 'Error al crear profesor';
+        console.error('Error creating profesor:', error);
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Actualizar profesor
+     */
+    async updateProfesor(id: string, data: UpdateProfesorDTO) {
+      this.loading = true;
+      this.error = null;
+      try {
+        const updated = await profesorService.update(id, data);
+        const index = this.profesores.findIndex(p => p.profesor_id === id);
+        if (index !== -1) {
+          this.profesores[index] = updated;
+        }
+        if (this.currentProfesor?.profesor_id === id) {
+          this.currentProfesor = updated;
+        }
+        return updated;
+      } catch (error: any) {
+        this.error = error.message || 'Error al actualizar profesor';
+        console.error('Error updating profesor:', error);
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Deshabilitar profesor
+     */
+    async disableProfesor(id: string) {
+      this.loading = true;
+      this.error = null;
+      try {
+        await profesorService.disable(id);
+        const profesor = this.profesores.find(p => p.profesor_id === id);
+        if (profesor) {
+          profesor.estado_activo = false;
+          if (profesor.User) {
+            profesor.User.is_active = false;
+          }
+        }
+      } catch (error: any) {
+        this.error = error.message || 'Error al deshabilitar profesor';
+        console.error('Error disabling profesor:', error);
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Habilitar profesor
+     */
+    async enableProfesor(id: string) {
+      this.loading = true;
+      this.error = null;
+      try {
+        await profesorService.enable(id);
+        const profesor = this.profesores.find(p => p.profesor_id === id);
+        if (profesor) {
+          profesor.estado_activo = true;
+          if (profesor.User) {
+            profesor.User.is_active = true;
+          }
+        }
+      } catch (error: any) {
+        this.error = error.message || 'Error al habilitar profesor';
+        console.error('Error enabling profesor:', error);
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Limpiar error
+     */
+    clearError() {
+      this.error = null;
+    },
+
+    /**
+     * Reiniciar estado
+     */
+    resetState() {
+      this.profesores = [];
+      this.currentProfesor = null;
+      this.loading = false;
+      this.error = null;
+    },
+
+    // ========== TEACHER DASHBOARD ACTIONS ==========
+    /**
+     * Cargar datos del dashboard del profesor
+     */
+    async fetchDashboard() {
+      this.loading = true;
+      this.error = null;
+      try {
+        this.dashboard = await teacherToolsService.getDashboard();
+      } catch (error: any) {
+        this.error = error.message || 'Error al cargar dashboard';
         console.error('Error fetching dashboard:', error);
         throw error;
       } finally {
@@ -180,329 +254,65 @@ export const useTeacherStore = defineStore('teacher', {
     },
 
     /**
-     * Carga próximas clases y evaluaciones
+     * Cargar próximas clases y evaluaciones
      */
-    async fetchUpcoming(): Promise<void> {
+    async fetchUpcoming() {
       try {
-        this.upcoming = await teacherService.getUpcoming();
+        this.upcoming = await teacherToolsService.getUpcoming();
       } catch (error: any) {
-        this.error = error.response?.data?.message || 'Error al cargar próximas actividades';
         console.error('Error fetching upcoming:', error);
       }
     },
 
     /**
-     * Carga todos los datos del dashboard
+     * Cargar todos los datos necesarios para el dashboard
      */
-    async loadDashboardData(): Promise<void> {
-      await Promise.all([
-        this.fetchDashboard(),
-        this.fetchMySubjects(),
-        this.fetchUpcoming()
-      ]);
-    },
-
-    // ========== ASIGNATURAS ==========
-
-    /**
-     * Obtiene todas las asignaturas del profesor
-     */
-    async fetchMySubjects(): Promise<void> {
+    async loadDashboardData() {
       this.loading = true;
       this.error = null;
       try {
-        this.subjects = await teacherService.getMySubjects();
+        await Promise.all([
+          this.fetchDashboard(),
+          this.fetchUpcoming()
+        ]);
       } catch (error: any) {
-        this.error = error.response?.data?.message || 'Error al cargar asignaturas';
+        this.error = error.message || 'Error al cargar datos del dashboard';
+        console.error('Error loading dashboard data:', error);
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Cargar asignaturas del profesor
+     */
+    async fetchMySubjects() {
+      this.loading = true;
+      this.error = null;
+      try {
+        this.subjects = await teacherToolsService.getMySubjects();
+      } catch (error: any) {
+        this.error = error.message || 'Error al cargar asignaturas';
         console.error('Error fetching subjects:', error);
-        throw error;
       } finally {
         this.loading = false;
       }
     },
 
     /**
-     * Obtiene los estudiantes de una asignatura
+     * Cargar estudiantes de una asignatura
      */
-    async fetchSubjectStudents(subjectId: string): Promise<void> {
+    async fetchSubjectStudents(subjectId: string) {
       this.loading = true;
       this.error = null;
       try {
-        this.currentSubjectStudents = await teacherService.getSubjectStudents(subjectId);
-        this.currentSubject = this.subjects.find(s => s.asignatura_id === subjectId) || null;
+        this.currentSubjectStudents = await teacherToolsService.getSubjectStudents(subjectId);
       } catch (error: any) {
-        this.error = error.response?.data?.message || 'Error al cargar estudiantes';
+        this.error = error.message || 'Error al cargar estudiantes';
         console.error('Error fetching students:', error);
-        throw error;
       } finally {
         this.loading = false;
       }
-    },
-
-    // ========== EVALUACIONES ==========
-
-    /**
-     * Obtiene las evaluaciones de una asignatura
-     */
-    async fetchSubjectEvaluations(subjectId: string): Promise<void> {
-      this.error = null;
-      try {
-        this.evaluations = await teacherService.getSubjectEvaluations(subjectId);
-      } catch (error: any) {
-        this.error = error.response?.data?.message || 'Error al cargar evaluaciones';
-        console.error('Error fetching evaluations:', error);
-        throw error;
-      }
-    },
-
-    /**
-     * Crea una nueva evaluación
-     */
-    async createEvaluation(data: EvaluationFormData): Promise<Evaluation> {
-      this.error = null;
-      try {
-        const newEvaluation = await teacherService.createEvaluation(data);
-        this.evaluations.push(newEvaluation);
-        return newEvaluation;
-      } catch (error: any) {
-        this.error = error.response?.data?.message || 'Error al crear evaluación';
-        console.error('Error creating evaluation:', error);
-        throw error;
-      }
-    },
-
-    /**
-     * Actualiza una evaluación
-     */
-    async updateEvaluation(evaluationId: number, data: Partial<EvaluationFormData>): Promise<Evaluation> {
-      this.error = null;
-      try {
-        const updated = await teacherService.updateEvaluation(evaluationId, data);
-        const index = this.evaluations.findIndex(e => e.evaluacion_id === evaluationId);
-        if (index !== -1) {
-          this.evaluations[index] = updated;
-        }
-        return updated;
-      } catch (error: any) {
-        this.error = error.response?.data?.message || 'Error al actualizar evaluación';
-        console.error('Error updating evaluation:', error);
-        throw error;
-      }
-    },
-
-    /**
-     * Elimina una evaluación
-     */
-    async deleteEvaluation(evaluationId: number): Promise<void> {
-      this.error = null;
-      try {
-        await teacherService.deleteEvaluation(evaluationId);
-        this.evaluations = this.evaluations.filter(e => e.evaluacion_id !== evaluationId);
-      } catch (error: any) {
-        this.error = error.response?.data?.message || 'Error al eliminar evaluación';
-        console.error('Error deleting evaluation:', error);
-        throw error;
-      }
-    },
-
-    // ========== NOTAS ==========
-
-    /**
-     * Obtiene las notas de una evaluación
-     */
-    async fetchEvaluationGrades(evaluationId: number): Promise<void> {
-      this.loading = true;
-      this.error = null;
-      try {
-        this.grades = await teacherService.getEvaluationGrades(evaluationId);
-        this.currentEvaluation = this.evaluations.find(e => e.evaluacion_id === evaluationId) || null;
-      } catch (error: any) {
-        this.error = error.response?.data?.message || 'Error al cargar notas';
-        console.error('Error fetching grades:', error);
-        throw error;
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    /**
-     * Guarda o actualiza una nota
-     */
-    async saveGrade(data: GradeFormData): Promise<Grade> {
-      this.error = null;
-      try {
-        const savedGrade = await teacherService.saveGrade(data);
-
-        // Actualizar en el array de grades
-        const index = this.grades.findIndex(
-          g => g.estudiante.estudiante_id === data.estudiante_id
-        );
-
-        if (index !== -1) {
-          this.grades[index] = savedGrade;
-        } else {
-          this.grades.push(savedGrade);
-        }
-
-        return savedGrade;
-      } catch (error: any) {
-        this.error = error.response?.data?.message || 'Error al guardar nota';
-        console.error('Error saving grade:', error);
-        throw error;
-      }
-    },
-
-    /**
-     * Actualiza una nota existente
-     */
-    async updateGrade(gradeId: number, data: Partial<GradeFormData>): Promise<Grade> {
-      this.error = null;
-      try {
-        const updated = await teacherService.updateGrade(gradeId, data);
-        const index = this.grades.findIndex(g => g.resultado_id === gradeId);
-        if (index !== -1) {
-          this.grades[index] = updated;
-        }
-        return updated;
-      } catch (error: any) {
-        this.error = error.response?.data?.message || 'Error al actualizar nota';
-        console.error('Error updating grade:', error);
-        throw error;
-      }
-    },
-
-    // ========== ASISTENCIA ==========
-
-    /**
-     * Registra la asistencia de una clase
-     */
-    async saveAttendance(data: AttendanceFormData): Promise<void> {
-      this.error = null;
-      try {
-        await teacherService.saveAttendance(data);
-      } catch (error: any) {
-        this.error = error.response?.data?.message || 'Error al registrar asistencia';
-        console.error('Error saving attendance:', error);
-        throw error;
-      }
-    },
-
-    // ========== OBSERVACIONES ==========
-
-    /**
-     * Obtiene todas las observaciones con filtros
-     */
-    async fetchObservations(filters?: any): Promise<void> {
-      this.loading = true;
-      this.error = null;
-      try {
-        this.observations = await teacherService.getAllObservations(filters);
-      } catch (error: any) {
-        this.error = error.response?.data?.message || 'Error al cargar observaciones';
-        console.error('Error fetching observations:', error);
-        throw error;
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    /**
-     * Crea una nueva observación
-     */
-    async createObservation(data: ObservationFormData): Promise<Observation> {
-      this.error = null;
-      try {
-        const newObservation = await teacherService.createObservation(data);
-        this.observations.unshift(newObservation); // Agregar al inicio
-        return newObservation;
-      } catch (error: any) {
-        this.error = error.response?.data?.message || 'Error al crear observación';
-        console.error('Error creating observation:', error);
-        throw error;
-      }
-    },
-
-    /**
-     * Actualiza una observación
-     */
-    async updateObservation(observationId: number, data: Partial<ObservationFormData>): Promise<Observation> {
-      this.error = null;
-      try {
-        const updated = await teacherService.updateObservation(observationId, data);
-        const index = this.observations.findIndex(o => o.id === observationId);
-        if (index !== -1) {
-          this.observations[index] = updated;
-        }
-        return updated;
-      } catch (error: any) {
-        this.error = error.response?.data?.message || 'Error al actualizar observación';
-        console.error('Error updating observation:', error);
-        throw error;
-      }
-    },
-
-    /**
-     * Elimina una observación
-     */
-    async deleteObservation(observationId: number): Promise<void> {
-      this.error = null;
-      try {
-        await teacherService.deleteObservation(observationId);
-        this.observations = this.observations.filter(o => o.id !== observationId);
-      } catch (error: any) {
-        this.error = error.response?.data?.message || 'Error al eliminar observación';
-        console.error('Error deleting observation:', error);
-        throw error;
-      }
-    },
-
-    // ========== HORARIO ==========
-
-    /**
-     * Obtiene el horario del profesor
-     */
-    async fetchSchedule(): Promise<void> {
-      this.error = null;
-      try {
-        this.schedule = await teacherService.getMySchedule();
-      } catch (error: any) {
-        this.error = error.response?.data?.message || 'Error al cargar horario';
-        console.error('Error fetching schedule:', error);
-        throw error;
-      }
-    },
-
-    // ========== UTILIDADES ==========
-
-    /**
-     * Limpia el error actual
-     */
-    clearError(): void {
-      this.error = null;
-    },
-
-    /**
-     * Limpia la asignatura actual
-     */
-    clearCurrentSubject(): void {
-      this.currentSubject = null;
-      this.currentSubjectStudents = [];
-      this.evaluations = [];
-    },
-
-    /**
-     * Limpia la evaluación actual
-     */
-    clearCurrentEvaluation(): void {
-      this.currentEvaluation = null;
-      this.grades = [];
-    },
-
-    /**
-     * Resetea todo el estado
-     */
-    resetState(): void {
-      this.$reset();
     }
   }
 });

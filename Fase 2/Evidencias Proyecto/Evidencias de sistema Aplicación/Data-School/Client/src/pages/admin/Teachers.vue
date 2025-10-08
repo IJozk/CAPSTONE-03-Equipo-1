@@ -68,7 +68,11 @@ onMounted(async () => {
   try {
     await teacherStore.fetchProfesores();
   } catch (error) {
-    console.error('Error fetching teachers:', error);
+    console.error('Error loading teachers:', error);
   }
 });
 </script>
+
+<style scoped>
+/* Agrega estilos personalizados aquí si es necesario */
+</style>

@@ -139,7 +139,7 @@
 import { ref, computed, onMounted, reactive } from 'vue';
 import { useRoute } from 'vue-router';
 import { useTeacherStore } from '@/store/teacher.store';
-import teacherService from '@/services/teacher.service';
+import teacherService from '@/services/teachertools.service';
 import type { Student, AttendanceRecord } from '@/types/teacher.types';
 
 const route = useRoute();

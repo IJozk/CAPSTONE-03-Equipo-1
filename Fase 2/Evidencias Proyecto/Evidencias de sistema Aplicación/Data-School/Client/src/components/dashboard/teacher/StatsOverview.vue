@@ -36,7 +36,7 @@
     <!-- Card 4: Promedio General -->
     <StatCard
       title="Promedio General"
-      :value="teacherStore.generalAverage.toFixed(1)"
+      :value="teacherStore.generalAverage?.toFixed(1) || '0.0'"
       subtitle="De todas las asignaturas"
       icon="chart-bar"
       icon-color="text-purple-600"
