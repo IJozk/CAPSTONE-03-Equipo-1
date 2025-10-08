@@ -190,16 +190,16 @@ export class AuthController {
           .select('nombre_completo, titulo_profesional, especialidad, rut, telefono, fecha_contratacion')
           .eq('user_id', userData.user_id)
           .single();
-        
+
         teacherData = result.data;
         teacherError = result.error;
 
         if (teacherError || !teacherData) {
           console.log(result)
           console.log(userData.user_id)
-          console.error('Error obteniendo datos de administrativo:', teacherError)
+          console.error('Error obteniendo datos de profesor:', teacherError)
           return res.status(404).json({
-            error: 'Perfil de administrativo no encontrado en el sistema'
+            error: 'Perfil de profesor no encontrado en el sistema'
           })
         }
       }
@@ -251,9 +251,14 @@ export class AuthController {
           // Información adicional para administrativos
           ...(userData.role === 'ADMINISTRADOR' && !adminError && adminData
             ? { admin_profile: adminData }
+            : {}),
+          // Información adicional para profesores
+          ...(userData.role === 'PROFESOR' && !teacherError && teacherData
+            ? { teacher_profile: teacherData }
             : {})
         },
-        session: data.session
+        session: data.session,
+        token: data.session?.access_token
       })
     } catch (error) {
       console.error('Error en login:', error)

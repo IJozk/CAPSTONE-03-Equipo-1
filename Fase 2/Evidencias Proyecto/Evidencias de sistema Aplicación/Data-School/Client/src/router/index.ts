@@ -212,6 +212,184 @@ const routes: RouteRecordRaw[] = [
     }
   },
 
+  // ==========================================
+  // RUTAS DEL PROFESOR (accesibles también para ADMINISTRADOR)
+  // ==========================================
+  {
+    path: '/teacher',
+    component: () => import('@/layouts/TeacherLayout.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresRole: ['PROFESOR', 'ADMINISTRADOR']
+    },
+    children: [
+      {
+        path: '',
+        redirect: '/teacher/dashboard'
+      },
+      {
+        path: 'dashboard',
+        name: 'TeacherDashboard',
+        component: () => import('@/pages/teacher/Dashboard.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['PROFESOR', 'ADMINISTRADOR'],
+          title: 'Panel del Profesor'
+        }
+      },
+      {
+        path: 'subjects',
+        name: 'TeacherSubjects',
+        component: () => import('@/pages/teacher/MySubjects.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['PROFESOR', 'ADMINISTRADOR'],
+          title: 'Mis Asignaturas'
+        }
+      },
+      {
+        path: 'subjects/:id',
+        name: 'TeacherSubjectDetail',
+        component: () => import('@/pages/teacher/SubjectDetail.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['PROFESOR', 'ADMINISTRADOR'],
+          title: 'Detalle de Asignatura'
+        }
+      },
+      {
+        path: 'evaluations',
+        name: 'TeacherEvaluations',
+        component: () => import('@/pages/teacher/Evaluations.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['PROFESOR', 'ADMINISTRADOR'],
+          title: 'Gestión de Evaluaciones'
+        }
+      },
+      {
+        path: 'evaluations/new',
+        name: 'TeacherEvaluationNew',
+        component: () => import('@/pages/teacher/EvaluationForm.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['PROFESOR', 'ADMINISTRADOR'],
+          title: 'Nueva Evaluación'
+        }
+      },
+      {
+        path: 'evaluations/:id/edit',
+        name: 'TeacherEvaluationEdit',
+        component: () => import('@/pages/teacher/EvaluationForm.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['PROFESOR', 'ADMINISTRADOR'],
+          title: 'Editar Evaluación'
+        }
+      },
+      {
+        path: 'grades',
+        name: 'TeacherGrades',
+        component: () => import('@/pages/teacher/GradeEntry.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['PROFESOR', 'ADMINISTRADOR'],
+          title: 'Registro de Notas'
+        }
+      },
+      {
+        path: 'attendance',
+        name: 'TeacherAttendance',
+        component: () => import('@/pages/teacher/Attendance.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['PROFESOR', 'ADMINISTRADOR'],
+          title: 'Registro de Asistencia'
+        }
+      },
+      {
+        path: 'observations',
+        name: 'TeacherObservations',
+        component: () => import('@/pages/teacher/Observations.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['PROFESOR', 'ADMINISTRADOR'],
+          title: 'Anotaciones'
+        }
+      },
+      {
+        path: 'students/:id',
+        name: 'TeacherStudentProfile',
+        component: () => import('@/pages/teacher/StudentProfile.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['PROFESOR', 'ADMINISTRADOR'],
+          title: 'Perfil del Estudiante'
+        }
+      },
+      {
+        path: 'schedule',
+        name: 'TeacherSchedule',
+        component: () => import('@/pages/teacher/Schedule.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['PROFESOR', 'ADMINISTRADOR'],
+          title: 'Mi Horario'
+        }
+      },
+      {
+        path: 'calendar',
+        name: 'TeacherCalendar',
+        component: () => import('@/pages/teacher/Schedule.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['PROFESOR', 'ADMINISTRADOR'],
+          title: 'Calendario'
+        }
+      },
+      {
+        path: 'reports/attendance',
+        name: 'TeacherAttendanceReport',
+        component: () => import('@/pages/teacher/AttendanceReport.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['PROFESOR', 'ADMINISTRADOR'],
+          title: 'Reporte de Asistencia'
+        }
+      },
+      {
+        path: 'reports/grades',
+        name: 'TeacherGradesReport',
+        component: () => import('@/pages/teacher/AttendanceReport.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['PROFESOR', 'ADMINISTRADOR'],
+          title: 'Reporte de Notas'
+        }
+      },
+      {
+        path: 'profile',
+        name: 'TeacherProfile',
+        component: () => import('@/pages/teacher/Profile.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['PROFESOR', 'ADMINISTRADOR'],
+          title: 'Mi Perfil'
+        }
+      },
+      {
+        path: 'settings',
+        name: 'TeacherSettings',
+        component: () => import('@/pages/teacher/Profile.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['PROFESOR', 'ADMINISTRADOR'],
+          title: 'Configuración'
+        }
+      }
+    ]
+  },
+
   // Ruta 404 - cualquier ruta no definida redirige a login
   {
     path: '/:pathMatch(.*)*',
