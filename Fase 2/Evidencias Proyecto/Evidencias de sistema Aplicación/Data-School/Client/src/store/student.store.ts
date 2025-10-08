@@ -1,12 +1,14 @@
 import { defineStore } from 'pinia';
-import SchoolService from '@/services/school.service.ts';
+import usersService from '@/services/user.service';
 import type {
-  SchoolInfo
-} from '@/types/school.types';
+    User
+} from '@/types/auth.types';
+import { StudentProfile } from '@/types/student.types';
 
-export const useSchoolStore = defineStore('school', {
+export const useStudentStore = defineStore('school', {
   state: () => ({
-        schoolInfo: null as SchoolInfo | null,
+        studentList: [] as User[],
+        studentInfo: null as StudentProfile | null,
         loading: false,
         error: null as string | null,
     }),
@@ -14,11 +16,11 @@ export const useSchoolStore = defineStore('school', {
         /**
          * Acción para obtener la información del colegio
          */
-        async fetchSchoolInfo() {
+        async fetchStudents() {
             this.loading = true;
             this.error = null;
                 try {
-                this.schoolInfo = await SchoolService.getSchoolInfo();
+                this.studentList = await usersService.getAllUsers("ESTUDIANTE");
             } catch (error: any) {
                 this.error = error.message || 'Error al cargar la información del colegio';
             }

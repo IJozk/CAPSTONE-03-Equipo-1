@@ -162,6 +162,8 @@ export const useAuthStore = defineStore('auth', {
       this.registerState.success = false;
 
       try {
+
+        
         const response = await authService.register(userData);
 
         this.registerState.registeredUser = response.user;

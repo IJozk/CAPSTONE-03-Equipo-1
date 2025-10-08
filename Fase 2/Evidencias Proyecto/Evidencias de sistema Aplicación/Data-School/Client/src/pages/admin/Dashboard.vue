@@ -89,7 +89,7 @@
       <!-- Course Summary -->
       <CourseSummary
         :courses="courseSummary"
-        :loading="loading"
+        :loading="schoolStore.loading"
       />
     </div>
   </AdminLayout>
