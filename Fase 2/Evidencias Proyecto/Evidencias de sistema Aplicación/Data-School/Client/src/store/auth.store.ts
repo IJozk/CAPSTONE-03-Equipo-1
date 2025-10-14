@@ -91,19 +91,34 @@ export const useAuthStore = defineStore('auth', {
       this.error = null;
 
       try {
+        console.log('Intentando login con:', credentials.email);
         const response = await authService.login(credentials);
+
+        console.log('Respuesta del servidor:', response);
 
         // Guardar datos en el state de Pinia
         this.user = response.user;
         this.token = response.token;
         this.isAuthenticated = true;
 
+        console.log('Guardando en localStorage:', {
+          token: response.token?.substring(0, 20) + '...',
+          user: response.user
+        });
+
         // Persistir en localStorage para mantener sesión al recargar
         localStorage.setItem('auth_token', response.token);
         localStorage.setItem('auth_user', JSON.stringify(response.user));
 
+        console.log('Login completado. Estado actual:', {
+          isAuthenticated: this.isAuthenticated,
+          userRole: this.userRole,
+          user: this.user
+        });
+
         return response;
       } catch (error: any) {
+        console.error('Error en login (auth.store):', error);
         this.error = error.message;
         throw error;
       } finally {
@@ -129,18 +144,31 @@ export const useAuthStore = defineStore('auth', {
      * Restaurar sesión desde localStorage (útil al recargar la página)
      */
     restoreSession() {
+      console.log('Intentando restaurar sesión desde localStorage...');
       const token = localStorage.getItem('auth_token');
       const userStr = localStorage.getItem('auth_user');
+
+      console.log('Datos en localStorage:', {
+        hasToken: !!token,
+        hasUser: !!userStr,
+        tokenPreview: token?.substring(0, 20) + '...',
+        userPreview: userStr?.substring(0, 50) + '...'
+      });
 
       if (token && userStr) {
         try {
           this.token = token;
           this.user = JSON.parse(userStr);
           this.isAuthenticated = true;
+
+
         } catch (error) {
+          console.error('Error parseando datos de sesión:', error);
           // Si hay error al parsear, cerrar sesión
           this.logout();
         }
+      } else {
+        console.log('ℹNo hay sesión previa en localStorage');
       }
     },
 
@@ -162,6 +190,8 @@ export const useAuthStore = defineStore('auth', {
       this.registerState.success = false;
 
       try {
+
+        
         const response = await authService.register(userData);
 
         this.registerState.registeredUser = response.user;

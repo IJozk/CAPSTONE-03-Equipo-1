@@ -57,6 +57,60 @@ class AuthService {
   async register(userData: RegisterDTO): Promise<AuthResponse> {
     try {
       // El token del admin se envía automáticamente por el interceptor
+
+      if (userData.role === 'ADMINISTRATIVO') {
+        if (!userData.cargo || !userData.area_id) {
+          throw new Error('El campo cargo y area_id son obligatorios para administrativos');
+        }
+        const response = await apiClient.post<AuthResponse>('/auth/register/administrativo', {
+          email: userData.email,
+          password: userData.password,
+          role: userData.role,
+          nombre_completo: userData.nombre_completo,
+          rut: userData.rut,
+          colegio_id: userData.colegio_id,
+          telefono: userData.telefono || null
+        });
+        return response.data;
+      }
+
+      if (userData.role === 'PROFESOR') {
+        if (!userData.titulo_profesional || !userData.especialidad || !userData.fecha_contratacion) {
+          throw new Error('Los campos titulo_profesional, especialidad y fecha_contratacion son obligatorios para profesores');
+        }
+        const response = await apiClient.post<AuthResponse>('/auth/register/profesor', {
+          email: userData.email,
+          password: userData.password,
+          role: userData.role,
+          nombre_completo: userData.nombre_completo,
+          rut: userData.rut,
+          colegio_id: userData.colegio_id,
+          telefono: userData.telefono || null,
+          titulo_profesional: userData.titulo_profesional,
+          especialidad: userData.especialidad,
+          fecha_contratacion: userData.fecha_contratacion
+        });
+        return response.data;
+      }
+      
+      if (userData.role === 'ESTUDIANTE_APODERADO') {
+        if ( !userData.fecha_nacimiento) {
+          throw new Error('Los campos curso_id y fecha_nacimiento son obligatorios para estudiantes');
+        }
+        const response = await apiClient.post<AuthResponse>('/auth/register/estudiante', {
+          email: userData.email,
+          password: userData.password,
+          role: userData.role,
+          nombre_completo: userData.nombre_completo,
+          rut: userData.rut,
+          colegio_id: userData.colegio_id,
+          telefono: userData.telefono || null,
+          fecha_nacimiento: userData.fecha_nacimiento
+        });
+        return response.data;
+      }
+
+
       const response = await apiClient.post<AuthResponse>('/auth/register', {
         email: userData.email,
         password: userData.password,
@@ -66,6 +120,7 @@ class AuthService {
         colegio_id: userData.colegio_id,
         telefono: userData.telefono || null
       });
+      
       return response.data;
     } catch (error: any) {
       // Manejar errores específicos

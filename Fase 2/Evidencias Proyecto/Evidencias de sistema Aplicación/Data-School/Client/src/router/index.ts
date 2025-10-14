@@ -412,7 +412,9 @@ router.beforeEach((to, from, next) => {
 
   // Restaurar sesión desde localStorage si no está cargada
   if (!authStore.isAuthenticated) {
+
     authStore.restoreSession();
+
   }
 
   // Rutas que requieren autenticación
@@ -430,6 +432,7 @@ router.beforeEach((to, from, next) => {
     const userRole = authStore.userRole;
 
     if (!requiredRoles.includes(userRole as string)) {
+
       // Redirigir al dashboard correcto según rol
       if (userRole === 'ESTUDIANTE_APODERADO') {
         next('/student/dashboard');
@@ -437,7 +440,9 @@ router.beforeEach((to, from, next) => {
         next('/admin/dashboard');
       } else if (userRole === 'PROFESOR') {
         next('/teacher/dashboard');
-      } else if (userRole === 'DIRECTOR' || userRole === 'UTP') {
+      } else if (userRole === 'ADMINISTRATIVO') {
+        next('/administrativo/dashboard');
+      } else if (userRole === 'DIRECTOR') {
         next('/director/dashboard');
       } else {
         next('/dashboard');
@@ -448,12 +453,14 @@ router.beforeEach((to, from, next) => {
 
   // Rutas solo para administradores (backward compatibility)
   if (to.meta.requiresAdmin && !authStore.isAdmin) {
+
     next('/dashboard');
     return;
   }
 
   // Rutas solo para invitados (si está autenticado, redirigir a dashboard correspondiente)
   if (to.meta.requiresGuest && authStore.isAuthenticated) {
+    console.log('ℹ️ Usuario ya autenticado en ruta de invitado, redirigiendo a dashboard');
     const userRole = authStore.userRole;
     if (userRole === 'ESTUDIANTE_APODERADO') {
       next('/student/dashboard');
@@ -461,7 +468,9 @@ router.beforeEach((to, from, next) => {
       next('/admin/dashboard');
     } else if (userRole === 'PROFESOR') {
       next('/teacher/dashboard');
-    } else if (userRole === 'DIRECTOR' || userRole === 'UTP') {
+    } else if (userRole === 'ADMINISTRATIVO') {
+      next('/administrativo/dashboard');
+    } else if (userRole === 'DIRECTOR') {
       next('/director/dashboard');
     } else {
       next('/dashboard');
@@ -469,7 +478,6 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  // Permitir navegación
   next();
 });
 

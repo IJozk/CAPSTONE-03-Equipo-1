@@ -127,3 +127,16 @@ export interface RegisterAdministrativoDto {
   area_id: number // ID del área administrativa
   fecha_contratacion?: string
 }
+
+export interface ListStudents{
+  id: string
+  nombre_completo: string
+  rut: string
+  fecha_nacimiento: string
+  genero: string
+  direccion: string
+  telefono: string
+  curso_id: string
+  colegio_id: string
+  created_at: string
+}
