@@ -34,7 +34,7 @@ export class EstudianteController {
                     return res.status(404).json({ message: 'Usuario no encontrado' })
                 }
 
-                if (userData.role !== 'ESTUDIANTE') {
+                if (userData.role !== 'ESTUDIANTE_APODERADO') {
                     return res.status(400).json({ message: 'El usuario debe tener rol ESTUDIANTE' })
                 }
             }

@@ -197,9 +197,9 @@
         <label for="genero" class="block text-sm font-medium text-gray-700 mb-2">Género *</label>
         <select id="genero" v-model="formData.genero" :class="inputClass('genero')" @blur="validateField('genero')">
           <option value="">Seleccionar</option>
-          <option value="male">Masculino</option>
-          <option value="female">Femenino</option>
-          <option value="other">Otro</option>
+          <option value="M">Masculino</option>
+          <option value="F">Femenino</option>
+          <option value="O">Otro</option>
         </select>
         <p v-if="errors.genero" class="mt-1 text-sm text-red-600">{{ errors.genero }}</p>
       </div>
@@ -323,7 +323,8 @@ import {
   validatePasswordStrength,
   validatePasswordMatch,
   validateRole,
-  validateTelefono
+  validateTelefono,
+  validateFechaNacimiento
 } from '@/utils/validators';
 import type { RegisterDTO, RegisterValidationErrors, RoleOption } from '@/types/auth.types';
 import { UserRole } from '@/types/auth.types';
@@ -367,13 +368,14 @@ const formData = ref<RegisterDTO>({
   rut: '',
   colegio_id: '',
   telefono: '',
+  
   // campos opcionales
   titulo_profesional: undefined,
   especialidad: undefined,
   fecha_contratacion: undefined,
   fecha_nacimiento: undefined,
-  direccion: undefined,
-  genero: undefined,
+  direccion: '',
+  genero: '',
   cargo: undefined,
   area_id: undefined
 });
@@ -537,8 +539,16 @@ const validateField = (field: keyof RegisterDTO) => {
     }
     case 'fecha_nacimiento': {
       if (formData.value.role === UserRole.ESTUDIANTE_APODERADO) {
-        if (!formData.value.fecha_nacimiento) errors.value.fecha_nacimiento = 'Fecha de nacimiento requerida';
-        else delete errors.value.fecha_nacimiento;
+        if (!formData.value.fecha_nacimiento) {
+          errors.value.fecha_nacimiento = 'Fecha de nacimiento requerida';
+        } else {
+          const error = validateFechaNacimiento(formData.value.fecha_nacimiento);
+          if (error) {
+            errors.value.fecha_nacimiento = error;
+          } else {
+            delete errors.value.fecha_nacimiento;
+          }
+        }
       }
       break;
     }

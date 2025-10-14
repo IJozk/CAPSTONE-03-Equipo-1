@@ -522,114 +522,144 @@ export class AuthController {
     }
   }
 
-  // Registro de Estudiante
-  async registerEstudiante(req: Request, res: Response) {
-    try {
-      const {
+// Registro de Estudiante
+async registerEstudiante(req: Request, res: Response) {
+  const client = supabaseAdmin || supabase;
+
+  try {
+    console.log('Body recibido:', req.body);
+    const {
+      email,
+      password,
+      colegio_id,
+      nombre_completo,
+      fecha_nacimiento,
+      rut,
+      telefono,
+      direccion,
+      genero
+    } = req.body as RegisterEstudianteDto;
+
+    // Validar campos requeridos
+    if (!nombre_completo || !fecha_nacimiento || !colegio_id) {
+      return res.status(400).json({
+        error: 'Nombre completo, fecha de nacimiento y colegio_id son requeridos'
+      });
+    }
+
+        // Validar dirección y género
+    if (!direccion) {
+      return res.status(400).json({
+        error: 'La dirección es requerida'
+      });
+    }
+
+    if (!genero) {
+      return res.status(400).json({
+        error: 'El género es requerido'
+      });
+    }
+
+    let authUserId: string | null = null;
+    let userId: string | null = null;
+
+    // 1️⃣ Crear usuario en Auth (si tiene email y password)
+    if (email && password) {
+      const { data: authData, error: authError } = await client.auth.admin.createUser({
         email,
         password,
-        colegio_id,
+        email_confirm: true
+      });
+
+      if (authError) {
+        return res.status(400).json({ error: authError.message });
+      }
+
+      if (!authData.user) {
+        return res.status(400).json({ error: 'Error al crear usuario de autenticación' });
+      }
+
+      authUserId = authData.user.id;
+
+      // 2️⃣ Crear registro en tabla User
+      const { data: userData, error: userError } = await client
+        .from('User')
+        .insert({
+          auth_user_id: authUserId,
+          email_address: email,
+          role: 'ESTUDIANTE_APODERADO',
+          colegio_id,
+          is_active: true,
+          profile_completed: true
+        })
+        .select()
+        .single();
+
+      if (userError) {
+        console.error('Error creando usuario en tabla User:', userError);
+        // 🔥 Si falla aquí, eliminamos el usuario auth recién creado
+        await client.auth.admin.deleteUser(authUserId);
+        return res.status(500).json({
+          error: 'Error al crear usuario en el sistema',
+          details: userError.message
+        });
+      }
+
+      userId = userData.user_id;
+    }
+
+    // 3️⃣ Crear registro en tabla Estudiante
+    const { data: estudianteData, error: estudianteError } = await client
+      .from('Estudiante')
+      .insert({
+        user_id: userId,
         nombre_completo,
         fecha_nacimiento,
         rut,
         telefono,
+        email,
         direccion,
-        genero
-      } = req.body as RegisterEstudianteDto
-
-      // Validar campos requeridos
-      if (!nombre_completo || !fecha_nacimiento || !colegio_id) {
-        return res.status(400).json({
-          error: 'Nombre completo, fecha de nacimiento y colegio_id son requeridos'
-        })
-      }
-
-      const client = supabaseAdmin || supabase
-      let userId: string | null = null
-
-      // Si se proporciona email y password, crear cuenta de autenticación
-      if (email && password) {
-        // Usar admin API para crear usuario sin confirmación de email
-        const { data: authData, error: authError } = await client.auth.admin.createUser({
-          email,
-          password,
-          email_confirm: true // Auto-confirmar email
-        })
-
-        if (authError) {
-          return res.status(400).json({
-            error: authError.message
-          })
-        }
-
-        if (!authData.user) {
-          return res.status(400).json({
-            error: 'Error al crear usuario de autenticación'
-          })
-        }
-
-        // Crear registro en tabla User
-        const { data: userData, error: userError } = await client
-          .from('User')
-          .insert({
-            auth_user_id: authData.user.id,
-            email_address: email,
-            role: 'ESTUDIANTE_APODERADO',
-            colegio_id: colegio_id,
-            is_active: true,
-            profile_completed: true
-          })
-          .select()
-          .single()
-
-        if (userError) {
-          console.error('Error creando usuario en tabla User:', userError)
-          return res.status(500).json({
-            error: 'Error al crear usuario en el sistema',
-            details: userError.message
-          })
-        }
-
-        userId = userData.user_id
-      }
-
-      // Crear registro en tabla Estudiante
-      const { data: estudianteData, error: estudianteError } = await client
-        .from('Estudiante')
-        .insert({
-          user_id: userId,
-          nombre_completo,
-          fecha_nacimiento,
-          rut,
-          telefono,
-          email,
-          direccion,
-          genero,
-          estado_activo: true
-        })
-        .select()
-        .single()
-
-      if (estudianteError) {
-        console.error('Error creando estudiante:', estudianteError)
-        return res.status(500).json({
-          error: 'Error al crear perfil de estudiante',
-          details: estudianteError.message
-        })
-      }
-
-      return res.status(201).json({
-        message: 'Estudiante registrado exitosamente',
-        estudiante: estudianteData,
-        has_account: !!userId
+        genero,
+        estado_activo: true
       })
-    } catch (error) {
-      console.error('Error en registro de estudiante:', error)
+      .select()
+      .single();
+
+    if (estudianteError) {
+      console.error('Error creando estudiante:', estudianteError);
+
+      // 🔥 Si hay un error (por ejemplo RUT duplicado)
+      // y existe un usuario asociado, eliminarlo
+      if (authUserId) {
+        await client.auth.admin.deleteUser(authUserId);
+      }
+      if (userId) {
+        await client.from('User').delete().eq('user_id', userId);
+      }
+
+      if (estudianteError.code === '23505') {
+        return res.status(400).json({ error: 'El estudiante ya existe en el sistema' });
+      }
+
       return res.status(500).json({
-        error: 'Error interno del servidor'
-      })
+        error: 'Error al crear perfil de estudiante',
+        details: estudianteError.message
+      });
     }
+
+    // ✅ Todo correcto
+    return res.status(201).json({
+      message: 'Estudiante registrado exitosamente',
+      estudiante: estudianteData,
+      has_account: !!userId
+    });
+  } catch (error) {
+    console.error('Error en registro de estudiante:', error);
+    return res.status(500).json({
+      error: 'Error interno del servidor'
+    });
   }
+}
 
   // Registro de Tutor (sin cuenta de usuario)
   async registerTutor(req: Request, res: Response) {
