@@ -139,17 +139,45 @@ class AuthService {
       });
       
       return response.data;
-    } catch (error: any) {
-      // Manejar errores específicos
-      if (error.response?.status === 400) {
-        const message = error.response.data.message || 'Error de validación';
-        throw new Error(message);
-      }
-      if (error.response?.status === 401 || error.response?.status === 403) {
-        throw new Error('No tienes permisos para registrar usuarios');
-      }
-      throw new Error(error.response?.data?.message || 'Error al registrar usuario');
+  } catch (error: any) {
+    console.error('Error en auth.service.register:', error);
+
+if (error.response?.data) {
+  const data = error.response.data;
+  let message =
+    data.message ||
+    data.error ||
+    'Ocurrió un error al registrar usuario';
+
+      const traducciones: Record<string, string> = {
+        'A user with this email address has already been registered':
+          'Ya existe un usuario registrado con este correo electrónico.',
+        'Invalid login credentials':
+          'Correo o contraseña incorrectos.',
+        'Email not confirmed':
+          'Debes confirmar tu correo antes de iniciar sesión.',
+        'Password should be at least 6 characters':
+          'La contraseña debe tener al menos 6 caracteres.',
+      };
+
+      // Buscar si el mensaje en inglés coincide con alguna traducción
+      const traduccion = Object.entries(traducciones).find(([ingles]) =>
+        message.includes(ingles)
+      );
+
+      if (traduccion) message = traduccion[1]; // reemplaza por el texto en español
+
+      const backendError = new Error(message);
+      (backendError as any).response = {
+        data,
+        status: error.response.status,
+      };
+
+      throw backendError;
     }
+
+    throw new Error(error.message || 'No se pudo conectar con el servidor');
+  }
   }
 
   /**
