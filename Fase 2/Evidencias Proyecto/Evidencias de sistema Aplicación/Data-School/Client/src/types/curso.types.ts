@@ -1,19 +1,29 @@
 // Tipos para Cursos
+import { Nivel } from './utils.types'
 
 export interface Curso {
   curso_id: string
   nombre: string
-  nivel: string
+  nivel_id: number
   anio_academico: number
   generacion: number
   capacidad_maxima?: number | null
   created_at?: string | null
   updated_at?: string | null
+  nivel: Nivel
+}
+
+/**
+ * Curso con información completa del nivel
+ * Útil para vistas que necesitan mostrar el nombre del nivel
+ */
+export interface CursoConNivel extends Curso {
+  nivel: Nivel
 }
 
 export interface CreateCursoDTO {
   nombre: string
-  nivel: string
+  nivel_id: number
   anio_academico: number
   generacion: number
   capacidad_maxima?: number | null
@@ -21,14 +31,14 @@ export interface CreateCursoDTO {
 
 export interface UpdateCursoDTO {
   nombre?: string
-  nivel?: string
+  nivel_id?: number
   anio_academico?: number
   generacion?: number
   capacidad_maxima?: number | null
 }
 
 export interface FilterCursoDTO {
-  nivel?: string
+  nivel_id?: number
   anio_academico?: number
   generacion?: number
 }

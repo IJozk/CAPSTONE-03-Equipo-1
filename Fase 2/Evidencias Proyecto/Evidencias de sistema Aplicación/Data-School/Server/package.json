@@ -23,7 +23,8 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "pg": "^8.11.5"
+    "pg": "^8.11.5",
+    "supabase": "^2.51.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",

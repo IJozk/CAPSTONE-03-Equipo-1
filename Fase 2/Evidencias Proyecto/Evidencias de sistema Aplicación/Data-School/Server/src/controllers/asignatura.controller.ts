@@ -34,8 +34,7 @@ export class AsignaturaController {
           ),
           Profesor:profesor_id (
             profesor_id,
-            nombre_completo,
-            especialidad
+            nombre_completo
           ),
           Sala:sala_id (
             sala_id,
