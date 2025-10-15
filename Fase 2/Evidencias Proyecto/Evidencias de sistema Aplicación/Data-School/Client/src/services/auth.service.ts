@@ -78,34 +78,51 @@ class AuthService {
         if (!userData.titulo_profesional || !userData.especialidad || !userData.fecha_contratacion) {
           throw new Error('Los campos titulo_profesional, especialidad y fecha_contratacion son obligatorios para profesores');
         }
+
+        if (!userData.telefono) {
+          throw new Error('El teléfono es obligatorio para profesores');
+        }
+
         const response = await apiClient.post<AuthResponse>('/auth/register/profesor', {
           email: userData.email,
           password: userData.password,
-          role: userData.role,
+          colegio_id: userData.colegio_id,
           nombre_completo: userData.nombre_completo,
           rut: userData.rut,
-          colegio_id: userData.colegio_id,
-          telefono: userData.telefono || null,
+          telefono: userData.telefono,
           titulo_profesional: userData.titulo_profesional,
           especialidad: userData.especialidad,
-          fecha_contratacion: userData.fecha_contratacion
+          fecha_contratacion: userData.fecha_contratacion,
+          direccion: userData.direccion || null,
+          comuna: userData.comuna || null
         });
         return response.data;
       }
       
       if (userData.role === 'ESTUDIANTE_APODERADO') {
-        if ( !userData.fecha_nacimiento) {
-          throw new Error('Los campos curso_id y fecha_nacimiento son obligatorios para estudiantes');
+        if (!userData.fecha_nacimiento) {
+          throw new Error('Los campos fecha_nacimiento, direccion y genero son obligatorios para estudiantes');
         }
+
+        if (!userData.direccion) {
+          throw new Error('La dirección es obligatoria para estudiantes');
+        }
+
+        if (!userData.genero) {
+          throw new Error('El género es obligatorio para estudiantes');
+        }
+
         const response = await apiClient.post<AuthResponse>('/auth/register/estudiante', {
           email: userData.email,
           password: userData.password,
-          role: userData.role,
+          colegio_id: userData.colegio_id,
           nombre_completo: userData.nombre_completo,
           rut: userData.rut,
-          colegio_id: userData.colegio_id,
           telefono: userData.telefono || null,
-          fecha_nacimiento: userData.fecha_nacimiento
+          fecha_nacimiento: userData.fecha_nacimiento,
+          direccion: userData.direccion,
+          genero: userData.genero,
+          comuna: userData.comuna || null
         });
         return response.data;
       }

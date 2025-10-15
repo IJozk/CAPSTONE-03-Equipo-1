@@ -101,6 +101,7 @@ export interface RegisterDTO {
   genero?: string;
   cargo?: string;
   area_id?: string;
+  comuna?: string;
 }
 
 // Errores de validación para formulario de registro
@@ -122,6 +123,7 @@ export interface RegisterValidationErrors {
   genero?: string;
   cargo?: string;
   area_id?: string;
+  comuna?: string;
 }
 
 // Opciones para select de roles
