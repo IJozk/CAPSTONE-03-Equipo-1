@@ -1,19 +1,24 @@
 import { createClient } from '@supabase/supabase-js'
-import type { Database } from '@/types/supabase'
+import { Database } from '@/types/supabase'
+import 'dotenv/config'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabaseUrl = process.env.SUPABASE_URL!
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY!
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables')
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-    storage: window.localStorage,
-    flowType: 'pkce' // Más seguro que 'implicit'
-  }
-})
+// Cliente para operaciones públicas (con RLS activo)
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
+
+// Cliente admin para operaciones que necesitan bypassear RLS
+export const supabaseAdmin = supabaseServiceRoleKey
+  ? createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
+  : null

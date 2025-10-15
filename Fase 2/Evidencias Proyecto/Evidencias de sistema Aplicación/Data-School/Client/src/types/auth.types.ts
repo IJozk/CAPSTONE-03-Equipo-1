@@ -2,19 +2,56 @@
 export enum UserRole {
   ADMINISTRADOR = 'ADMINISTRADOR',
   DIRECTOR = 'DIRECTOR',
-  UTP = 'UTP',
+  ADMINISTRATIVO = 'ADMINISTRATIVO',
   PROFESOR = 'PROFESOR',
   ESTUDIANTE_APODERADO = 'ESTUDIANTE_APODERADO'
 }
 
 // Datos del usuario autenticado
 export interface User {
-  user_id: string;
-  email_address: string;
+  id: string;
+  email: string;
   role: UserRole;
   profile_completed: boolean;
   colegio_id: string | null;
   nombre_completo?: string;
+  admin_profile?: {
+    nombre_completo: string;
+    rut: string;
+    telefono?: string;
+    direccion?: string;
+    genero?: string;
+    fecha_nacimiento?: string; // ISO date
+  };
+  profesor_profile?: {
+    nombre_completo: string;
+    rut: string;
+    titulo_profesional: string;
+    especialidad?: string;
+    fecha_contratacion: string; // ISO date
+    telefono?: string;
+    direccion?: string;
+    genero?: string;
+    fecha_nacimiento?: string; // ISO date
+  };
+  estudiante_profile?: {
+    nombre_completo: string;
+    rut: string;
+    fecha_nacimiento: string; // ISO date
+    genero?: string;
+    direccion?: string;
+    telefono?: string;
+    curso_id?: string; // Curso actual
+  };
+  apoderado_profile?: {
+    nombre_completo: string;
+    rut: string;
+    telefono?: string;
+    direccion?: string;
+    genero?: string;
+    fecha_nacimiento?: string; // ISO date
+  };
+  created_at?: string; // ISO date
 }
 
 // Credenciales para login
@@ -43,4 +80,103 @@ export interface AuthState {
 export interface ValidationErrors {
   email?: string;
   password?: string;
+}
+
+// DTO para registro de usuarios
+export interface RegisterDTO {
+  email: string;
+  password: string;
+  confirmPassword?: string; // Solo para frontend
+  role: UserRole;
+  nombre_completo: string;
+  rut: string;
+  colegio_id: string;
+  telefono?: string;
+  // Campos opcionales según rol
+  titulo_profesional?: string;
+  especialidad?: string;
+  fecha_contratacion?: string; // ISO date
+  fecha_nacimiento?: string; // ISO date
+  direccion?: string;
+  genero?: string;
+  cargo?: string;
+  area_id?: string;
+  comuna?: string;
+}
+
+// Errores de validación para formulario de registro
+export interface RegisterValidationErrors {
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+  nombre_completo?: string;
+  rut?: string;
+  role?: string;
+  colegio_id?: string;
+  telefono?: string;
+  // Campos por rol
+  titulo_profesional?: string;
+  especialidad?: string;
+  fecha_contratacion?: string;
+  fecha_nacimiento?: string;
+  direccion?: string;
+  genero?: string;
+  cargo?: string;
+  area_id?: string;
+  comuna?: string;
+}
+
+// Opciones para select de roles
+export interface RoleOption {
+  value: UserRole;
+  label: string;
+  description: string;
+}
+
+// Estado de registro en el store
+export interface RegisterState {
+  loading: boolean;
+  error: string | null;
+  success: boolean;
+  registeredUser: User | null;
+}
+
+// DTO para solicitar recuperación de contraseña
+export interface ForgotPasswordDTO {
+  email: string;
+}
+
+// DTO para restablecer contraseña
+export interface ResetPasswordDTO {
+  token: string;
+  newPassword: string;
+  confirmPassword?: string; // Solo para frontend
+}
+
+// Respuesta de solicitud de recuperación
+export interface ForgotPasswordResponse {
+  message: string;
+  email: string;
+}
+
+// Respuesta de restablecimiento de contraseña
+export interface ResetPasswordResponse {
+  message: string;
+}
+
+// Estado de forgot password en el store
+export interface ForgotPasswordState {
+  loading: boolean;
+  success: boolean;
+  error: string | null;
+  cooldownSeconds: number;
+}
+
+// Estado de reset password en el store
+export interface ResetPasswordState {
+  loading: boolean;
+  success: boolean;
+  error: string | null;
+  tokenValid: boolean | null;
+  redirectCountdown: number;
 }

@@ -70,7 +70,24 @@
         <svg class="w-5 h-5 text-red-600 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
           <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
         </svg>
-        <p class="text-sm text-red-800">{{ loginError }}</p>
+        <div class="flex-1">
+          <p class="text-sm text-red-800 font-medium">{{ loginError }}</p>
+
+          <!-- Información de Debug -->
+          <div v-if="debugInfo" class="mt-3 p-3 bg-white border border-red-300 rounded text-xs font-mono">
+            <p class="font-semibold text-red-900 mb-2">🔍 Información de Debug:</p>
+            <div class="space-y-1 text-gray-700">
+              <p><strong>Error completo:</strong> {{ debugInfo.fullError }}</p>
+              <p><strong>Estado HTTP:</strong> {{ debugInfo.status || 'N/A' }}</p>
+              <p><strong>Email usado:</strong> {{ debugInfo.email }}</p>
+              <p><strong>Timestamp:</strong> {{ debugInfo.timestamp }}</p>
+              <div v-if="debugInfo.response" class="mt-2 pt-2 border-t border-red-200">
+                <p class="font-semibold text-red-900 mb-1">Respuesta del servidor:</p>
+                <pre class="whitespace-pre-wrap break-all">{{ JSON.stringify(debugInfo.response, null, 2) }}</pre>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -128,6 +145,7 @@ const formData = ref<LoginCredentials>({
 const showPassword = ref(false);
 const errors = ref<ValidationErrors>({});
 const loginError = ref<string | null>(null);
+const debugInfo = ref<any>(null);
 
 // Propiedades computadas
 const isLoading = computed(() => authStore.loading);
@@ -164,6 +182,7 @@ const validateField = (field: 'email' | 'password') => {
 const clearFieldError = (field: 'email' | 'password') => {
   delete errors.value[field];
   loginError.value = null;
+  debugInfo.value = null;
 };
 
 /**
@@ -177,23 +196,54 @@ const handleSubmit = async () => {
   if (!isFormValid.value) return;
 
   loginError.value = null;
+  debugInfo.value = null;
 
   try {
-    await authStore.login(formData.value);
+    const response = await authStore.login(formData.value);
 
     // Redireccionar según el rol del usuario
     const role = authStore.userRole;
-    if (role === 'ADMINISTRADOR' || role === 'DIRECTOR') {
-      router.push('/dashboard');
-    } else if (role === 'PROFESOR') {
-      router.push('/dashboard/profesor');
-    } else if (role === 'ESTUDIANTE_APODERADO') {
-      router.push('/dashboard/estudiante');
-    } else {
-      router.push('/dashboard');
+
+    console.log('✅ Login exitoso:', {
+      role,
+      user: authStore.user,
+      fullResponse: response
+    });
+
+    // Sistema de redirección mejorado basado en roles específicos
+    switch(role) {
+      case 'ADMINISTRADOR':
+        router.push('/admin');
+        break;
+      case 'ADMINISTRATIVO':
+        router.push('/administrativo');
+        break;
+      case 'PROFESOR':
+        router.push('/teacher');
+        break;
+      case 'ESTUDIANTE_APODERADO':
+        router.push('/student');
+        break;
+      default:
+        router.push('/dashboard');
     }
   } catch (error: any) {
+    console.error('❌ Error en login:', error);
+
     loginError.value = error.message || 'Error al iniciar sesión';
+
+    // Capturar información de debug detallada
+    debugInfo.value = {
+      fullError: error.toString(),
+      status: error.response?.status,
+      email: formData.value.email,
+      timestamp: new Date().toLocaleString(),
+      response: error.response?.data || null,
+      stack: error.stack
+    };
+
+    console.log('🔍 Debug info completa:', debugInfo.value);
+
     // Limpiar contraseña en caso de error de seguridad
     formData.value.password = '';
   }
@@ -203,7 +253,6 @@ const handleSubmit = async () => {
  * Manejar clic en "Olvidaste tu contraseña"
  */
 const handleForgotPassword = () => {
-  // TODO: Implementar recuperación de contraseña
-  alert('Funcionalidad de recuperación de contraseña en desarrollo');
+  router.push('/forgot-password');
 };
 </script>
