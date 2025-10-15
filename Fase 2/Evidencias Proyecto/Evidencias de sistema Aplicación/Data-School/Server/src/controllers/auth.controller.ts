@@ -413,114 +413,120 @@ export class AuthController {
     }
   }
 
-  // Registro de Profesor
-  async registerProfesor(req: Request, res: Response) {
-    try {
-      const {
-        email,
-        password,
-        colegio_id,
+async registerProfesor(req: Request, res: Response) {
+  const client = supabaseAdmin || supabase;
+
+  try {
+    const {
+      email,
+      password,
+      colegio_id,
+      nombre_completo,
+      rut,
+      telefono,
+      titulo_profesional,
+      especialidad,
+      fecha_contratacion
+    } = req.body as RegisterProfesorDto;
+
+    // Validar campos requeridos
+    if (!email || !password || !nombre_completo || !colegio_id) {
+      return res.status(400).json({
+        error: 'Email, contraseña, nombre completo y colegio_id son requeridos'
+      });
+    }
+
+    // 1️⃣ Crear usuario en Auth
+    const { data: authData, error: authError } = await client.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true
+    });
+
+    if (authError) {
+      return res.status(400).json({ error: authError.message });
+    }
+
+    if (!authData.user) {
+      return res.status(400).json({ error: 'Error al crear usuario de autenticación' });
+    }
+
+    const authUserId = authData.user.id;
+
+    // 2️⃣ Crear registro en tabla User
+    const { data: userData, error: userError } = await client
+      .from('User')
+      .insert({
+        auth_user_id: authUserId,
+        email_address: email,
+        role: 'PROFESOR',
+        colegio_id: colegio_id,
+        is_active: true,
+        profile_completed: true
+      })
+      .select()
+      .single();
+
+    if (userError) {
+      console.error('Error creando usuario en tabla User:', userError);
+      // 🔥 Rollback: eliminar usuario de auth
+      await client.auth.admin.deleteUser(authUserId);
+      return res.status(500).json({
+        error: 'Error al crear usuario en el sistema',
+        details: userError.message
+      });
+    }
+
+    // 3️⃣ Crear registro en tabla Profesor
+    const { data: profesorData, error: profesorError } = await client
+      .from('Profesor')
+      .insert({
+        user_id: userData.user_id,
         nombre_completo,
         rut,
         telefono,
         titulo_profesional,
         especialidad,
-        fecha_contratacion
-      } = req.body as RegisterProfesorDto
-
-      // Validar campos requeridos
-      if (!email || !password || !nombre_completo || !colegio_id) {
-        return res.status(400).json({
-          error: 'Email, contraseña, nombre completo y colegio_id son requeridos'
-        })
-      }
-
-      // Usar supabaseAdmin para crear usuarios sin confirmación de email
-      const client = supabaseAdmin || supabase
-
-      // Registrar usuario con Supabase Auth Admin API (auto-confirmar email)
-      const { data: authData, error: authError } = await client.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true // Auto-confirmar email - usuario puede hacer login inmediatamente
+        fecha_contratacion,
+        estado_activo: true
       })
+      .select()
+      .single();
 
-      if (authError) {
-        return res.status(400).json({
-          error: authError.message
-        })
+    if (profesorError) {
+      console.error('Error creando profesor:', profesorError);
+      // 🔥 Rollback: eliminar usuario de auth y User
+      await client.auth.admin.deleteUser(authUserId);
+      await client.from('User').delete().eq('user_id', userData.user_id);
+      
+      if (profesorError.code === '23505') {
+        return res.status(400).json({ error: 'El profesor ya existe en el sistema' });
       }
-
-      if (!authData.user) {
-        return res.status(400).json({
-          error: 'Error al crear usuario de autenticación'
-        })
-      }
-
-      // Crear registro en tabla User
-      const { data: userData, error: userError } = await client
-        .from('User')
-        .insert({
-          auth_user_id: authData.user.id,
-          email_address: email,
-          role: 'PROFESOR',
-          colegio_id: colegio_id,
-          is_active: true,
-          profile_completed: true
-        })
-        .select()
-        .single()
-
-      if (userError) {
-        console.error('Error creando usuario en tabla User:', userError)
-        return res.status(500).json({
-          error: 'Error al crear usuario en el sistema',
-          details: userError.message
-        })
-      }
-
-      // Crear registro en tabla Profesor
-      const { data: profesorData, error: profesorError } = await client
-        .from('Profesor')
-        .insert({
-          user_id: userData.user_id,
-          nombre_completo,
-          rut,
-          telefono,
-          titulo_profesional,
-          especialidad,
-          fecha_contratacion,
-          estado_activo: true
-        })
-        .select()
-        .single()
-
-      if (profesorError) {
-        console.error('Error creando profesor:', profesorError)
-        return res.status(500).json({
-          error: 'Error al crear perfil de profesor',
-          details: profesorError.message
-        })
-      }
-
-      return res.status(201).json({
-        message: 'Profesor registrado exitosamente',
-        user: {
-          id: userData.user_id,
-          auth_id: authData.user.id,
-          email: email,
-          role: 'PROFESOR',
-          colegio_id: colegio_id
-        },
-        profesor: profesorData
-      })
-    } catch (error) {
-      console.error('Error en registro de profesor:', error)
+      
       return res.status(500).json({
-        error: 'Error interno del servidor'
-      })
+        error: 'Error al crear perfil de profesor',
+        details: profesorError.message
+      });
     }
+
+    return res.status(201).json({
+      message: 'Profesor registrado exitosamente',
+      user: {
+        id: userData.user_id,
+        auth_id: authData.user.id,
+        email: email,
+        role: 'PROFESOR',
+        colegio_id: colegio_id
+      },
+      profesor: profesorData
+    });
+  } catch (error) {
+    console.error('Error en registro de profesor:', error);
+    return res.status(500).json({
+      error: 'Error interno del servidor'
+    });
   }
+}
 
 // Registro de Estudiante
 async registerEstudiante(req: Request, res: Response) {
@@ -761,120 +767,126 @@ async registerEstudiante(req: Request, res: Response) {
     }
   }
 
-  // Registro de Administrativo (incluye ADMINISTRATIVO, DIRECTOR, ADMINISTRADOR)
-  async registerAdministrativo(req: Request, res: Response) {
-    try {
-      const {
-        email,
-        password,
-        role,
-        colegio_id,
+async registerAdministrativo(req: Request, res: Response) {
+  const client = supabaseAdmin || supabase;
+
+  try {
+    const {
+      email,
+      password,
+      role,
+      colegio_id,
+      nombre_completo,
+      cargo,
+      rut,
+      telefono,
+      area_id,
+      fecha_contratacion
+    } = req.body as RegisterAdministrativoDto;
+
+    // Validar campos requeridos
+    if (!email || !password || !nombre_completo || !colegio_id || !role || !area_id) {
+      return res.status(400).json({
+        error: 'Email, contraseña, nombre completo, colegio_id, role y area_id son requeridos'
+      });
+    }
+
+    // Validar que el rol sea administrativo
+    if (!['ADMINISTRATIVO', 'DIRECTOR', 'ADMINISTRADOR'].includes(role)) {
+      return res.status(400).json({
+        error: 'El rol debe ser ADMINISTRATIVO, DIRECTOR o ADMINISTRADOR'
+      });
+    }
+
+    // 1️⃣ Crear usuario en Auth
+    const { data: authData, error: authError } = await client.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true
+    });
+
+    if (authError) {
+      return res.status(400).json({ error: authError.message });
+    }
+
+    if (!authData.user) {
+      return res.status(400).json({ error: 'Error al crear usuario de autenticación' });
+    }
+
+    const authUserId = authData.user.id;
+
+    // 2️⃣ Crear registro en tabla User
+    const { data: userData, error: userError } = await client
+      .from('User')
+      .insert({
+        auth_user_id: authUserId,
+        email_address: email,
+        role: role,
+        colegio_id: colegio_id,
+        is_active: true,
+        profile_completed: true
+      })
+      .select()
+      .single();
+
+    if (userError) {
+      console.error('Error creando usuario en tabla User:', userError);
+      // 🔥 Rollback: eliminar usuario de auth
+      await client.auth.admin.deleteUser(authUserId);
+      return res.status(500).json({
+        error: 'Error al crear usuario en el sistema',
+        details: userError.message
+      });
+    }
+
+    // 3️⃣ Crear registro en tabla Administrativo
+    const { data: adminData, error: adminError } = await client
+      .from('Administrativo')
+      .insert({
+        user_id: userData.user_id,
         nombre_completo,
         cargo,
         rut,
         telefono,
         area_id,
-        fecha_contratacion
-      } = req.body as RegisterAdministrativoDto
-
-      // Validar campos requeridos
-      if (!email || !password || !nombre_completo || !colegio_id || !role || !area_id) {
-        return res.status(400).json({
-          error: 'Email, contraseña, nombre completo, colegio_id, role y area_id son requeridos'
-        })
-      }
-
-      // Validar que el rol sea administrativo
-      if (!['ADMINISTRATIVO', 'DIRECTOR', 'ADMINISTRADOR'].includes(role)) {
-        return res.status(400).json({
-          error: 'El rol debe ser ADMINISTRATIVO, DIRECTOR o ADMINISTRADOR'
-        })
-      }
-
-      // Usar supabaseAdmin para crear usuarios sin confirmación de email
-      const client = supabaseAdmin || supabase
-
-      // Registrar usuario con Supabase Auth Admin API (auto-confirmar email)
-      const { data: authData, error: authError } = await client.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true // Auto-confirmar email
+        fecha_contratacion,
+        estado_activo: true
       })
+      .select()
+      .single();
 
-      if (authError) {
-        return res.status(400).json({
-          error: authError.message
-        })
+    if (adminError) {
+      console.error('Error creando administrativo:', adminError);
+      // 🔥 Rollback: eliminar usuario de auth y User
+      await client.auth.admin.deleteUser(authUserId);
+      await client.from('User').delete().eq('user_id', userData.user_id);
+      
+      if (adminError.code === '23505') {
+        return res.status(400).json({ error: 'El administrativo ya existe en el sistema' });
       }
-
-      if (!authData.user) {
-        return res.status(400).json({
-          error: 'Error al crear usuario de autenticación'
-        })
-      }
-
-      // Crear registro en tabla User
-      const { data: userData, error: userError } = await client
-        .from('User')
-        .insert({
-          auth_user_id: authData.user.id,
-          email_address: email,
-          role: role,
-          colegio_id: colegio_id,
-          is_active: true,
-          profile_completed: true
-        })
-        .select()
-        .single()
-
-      if (userError) {
-        console.error('Error creando usuario en tabla User:', userError)
-        return res.status(500).json({
-          error: 'Error al crear usuario en el sistema',
-          details: userError.message
-        })
-      }
-
-      // Crear registro en tabla Administrativo
-      const { data: adminData, error: adminError } = await client
-        .from('Administrativo')
-        .insert({
-          user_id: userData.user_id,
-          nombre_completo,
-          cargo,
-          rut,
-          telefono,
-          area_id,
-          fecha_contratacion,
-          estado_activo: true
-        })
-        .select()
-        .single()
-
-      if (adminError) {
-        console.error('Error creando administrativo:', adminError)
-        return res.status(500).json({
-          error: 'Error al crear perfil de administrativo',
-          details: adminError.message
-        })
-      }
-
-      return res.status(201).json({
-        message: 'Administrativo registrado exitosamente',
-        user: {
-          id: userData.user_id,
-          auth_id: authData.user.id,
-          email: email,
-          role: role,
-          colegio_id: colegio_id
-        },
-        administrativo: adminData
-      })
-    } catch (error) {
-      console.error('Error en registro de administrativo:', error)
+      
       return res.status(500).json({
-        error: 'Error interno del servidor'
-      })
+        error: 'Error al crear perfil de administrativo',
+        details: adminError.message
+      });
     }
+
+    return res.status(201).json({
+      message: 'Administrativo registrado exitosamente',
+      user: {
+        id: userData.user_id,
+        auth_id: authData.user.id,
+        email: email,
+        role: role,
+        colegio_id: colegio_id
+      },
+      administrativo: adminData
+    });
+  } catch (error) {
+    console.error('Error en registro de administrativo:', error);
+    return res.status(500).json({
+      error: 'Error interno del servidor'
+    });
   }
+}
 }
