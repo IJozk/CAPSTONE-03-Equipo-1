@@ -159,25 +159,31 @@ export class AuthController {
       let adminError = null;
 
       if (userData.role === 'ADMINISTRADOR' || userData.role === 'ADMINISTRATIVO' || userData.role === 'DIRECTOR') {
-        // Obtener información adicional del usuario desde la tabla User
+        // Obtener información adicional del usuario desde la tabla Administrativo
         const client = supabaseAdmin || supabase;
-        const result = await client
-          .from('Administrativo')
-          .select('nombre_completo, cargo, rut, telefono, area_id, fecha_contratacion')
-          .eq('user_id', userData.user_id)
-          .single();
 
-        adminData = result.data;
-        adminError = result.error;
+        try {
+          const result = await client
+            .from('Administrativo')
+            .select('administrativo_id, nombre_completo, cargo, rut, telefono, area_id, fecha_contratacion')
+            .eq('user_id', userData.user_id)
+            .maybeSingle(); // Usar maybeSingle() en lugar de single() para evitar error si no existe
 
-        // Solo advertir si no existe el perfil, pero permitir el login
-        if (adminError || !adminData) {
-          console.warn('Usuario administrativo sin perfil completo:', {
-            user_id: userData.user_id,
-            role: userData.role,
-            error: adminError?.message
-          })
-          // No retornar error - permitir login sin perfil completo
+          adminData = result.data;
+          adminError = result.error;
+
+          // Solo advertir si no existe el perfil, pero permitir el login
+          if (adminError || !adminData) {
+            console.warn('Usuario administrativo sin perfil completo:', {
+              user_id: userData.user_id,
+              role: userData.role,
+              error: adminError?.message || 'No se encontró registro en tabla Administrativo'
+            })
+            // No retornar error - permitir login sin perfil completo
+          }
+        } catch (err) {
+          console.error('Excepción al obtener datos de administrativo:', err)
+          // Continuar sin el perfil administrativo
         }
       }
 

@@ -34,7 +34,7 @@ export class EstudianteController {
                     return res.status(404).json({ message: 'Usuario no encontrado' })
                 }
 
-                if (userData.role !== 'ESTUDIANTE') {
+                if (userData.role !== 'ESTUDIANTE_APODERADO') {
                     return res.status(400).json({ message: 'El usuario debe tener rol ESTUDIANTE' })
                 }
             }
@@ -99,6 +99,17 @@ export class EstudianteController {
                 .select('*, User(email_address, is_active)')
                 .eq('estudiante_id', id)
                 .single()
+
+            const curso_actual = await supabaseAdmin!
+                .from('Estudiante_Curso')
+                .select('curso_id, Curso(nombre, nivel)')
+                .eq('estudiante_id', id)
+                .single()
+
+            const tutores = await supabaseAdmin!
+                .from('Tutor')
+                .select('Tutor(nombre_completo, telefono)')
+                .eq('estudiante_id', id)
 
             if (error) throw error
 
