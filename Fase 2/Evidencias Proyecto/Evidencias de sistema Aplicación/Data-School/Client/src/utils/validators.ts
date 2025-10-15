@@ -89,14 +89,19 @@ export const validateRUT = (rut: string): string | null => {
   // Limpiar RUT (quitar puntos y guión)
   const cleanRut = rut.replace(/\./g, '').replace(/-/g, '');
 
-  // Verificar formato básico
-  if (cleanRut.length < 8 || cleanRut.length > 9) {
+  // Verificar formato básico - MODIFICADO: mínimo 2 caracteres
+  if (cleanRut.length < 2 || cleanRut.length > 9) {
     return 'RUT inválido';
   }
 
   // Separar número y dígito verificador
   const rutNumber = cleanRut.slice(0, -1);
   const verifier = cleanRut.slice(-1).toUpperCase();
+
+  // Validar que el número sea válido
+  if (!/^\d+$/.test(rutNumber)) {
+    return 'RUT debe contener solo números';
+  }
 
   // Calcular dígito verificador
   let sum = 0;
@@ -135,17 +140,20 @@ export const formatRUT = (rut: string): string => {
   const clean = rut.replace(/[^0-9kK]/g, '');
 
   if (clean.length === 0) return '';
+  
+  // Si solo hay un carácter, devolverlo sin formato
+  if (clean.length === 1) return clean;
 
   // Separar número y verificador
   const number = clean.slice(0, -1);
   const verifier = clean.slice(-1);
 
-  // Formatear número con puntos
+  // Formatear número con puntos (solo si tiene más de 3 dígitos)
   let formatted = '';
   let counter = 0;
 
   for (let i = number.length - 1; i >= 0; i--) {
-    if (counter === 3) {
+    if (counter === 3 && number.length > 3) {
       formatted = '.' + formatted;
       counter = 0;
     }
@@ -153,10 +161,8 @@ export const formatRUT = (rut: string): string => {
     counter++;
   }
 
-  // Agregar guión y verificador si existe
-  if (verifier) {
-    formatted += '-' + verifier.toUpperCase();
-  }
+  // Agregar guión y verificador
+  formatted += '-' + verifier.toUpperCase();
 
   return formatted;
 };
@@ -259,6 +265,47 @@ export const validateRole = (role: string): string | null => {
   const validRoles = ['ADMINISTRADOR', 'DIRECTOR', 'UTP', 'PROFESOR', 'ESTUDIANTE_APODERADO'];
   if (!validRoles.includes(role)) {
     return 'Rol inválido';
+  }
+
+  return null;
+};
+
+/**
+ * Valida fecha de nacimiento
+ * - No puede ser futura
+ * - Debe tener al menos 3 años de antigüedad
+ * @param fecha - Fecha en formato YYYY-MM-DD
+ * @returns Mensaje de error o null si es válido
+ */
+export const validateFechaNacimiento = (fecha: string): string | null => {
+  if (!fecha || fecha.trim().length === 0) {
+    return 'La fecha de nacimiento es requerida';
+  }
+
+  const fechaNacimiento = new Date(fecha);
+  const hoy = new Date();
+  
+  // Resetear horas para comparar solo fechas
+  hoy.setHours(0, 0, 0, 0);
+  fechaNacimiento.setHours(0, 0, 0, 0);
+
+  // Validar que no sea fecha futura
+  if (fechaNacimiento > hoy) {
+    return 'La fecha de nacimiento no puede ser futura';
+  }
+
+  // Calcular edad
+  const edadEnMilisegundos = hoy.getTime() - fechaNacimiento.getTime();
+  const edadEnAnios = edadEnMilisegundos / (1000 * 60 * 60 * 24 * 365.25);
+
+  // Validar edad mínima de 3 años
+  if (edadEnAnios < 3) {
+    return 'El estudiante debe tener al menos 3 años de edad';
+  }
+
+  // Validar edad máxima razonable (opcional, por ejemplo 100 años)
+  if (edadEnAnios > 100) {
+    return 'La fecha de nacimiento no es válida';
   }
 
   return null;
