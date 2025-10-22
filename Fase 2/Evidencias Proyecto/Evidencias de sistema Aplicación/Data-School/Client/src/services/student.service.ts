@@ -4,7 +4,7 @@
  */
 
 import apiClient from './api.config';
-import type { StudentProfile, AcademicSummary, UpcomingEvent } from '@/types/student.types';
+import type { StudentProfile, AcademicSummary, UpcomingEvent, ScheduleSlot } from '@/types/student.types';
 
 class StudentService {
   /**
@@ -37,10 +37,10 @@ class StudentService {
 
   /**
    * Obtiene los próximos eventos del estudiante (tareas, exámenes, etc.)
-   * @param limit - Número máximo de eventos a obtener (default: 4)
+   * @param limit - Número máximo de eventos a obtener (default: 5)
    * @returns Lista de próximos eventos
    */
-  async getUpcomingEvents(limit: number = 4): Promise<{ events: UpcomingEvent[] }> {
+  async getUpcomingEvents(limit: number = 5): Promise<{ events: UpcomingEvent[] }> {
     try {
       const response = await apiClient.get<{ events: UpcomingEvent[] }>(
         `/students/me/upcoming-events?limit=${limit}`
@@ -53,30 +53,31 @@ class StudentService {
   }
 
   /**
-   * Obtiene las notas del estudiante por asignatura
-   * @returns Notas organizadas por asignatura
+   * Obtiene el horario semanal del estudiante
+   * @returns Horario semanal
    */
-  async getGrades(): Promise<any> {
+  async getSchedule(): Promise<ScheduleSlot[]> {
     try {
-      const response = await apiClient.get('/students/me/grades');
-      return response.data;
+      const response = await apiClient.get<{ schedule: ScheduleSlot[] }>('/students/me/schedule');
+      return response.data.schedule;
     } catch (error: any) {
-      console.error('Error fetching grades:', error);
-      throw new Error(error.response?.data?.message || 'Error al obtener notas');
+      console.error('Error fetching schedule:', error);
+      throw new Error(error.response?.data?.message || 'Error al obtener horario');
     }
   }
 
   /**
-   * Obtiene el historial de asistencia del estudiante
-   * @returns Historial de asistencia
+   * Actualiza el perfil del estudiante
+   * @param data - Datos a actualizar
+   * @returns Perfil actualizado
    */
-  async getAttendance(): Promise<any> {
+  async updateProfile(data: Partial<StudentProfile>): Promise<StudentProfile> {
     try {
-      const response = await apiClient.get('/students/me/attendance');
+      const response = await apiClient.put<StudentProfile>('/students/me', data);
       return response.data;
     } catch (error: any) {
-      console.error('Error fetching attendance:', error);
-      throw new Error(error.response?.data?.message || 'Error al obtener asistencia');
+      console.error('Error updating profile:', error);
+      throw new Error(error.response?.data?.message || 'Error al actualizar perfil');
     }
   }
 }

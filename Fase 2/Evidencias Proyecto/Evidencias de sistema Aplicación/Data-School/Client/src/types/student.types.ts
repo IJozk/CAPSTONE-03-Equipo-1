@@ -9,7 +9,7 @@ export interface StudentProfile {
     estudiante_id: string;
     nombre_completo: string;
     rut: string;
-    fecha_nacimiento: Date; 
+    fecha_nacimiento: Date;
     genero: 'M' | 'F' | 'O'; // Masculino, Femenino, Otro
     direccion: string;
     comuna: string;
@@ -33,35 +33,68 @@ export interface StudentProfile {
 // Resumen académico del estudiante
 export interface AcademicSummary {
   promedio_general: number; // Escala chilena: 1.0 - 7.0
-  asistencia_total: number; // Porcentaje: 0 - 100
-  total_evaluaciones: number;
-  asignaturas: Asignatura[];
+  porcentaje_asistencia: number; // Porcentaje: 0 - 100
+  total_asignaturas: number;
+  evaluaciones_pendientes: number;
+  ultima_actualizacion: string;
 }
 
-// Asignatura individual
-export interface Asignatura {
-  nombre: string;
+// Asignatura con notas
+export interface Subject {
+  asignatura_id: string;
+  nombre_asignatura: string;
+  profesor_nombre: string;
   promedio: number;
-  ultima_nota: number;
+  notas: Grade[];
+}
+
+// Nota individual
+export interface Grade {
+  nota_id: string;
+  evaluacion_nombre: string;
+  nota: number;
+  fecha: string;
+  porcentaje: number;
+}
+
+// Registro de asistencia
+export interface Attendance {
+  id: string;
+  fecha: string;
+  asignatura_nombre: string;
+  estado: 'PRESENTE' | 'AUSENTE' | 'ATRASADO' | 'JUSTIFICADO';
+  observacion?: string;
+}
+
+// Notificación del estudiante
+export interface Notification {
+  id: string;
+  tipo: 'CALIFICACION' | 'ASISTENCIA' | 'EVENTO' | 'ALERTA';
+  titulo: string;
+  mensaje: string;
+  fecha_creacion: string;
+  leida: boolean;
+  prioridad: 1 | 2 | 3 | 4 | 5;
 }
 
 // Evento próximo (tarea, examen, clase, etc.)
 export interface UpcomingEvent {
-  id: number;
+  id: string;
   titulo: string;
+  descripcion: string;
   fecha: string; // ISO 8601 format
-  tipo: 'tarea' | 'examen' | 'evento' | 'clase';
+  tipo: 'EVALUACION' | 'REUNION' | 'ACTIVIDAD' | 'OTRO';
   asignatura?: string;
-  descripcion?: string;
   lugar?: string;
   sala?: string;
 }
 
-// Estado del store de estudiantes
-export interface StudentState {
-  profile: StudentProfile | null;
-  academicSummary: AcademicSummary | null;
-  upcomingEvents: UpcomingEvent[];
-  loading: boolean;
-  error: string | null;
+// Slot del horario semanal
+export interface ScheduleSlot {
+  dia: string;
+  hora_inicio: string;
+  hora_fin: string;
+  asignatura: string;
+  profesor: string;
+  sala?: string;
 }
