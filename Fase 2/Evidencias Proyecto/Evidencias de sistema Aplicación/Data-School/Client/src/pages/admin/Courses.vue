@@ -24,7 +24,7 @@
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Nivel</label>
             <select
-              v-model.number="filters.nivel_id"
+              v-model.number="filters.nivel"
               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               <option :value="undefined">Todos los niveles</option>
@@ -97,7 +97,7 @@
               </tr>
               <tr v-for="curso in cursoStore.cursos" :key="curso.curso_id" class="hover:bg-gray-50">
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {{ getNivelDisplay(curso.nivel) }}
+                  {{ typeof curso.nivel === 'object' ? curso.nivel_obj.display : getNivelDisplay(curso.nivel) }}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {{ curso.nombre }}
@@ -164,7 +164,7 @@
                     Nivel <span class="text-red-500">*</span>
                   </label>
                   <select
-                    v-model.number="formData.nivel_id"
+                    v-model="formData.nivel"
                     required
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   >
@@ -310,7 +310,7 @@ const cursoToDelete = ref<Curso | null>(null)
 // Datos del formulario
 const formData = ref<CreateCursoDTO>({
   nombre: '',
-  nivel_id: 1, // Por defecto Pre-Kinder
+  nivel: 1, // Por defecto Pre-Kinder
   anio_academico: new Date().getFullYear(),
   generacion: new Date().getFullYear(),
   capacidad_maxima: null
@@ -320,7 +320,7 @@ const editingId = ref<string | null>(null)
 
 // Filtros
 const filters = ref<FilterCursoDTO>({
-  nivel_id: undefined,
+  nivel: undefined,
   anio_academico: undefined,
   generacion: undefined
 })
@@ -341,7 +341,7 @@ const loadCursos = async () => {
 const applyFilters = async () => {
   try {
     const activeFilters: FilterCursoDTO = {}
-    if (filters.value.nivel_id) activeFilters.nivel_id = filters.value.nivel_id
+    if (filters.value.nivel) activeFilters.nivel = filters.value.nivel
     if (filters.value.anio_academico) activeFilters.anio_academico = filters.value.anio_academico
 
     await cursoStore.fetchAll(activeFilters)
@@ -352,7 +352,7 @@ const applyFilters = async () => {
 
 const clearFilters = async () => {
   filters.value = {
-    nivel_id: undefined,
+    nivel: undefined,
     anio_academico: undefined,
     generacion: undefined
   }
@@ -365,7 +365,7 @@ const openCreateModal = () => {
   editingId.value = null
   formData.value = {
     nombre: '',
-    nivel_id: 1, // Por defecto Pre-Kinder
+    nivel: 1, // Por defecto Pre-Kinder
     anio_academico: new Date().getFullYear(),
     generacion: new Date().getFullYear(),
     capacidad_maxima: null
@@ -376,9 +376,13 @@ const openCreateModal = () => {
 const openEditModal = (curso: Curso) => {
   isEditing.value = true
   editingId.value = curso.curso_id
+
+  // Asegurar que nivel_id sea un número
+  const nivelId = typeof curso.nivel === 'object' ? curso.nivel_obj.id : curso.nivel
+
   formData.value = {
     nombre: curso.nombre,
-    nivel_id: curso.nivel_id,
+    nivel: nivelId,
     anio_academico: curso.anio_academico,
     generacion: curso.generacion,
     capacidad_maxima: curso.capacidad_maxima
@@ -396,6 +400,7 @@ const handleSubmit = async () => {
   submitting.value = true
   try {
     if (isEditing.value && editingId.value) {
+      console.log(formData.value)
       await cursoStore.update(editingId.value, formData.value)
       alert('Curso actualizado exitosamente')
     } else {

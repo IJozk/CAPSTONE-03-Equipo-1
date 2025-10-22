@@ -16,7 +16,7 @@ class CursoService {
     try {
       const params = new URLSearchParams()
 
-      if (filters?.nivel_id) params.append('nivel', String(filters.nivel_id))
+      if (filters?.nivel) params.append('nivel', String(filters.nivel))
       if (filters?.anio_academico) params.append('anio_academico', String(filters.anio_academico))
       if (filters?.generacion) params.append('generacion', String(filters.generacion))
 
