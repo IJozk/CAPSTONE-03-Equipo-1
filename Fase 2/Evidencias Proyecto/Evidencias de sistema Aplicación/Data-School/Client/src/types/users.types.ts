@@ -79,6 +79,7 @@ export interface UpdateEstudianteDTO {
   direccion?: string;
   telefono?: string;
   email?: string;
+  estado_activo?: boolean;
 }
 
 // ============= ADMINISTRATIVO =============

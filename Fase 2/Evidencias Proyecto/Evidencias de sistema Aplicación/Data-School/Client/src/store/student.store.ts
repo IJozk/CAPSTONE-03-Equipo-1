@@ -55,7 +55,7 @@ export const useStudentStore = defineStore('student', {
       this.loading = true;
       this.error = null;
       try {
-        this.estudiantes = await estudianteService.getAll(params);
+        this.estudiantes = await estudianteService.getAll({ incluir_inactivos: true });
       } catch (error: any) {
         this.error = error.message || 'Error al cargar estudiantes';
         console.error('Error fetching estudiantes:', error);
@@ -114,6 +114,54 @@ export const useStudentStore = defineStore('student', {
         if (this.currentEstudiante?.estudiante_id === id) {
           this.currentEstudiante = updated;
         }
+        return updated;
+      } catch (error: any) {
+        this.error = error.message || 'Error al actualizar estudiante';
+        console.error('Error updating estudiante:', error);
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Actualizar estudiante usando user_id (para el modal de edición)
+     */
+    async updateEstudiantes(userId: string, data: Partial<UpdateEstudianteDTO>) {
+      this.loading = true;
+      this.error = null;
+      try {
+        console.log('=== STORE DEBUG ===');
+        console.log('userId recibido:', userId);
+        console.log('data recibida en store:', data);
+        console.log('estado_activo en store:', data.estado_activo, 'tipo:', typeof data.estado_activo);
+        
+        // Encontrar el estudiante por user_id
+        const estudiante = this.estudiantes.find(e => e.user_id === userId);
+        if (!estudiante) {
+          throw new Error('Estudiante no encontrado');
+        }
+
+        console.log('Estudiante encontrado, ID:', estudiante.estudiante_id);
+
+        // Actualizar usando el estudiante_id
+        console.log('Datos enviados al backend:', data);
+        const updated = await estudianteService.update(estudiante.estudiante_id, data as UpdateEstudianteDTO);
+        
+        console.log('Respuesta del backend:', updated);
+        console.log('=== FIN STORE DEBUG ===');
+        
+        // Actualizar en el array de estudiantes
+        const index = this.estudiantes.findIndex(e => e.user_id === userId);
+        if (index !== -1) {
+          this.estudiantes[index] = updated;
+        }
+        
+        // Actualizar currentEstudiante si es el mismo
+        if (this.currentEstudiante?.user_id === userId) {
+          this.currentEstudiante = updated;
+        }
+        
         return updated;
       } catch (error: any) {
         this.error = error.message || 'Error al actualizar estudiante';
