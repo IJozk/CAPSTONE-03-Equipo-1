@@ -237,7 +237,7 @@
                     required
                     >
                     <option v-for="curso in cursoStore.cursosByAnio(2025) " :key="curso.curso_id" :value="curso.curso_id">
-                      {{ NIVELES[curso.nivel].display  +  " " + curso.nombre }}
+                      {{ NIVELES[curso.nivel_id-1].display  +  " " + curso.nombre }}
                     </option>
                   </select>
                 </div>  

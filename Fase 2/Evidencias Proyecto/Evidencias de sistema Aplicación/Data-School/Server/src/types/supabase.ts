@@ -726,7 +726,7 @@ export type Database = {
           created_at: string | null
           curso_id: string
           generacion: number
-          nivel: number
+          nivel_id: number
           nombre: string
           updated_at: string | null
         }
@@ -736,7 +736,7 @@ export type Database = {
           created_at?: string | null
           curso_id?: string
           generacion: number
-          nivel: number
+          nivel_id: number
           nombre: string
           updated_at?: string | null
         }
@@ -746,14 +746,14 @@ export type Database = {
           created_at?: string | null
           curso_id?: string
           generacion?: number
-          nivel?: number
+          nivel_id?: number
           nombre?: string
           updated_at?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "Curso_nivel_fkey"
-            columns: ["nivel"]
+            columns: ["nivel_id"]
             isOneToOne: false
             referencedRelation: "NivelCurso"
             referencedColumns: ["id"]

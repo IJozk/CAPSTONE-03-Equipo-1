@@ -16,7 +16,7 @@ class CursoService {
     try {
       const params = new URLSearchParams()
 
-      if (filters?.nivel) params.append('nivel', String(filters.nivel))
+      if (filters?.nivel_id) params.append('nivel_id', String(filters.nivel_id))
       if (filters?.anio_academico) params.append('anio_academico', String(filters.anio_academico))
       if (filters?.generacion) params.append('generacion', String(filters.generacion))
 
@@ -24,6 +24,7 @@ class CursoService {
       const url = queryString ? `/cursos?${queryString}` : '/cursos'
 
       const response = await apiClient.get<CursoResponse>(url)
+      console.log(response)
       return Array.isArray(response.data.data) ? response.data.data : [response.data.data]
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Error al obtener cursos')

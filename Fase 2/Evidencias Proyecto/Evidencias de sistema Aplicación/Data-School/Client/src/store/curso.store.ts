@@ -23,7 +23,7 @@ export const useCursoStore = defineStore('curso', {
      * Obtener cursos por nivel
      */
     cursosByNivel: (state) => (nivel_id: number): Curso[] => {
-      return state.cursos.filter(c => c.nivel === nivel_id)
+      return state.cursos.filter(c => c.nivel_id === nivel_id)
     },
 
     /**
@@ -45,7 +45,7 @@ export const useCursoStore = defineStore('curso', {
      * Obtener niveles únicos
      */
     niveles: (state): number[] => {
-      const niveles = state.cursos.map(c => c.nivel)
+      const niveles = state.cursos.map(c => c.nivel_id)
       return [...new Set(niveles)].sort()
     }
   },

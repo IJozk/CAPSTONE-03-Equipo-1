@@ -30,7 +30,7 @@ export class AsignaturaController {
           Curso:curso_id (
             curso_id,
             nombre,
-            nivel
+            nivel_id
           ),
           Profesor:profesor_id (
             profesor_id,
@@ -103,7 +103,7 @@ export class AsignaturaController {
           Curso:curso_id (
             curso_id,
             nombre,
-            nivel,
+            nivel_id,
             anio
           ),
           Profesor:profesor_id (
@@ -204,7 +204,7 @@ export class AsignaturaController {
           Curso:curso_id (
             curso_id,
             nombre,
-            nivel
+            nivel_id
           ),
           Profesor:profesor_id (
             profesor_id,
@@ -284,7 +284,7 @@ export class AsignaturaController {
           Curso:curso_id (
             curso_id,
             nombre,
-            nivel
+            nivel_id
           ),
           Profesor:profesor_id (
             profesor_id,
@@ -502,7 +502,7 @@ export class AsignaturaController {
           Curso:curso_id (
             curso_id,
             nombre,
-            nivel,
+            nivel_id,
             paralelo
           )
         `)

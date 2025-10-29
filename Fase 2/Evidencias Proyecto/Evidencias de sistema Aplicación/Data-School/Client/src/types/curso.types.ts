@@ -4,7 +4,7 @@ import { Nivel } from './utils.types'
 export interface Curso {
   curso_id: string
   nombre: string
-  nivel: number
+  nivel_id: number
   anio_academico: number
   generacion: number
   capacidad_maxima?: number | null
@@ -23,7 +23,7 @@ export interface CursoConNivel extends Curso {
 
 export interface CreateCursoDTO {
   nombre: string
-  nivel: number
+  nivel_id: number
   anio_academico: number
   generacion: number
   capacidad_maxima?: number | null
@@ -31,14 +31,14 @@ export interface CreateCursoDTO {
 
 export interface UpdateCursoDTO {
   nombre?: string
-  nivel?: number
+  nivel_id?: number
   anio_academico?: number
   generacion?: number
   capacidad_maxima?: number | null
 }
 
 export interface FilterCursoDTO {
-  nivel?: number
+  nivel_id?: number
   anio_academico?: number
   generacion?: number
 }
