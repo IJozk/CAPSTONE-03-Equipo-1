@@ -161,6 +161,16 @@ const routes: RouteRecordRaw[] = [
       title: 'Gestión de Estudiantes'
     }
   },
+    {
+    path: '/admin/administrativos',
+    name: 'AdminAdministrativos',
+    component: () => import('@/pages/admin/Adminis.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresRole: ['ADMINISTRADOR'],
+      title: 'Gestión de Administradores'
+    }
+  },
   {
     path: '/admin/analytics',
     name: 'AdminAnalytics',
