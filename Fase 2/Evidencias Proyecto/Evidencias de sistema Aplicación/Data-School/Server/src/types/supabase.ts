@@ -892,6 +892,27 @@ export type Database = {
           },
         ]
       }
+      Especialidad: {
+        Row: {
+          created_at: string
+          id: number
+          nombre_especialidad: string
+          tipo_especialidad: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          nombre_especialidad: string
+          tipo_especialidad: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          nombre_especialidad?: string
+          tipo_especialidad?: string
+        }
+        Relationships: []
+      }
       EstadoMatricula: {
         Row: {
           descripcion: string | null
@@ -1482,6 +1503,45 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "User"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      Profesor_especialidad: {
+        Row: {
+          certificado_url: string | null
+          created_at: string
+          especialidad_id: number
+          fecha_certificacion: string | null
+          profesor_id: string
+        }
+        Insert: {
+          certificado_url?: string | null
+          created_at?: string
+          especialidad_id: number
+          fecha_certificacion?: string | null
+          profesor_id?: string
+        }
+        Update: {
+          certificado_url?: string | null
+          created_at?: string
+          especialidad_id?: number
+          fecha_certificacion?: string | null
+          profesor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "Profesor_especialidad_especialidad_id_fkey"
+            columns: ["especialidad_id"]
+            isOneToOne: false
+            referencedRelation: "Especialidad"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "Profesor_especialidad_profesor_id_fkey"
+            columns: ["profesor_id"]
+            isOneToOne: false
+            referencedRelation: "Profesor"
+            referencedColumns: ["profesor_id"]
           },
         ]
       }

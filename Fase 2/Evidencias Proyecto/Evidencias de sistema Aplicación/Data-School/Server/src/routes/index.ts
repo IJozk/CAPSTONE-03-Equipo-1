@@ -10,6 +10,18 @@ import administrativoRoutes from './administrativo.router'
 import tutorRoutes from './tutor.router'
 import asignaturaRoutes from './asignatura.router'
 import cursoRoutes from './curso.router'
+import matriculaRoutes from './matricula.router'
+import asistenciaRoutes from './asistencia.router'
+import evaluacionRoutes from './evaluacion.router'
+import resultadoEvaluacionRoutes from './resultadoEvaluacion.router'
+import horarioRoutes from './horario.router'
+import anioAcademicoRoutes from './anioAcademico.router'
+import alertaRoutes from './alerta.router'
+import salaRoutes from './sala.router'
+import tallerRoutes from './taller.router'
+import grupoTallerRoutes from './grupoTaller.router'
+import areaRoutes from './area.router'
+import eventoRoutes from './evento.router'
 
 const router = Router()
 
@@ -31,6 +43,20 @@ router.use('/tutores', tutorRoutes)
 // Rutas CRUD de entidades académicas
 router.use('/asignaturas', asignaturaRoutes)
 router.use('/cursos', cursoRoutes)
+router.use('/matriculas', matriculaRoutes)
+router.use('/asistencias', asistenciaRoutes)
+router.use('/evaluaciones', evaluacionRoutes)
+router.use('/resultados-evaluacion', resultadoEvaluacionRoutes)
+router.use('/horarios', horarioRoutes)
+router.use('/anios-academicos', anioAcademicoRoutes)
+
+// Rutas CRUD de entidades administrativas y de gestión
+router.use('/alertas', alertaRoutes)
+router.use('/salas', salaRoutes)
+router.use('/talleres', tallerRoutes)
+router.use('/inscripciones-taller', grupoTallerRoutes)
+router.use('/areas', areaRoutes)
+router.use('/eventos', eventoRoutes)
 
 // Rutas protegidas
 router.use('/protected', protectedRoutes)

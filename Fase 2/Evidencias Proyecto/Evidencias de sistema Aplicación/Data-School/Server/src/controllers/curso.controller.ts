@@ -223,6 +223,7 @@ export class CursoController {
         .single()
 
       if (error) {
+        console.log(updateData)
         console.error('Error actualizando curso:', error)
         return res.status(500).json({
           error: 'Error al actualizar curso',
