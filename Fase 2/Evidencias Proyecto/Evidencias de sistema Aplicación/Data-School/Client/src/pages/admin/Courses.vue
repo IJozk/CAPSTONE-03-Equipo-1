@@ -24,7 +24,7 @@
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Nivel</label>
             <select
-              v-model.number="filters.nivel"
+              v-model.number="filters.nivel_id"
               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               <option :value="undefined">Todos los niveles</option>
@@ -97,7 +97,7 @@
               </tr>
               <tr v-for="curso in cursoStore.cursos" :key="curso.curso_id" class="hover:bg-gray-50">
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {{ typeof curso.nivel === 'object' ? curso.nivel_obj.display : getNivelDisplay(curso.nivel) }}
+                  {{ getNivelDisplay(curso.nivel_id) }}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {{ curso.nombre }}
@@ -164,7 +164,7 @@
                     Nivel <span class="text-red-500">*</span>
                   </label>
                   <select
-                    v-model="formData.nivel"
+                    v-model="formData.nivel_id"
                     required
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   >
@@ -183,7 +183,6 @@
                     required
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   >
-                    <option value="" disabled>Selecciona una letra</option>
                     <option v-for="letra in letras" :key="letra" :value="letra">
                       {{ letra }}
                     </option>
@@ -310,7 +309,7 @@ const cursoToDelete = ref<Curso | null>(null)
 // Datos del formulario
 const formData = ref<CreateCursoDTO>({
   nombre: '',
-  nivel: 1, // Por defecto Pre-Kinder
+  nivel_id: 1, // Por defecto Pre-Kinder
   anio_academico: new Date().getFullYear(),
   generacion: new Date().getFullYear(),
   capacidad_maxima: null
@@ -320,7 +319,7 @@ const editingId = ref<string | null>(null)
 
 // Filtros
 const filters = ref<FilterCursoDTO>({
-  nivel: undefined,
+  nivel_id: undefined,
   anio_academico: undefined,
   generacion: undefined
 })
@@ -341,7 +340,7 @@ const loadCursos = async () => {
 const applyFilters = async () => {
   try {
     const activeFilters: FilterCursoDTO = {}
-    if (filters.value.nivel) activeFilters.nivel = filters.value.nivel
+    if (filters.value.nivel_id) activeFilters.nivel_id = filters.value.nivel_id
     if (filters.value.anio_academico) activeFilters.anio_academico = filters.value.anio_academico
 
     await cursoStore.fetchAll(activeFilters)
@@ -352,7 +351,7 @@ const applyFilters = async () => {
 
 const clearFilters = async () => {
   filters.value = {
-    nivel: undefined,
+    nivel_id: undefined,
     anio_academico: undefined,
     generacion: undefined
   }
@@ -365,7 +364,7 @@ const openCreateModal = () => {
   editingId.value = null
   formData.value = {
     nombre: '',
-    nivel: 1, // Por defecto Pre-Kinder
+    nivel_id: 1, // Por defecto Pre-Kinder
     anio_academico: new Date().getFullYear(),
     generacion: new Date().getFullYear(),
     capacidad_maxima: null
@@ -378,11 +377,11 @@ const openEditModal = (curso: Curso) => {
   editingId.value = curso.curso_id
 
   // Asegurar que nivel_id sea un número
-  const nivelId = typeof curso.nivel === 'object' ? curso.nivel_obj.id : curso.nivel
+  const nivelId = typeof curso.nivel_id === 'object' ? curso.nivel_obj.id : curso.nivel_id
 
   formData.value = {
     nombre: curso.nombre,
-    nivel: nivelId,
+    nivel_id: nivelId,
     anio_academico: curso.anio_academico,
     generacion: curso.generacion,
     capacidad_maxima: curso.capacidad_maxima
@@ -409,6 +408,7 @@ const handleSubmit = async () => {
     }
     closeModal()
   } catch (error: any) {
+    console.log(formData.value)
     alert(`Error: ${error.message}`)
   } finally {
     submitting.value = false

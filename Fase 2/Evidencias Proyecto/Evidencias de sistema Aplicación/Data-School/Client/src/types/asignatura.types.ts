@@ -20,7 +20,7 @@ export interface Asignatura {
   Curso?: {
     curso_id: string
     nombre: string
-    nivel: string
+    nivel_id: number
     paralelo?: string
   }
   Profesor?: {
