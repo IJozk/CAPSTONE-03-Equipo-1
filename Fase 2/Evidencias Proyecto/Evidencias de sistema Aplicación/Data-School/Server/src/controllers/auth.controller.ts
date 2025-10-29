@@ -196,7 +196,7 @@ export class AuthController {
         const client = supabaseAdmin || supabase;
         const result = await client
           .from('Profesor')
-          .select('nombre_completo, titulo_profesional, especialidad, rut, telefono, fecha_contratacion')
+          .select('nombre_completo, rut, telefono')
           .eq('user_id', userData.user_id)
           .single();
 
@@ -490,30 +490,8 @@ async registerProfesor(req: Request, res: Response) {
         user_id: userData.user_id,
         nombre_completo,
         rut,
-        telefono,
-        titulo_profesional,
-        especialidad,
-        fecha_contratacion,
-        estado_activo: true
-      })
-      .select()
-      .single();
-
-    if (profesorError) {
-      console.error('Error creando profesor:', profesorError);
-      // 🔥 Rollback: eliminar usuario de auth y User
-      await client.auth.admin.deleteUser(authUserId);
-      await client.from('User').delete().eq('user_id', userData.user_id);
-      
-      if (profesorError.code === '23505') {
-        return res.status(400).json({ error: 'El profesor ya existe en el sistema' });
-      }
-      
-      return res.status(500).json({
-        error: 'Error al crear perfil de profesor',
-        details: profesorError.message
-      });
-    }
+        telefono
+      } = req.body as RegisterProfesorDto
 
     return res.status(201).json({
       message: 'Profesor registrado exitosamente',
@@ -617,7 +595,43 @@ async registerEstudiante(req: Request, res: Response) {
         });
       }
 
-      userId = userData.user_id;
+      // Crear registro en tabla Profesor
+      const { data: profesorData, error: profesorError } = await client
+        .from('Profesor')
+        .insert({
+          user_id: userData.user_id,
+          nombre_completo,
+          rut,
+          telefono,
+          estado_activo: true
+        })
+        .select()
+        .single()
+
+      if (profesorError) {
+        console.error('Error creando profesor:', profesorError)
+        return res.status(500).json({
+          error: 'Error al crear perfil de profesor',
+          details: profesorError.message
+        })
+      }
+
+      return res.status(201).json({
+        message: 'Profesor registrado exitosamente',
+        user: {
+          id: userData.user_id,
+          auth_id: authData.user.id,
+          email: email,
+          role: 'PROFESOR',
+          colegio_id: colegio_id
+        },
+        profesor: profesorData
+      })
+    } catch (error) {
+      console.error('Error en registro de profesor:', error)
+      return res.status(500).json({
+        error: 'Error interno del servidor'
+      })
     }
 
     // 3️⃣ Crear registro en tabla Estudiante
