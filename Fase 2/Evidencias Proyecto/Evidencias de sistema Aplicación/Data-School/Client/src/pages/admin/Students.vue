@@ -35,9 +35,68 @@
         </div>
 
         <div v-else>
+          <!-- Filtros -->
+          <div class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Filtro por RUT -->
+            <div>
+              <label for="rut-filter" class="block text-sm font-medium text-gray-700 mb-2">
+                Buscar por RUT
+              </label>
+              <div class="relative">
+                <input
+                  id="rut-filter"
+                  type="text"
+                  v-model="rutFilter"
+                  @input="currentPage = 1"
+                  placeholder="Ej: 12345678-9"
+                  class="block w-full px-3 py-2 pl-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                />
+                <svg class="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <button
+                  v-if="rutFilter"
+                  @click="clearRutFilter"
+                  class="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                >
+                  <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Filtro por Estado -->
+            <div>
+              <label for="status-filter" class="block text-sm font-medium text-gray-700 mb-2">
+                Filtrar por Estado
+              </label>
+              <select
+                id="status-filter"
+                v-model="statusFilter"
+                @change="currentPage = 1"
+                class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+              >
+                <option value="">Todos</option>
+                <option value="true">Activos</option>
+                <option value="false">Inactivos</option>
+              </select>
+            </div>
+          </div>
+
           <!-- Información de paginación -->
-          <div class="mb-4 text-sm text-gray-600">
-            Mostrando {{ startIndex + 1 }} - {{ endIndex }} de {{ totalStudents }} estudiantes
+          <div class="mb-4 flex items-center justify-between">
+            <div class="text-sm text-gray-600">
+              Mostrando {{ startIndex + 1 }} - {{ endIndex }} de {{ totalFilteredStudents }} estudiantes
+              <span v-if="rutFilter || statusFilter" class="font-medium text-primary-600">(filtrado)</span>
+            </div>
+            <button
+              v-if="rutFilter || statusFilter"
+              @click="clearAllFilters"
+              class="text-sm text-primary-600 hover:text-primary-700 font-medium"
+            >
+              Limpiar filtros
+            </button>
           </div>
 
           <!-- Tabla de estudiantes -->
@@ -58,8 +117,15 @@
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
+                <tr v-if="paginatedStudents.length === 0">
+                  <td colspan="10" class="px-6 py-8 text-center text-sm text-gray-500">
+                    No se encontraron estudiantes con los filtros aplicados
+                  </td>
+                </tr>
                 <tr v-for="student in paginatedStudents" :key="student.user_id">
-                  <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-900">{{ student.rut }}</td>
+                  <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-900">
+                    <span class="font-medium">{{ student.rut }}</span>
+                  </td>
                   <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-900">{{ student.nombre_completo }}</td>
                   <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-900">{{ student.email }}</td>
                   <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-900">{{ student.fecha_nacimiento }}</td>
@@ -68,12 +134,12 @@
                   <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-900">{{ student.direccion }}</td>
                   <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-900">{{ student.telefono }}</td>
                   <td class="px-6 py-4 text-center whitespace-nowrap text-sm">
-                    <span :class="student.estado_activo ? 'text-green-600' : 'text-red-600'">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" :class="student.estado_activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
                       {{ student.estado_activo ? 'Activo' : 'Inactivo' }}
                     </span>
                   </td>
                   <td class="px-6 py-4 text-center whitespace-nowrap text-sm font-medium">
-                    <button @click="openEditModal(student)" class="text-blue-600 hover:text-blue-900 mr-4">Editar</button>
+                    <button @click="openEditModal(student)" class="text-blue-600 hover:text-blue-900">Editar</button>
                   </td>
                 </tr>
               </tbody>
@@ -81,7 +147,7 @@
           </div>
 
           <!-- Controles de paginación -->
-          <div class="mt-6 flex items-center justify-between border-t border-gray-200 pt-4">
+          <div v-if="totalPages > 1" class="mt-6 flex items-center justify-between border-t border-gray-200 pt-4">
             <div class="flex-1 flex justify-between sm:hidden">
               <button
                 @click="previousPage"
@@ -315,6 +381,8 @@ import { onMounted, computed, ref } from 'vue';
 const studentStore = useStudentStore();
 const currentPage = ref(1);
 const itemsPerPage = 20;
+const rutFilter = ref('');
+const statusFilter = ref('');
 
 // Estado del modal de edición
 const isEditModalOpen = ref(false);
@@ -335,23 +403,53 @@ const editForm = ref<{
   estado_activo: true
 });
 
-// Computed properties para la paginación
-const totalStudents = computed(() => studentStore.estudiantes.length);
+// Normalizar RUT para comparación (quita puntos y guiones)
+const normalizeRut = (rut: string) => {
+  return rut.replace(/[.-]/g, '').toLowerCase();
+};
 
-const totalPages = computed(() => Math.ceil(totalStudents.value / itemsPerPage));
+// Estudiantes filtrados
+const filteredStudents = computed(() => {
+  let students = studentStore.estudiantes;
+
+  // Filtrar por RUT
+  if (rutFilter.value) {
+    const normalizedFilter = normalizeRut(rutFilter.value);
+    students = students.filter(student => {
+      const normalizedRut = normalizeRut(student.rut || '');
+      return normalizedRut.includes(normalizedFilter);
+    });
+  }
+
+  // Filtrar por estado
+  if (statusFilter.value !== '') {
+    const isActive = statusFilter.value === 'true';
+    students = students.filter(student => {
+      return (student.estado_activo === isActive || 
+              student.estado_activo === Boolean(isActive));
+    });
+  }
+
+  return students;
+});
+
+// Computed properties para la paginación
+const totalFilteredStudents = computed(() => filteredStudents.value.length);
+
+const totalPages = computed(() => Math.ceil(totalFilteredStudents.value / itemsPerPage));
 
 const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage);
 
-const endIndex = computed(() => Math.min(startIndex.value + itemsPerPage, totalStudents.value));
+const endIndex = computed(() => Math.min(startIndex.value + itemsPerPage, totalFilteredStudents.value));
 
 const paginatedStudents = computed(() => {
-  return studentStore.estudiantes.slice(startIndex.value, endIndex.value);
+  return filteredStudents.value.slice(startIndex.value, endIndex.value);
 });
 
-// Páginas visibles en la paginación (máximo 7 páginas)
+// Páginas visibles en la paginación
 const visiblePages = computed(() => {
   const pages = [];
-  const maxVisible = 10000;
+  const maxVisible = 5;
   let start = Math.max(1, currentPage.value - Math.floor(maxVisible / 2));
   let end = Math.min(totalPages.value, start + maxVisible - 1);
 
@@ -365,6 +463,18 @@ const visiblePages = computed(() => {
 
   return pages;
 });
+
+// Funciones de filtrado
+const clearRutFilter = () => {
+  rutFilter.value = '';
+  currentPage.value = 1;
+};
+
+const clearAllFilters = () => {
+  rutFilter.value = '';
+  statusFilter.value = '';
+  currentPage.value = 1;
+};
 
 // Métodos de navegación
 const nextPage = () => {
@@ -423,9 +533,7 @@ const closeEditModal = () => {
 
 const saveStudent = async () => {
   try {
-    // Aquí deberías llamar a tu función de actualización del store
     await studentStore.updateEstudiantes(editingStudent.value.user_id, editForm.value);
-    
     closeEditModal();
     alert('Estudiante actualizado correctamente');
   } catch (error) {

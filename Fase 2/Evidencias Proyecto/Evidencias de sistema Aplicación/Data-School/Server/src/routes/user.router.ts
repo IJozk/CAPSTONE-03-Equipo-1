@@ -5,7 +5,7 @@ const router = Router()
 const userController = new UserController()
 
 // Rutas de autenticación
-router.get('/estudiantes', userController.getEstudiantes.bind(userController))
+router.get('/', userController.getAllUsers.bind(userController));
 
 
 export default router;

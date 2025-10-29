@@ -2,9 +2,19 @@ import { Request, Response } from 'express'
 import { supabase, supabaseAdmin } from '@/config/supabase'
 
 export class UserController {
+    async getAllUsers(req: Request, res: Response) {
+    try {
+        const { data, error } = await supabaseAdmin!
+            .from('User')
+            .select('*');
 
-    // Obtener información del colegio en DB
-    public async getEstudiantes(req: Request, res: Response): Promise<Response> {
+        if (error) throw error;
+        return res.status(200).json(data);
+            } catch (error: any) {
+        return res.status(500).json({ message: 'Error al obtener usuarios', error: error.message });
+            }
+        }
+        public async getEstudiantes(req: Request, res: Response): Promise<Response> {
 
         try {
             const { data, error }  = await supabaseAdmin!
@@ -26,4 +36,5 @@ export class UserController {
         }
 
     }
+    
 }
