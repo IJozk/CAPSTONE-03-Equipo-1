@@ -313,6 +313,198 @@ export const useTeacherStore = defineStore('teacher', {
       } finally {
         this.loading = false;
       }
+    },
+
+    // ========== EVALUACIONES ACTIONS ==========
+    /**
+     * Cargar evaluaciones de una asignatura
+     */
+    async fetchEvaluations(subjectId: string) {
+      this.loading = true;
+      this.error = null;
+      try {
+        this.evaluations = await teacherToolsService.getSubjectEvaluations(subjectId);
+      } catch (error: any) {
+        this.error = error.message || 'Error al cargar evaluaciones';
+        console.error('Error fetching evaluations:', error);
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Crear nueva evaluación
+     */
+    async createEvaluation(data: any) {
+      this.loading = true;
+      this.error = null;
+      try {
+        const newEvaluation = await teacherToolsService.createEvaluation(data);
+        this.evaluations.push(newEvaluation);
+        return newEvaluation;
+      } catch (error: any) {
+        this.error = error.message || 'Error al crear evaluación';
+        console.error('Error creating evaluation:', error);
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Actualizar evaluación
+     */
+    async updateEvaluation(evaluationId: number, data: any) {
+      this.loading = true;
+      this.error = null;
+      try {
+        const updated = await teacherToolsService.updateEvaluation(evaluationId, data);
+        const index = this.evaluations.findIndex(e => e.evaluacion_id === evaluationId);
+        if (index !== -1) {
+          this.evaluations[index] = updated;
+        }
+        return updated;
+      } catch (error: any) {
+        this.error = error.message || 'Error al actualizar evaluación';
+        console.error('Error updating evaluation:', error);
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Eliminar evaluación
+     */
+    async deleteEvaluation(evaluationId: number) {
+      this.loading = true;
+      this.error = null;
+      try {
+        await teacherToolsService.deleteEvaluation(evaluationId);
+        this.evaluations = this.evaluations.filter(e => e.evaluacion_id !== evaluationId);
+      } catch (error: any) {
+        this.error = error.message || 'Error al eliminar evaluación';
+        console.error('Error deleting evaluation:', error);
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    // ========== NOTAS ACTIONS ==========
+    /**
+     * Cargar notas de una evaluación
+     */
+    async fetchGrades(evaluationId: number) {
+      this.loading = true;
+      this.error = null;
+      try {
+        this.grades = await teacherToolsService.getEvaluationGrades(evaluationId);
+      } catch (error: any) {
+        this.error = error.message || 'Error al cargar notas';
+        console.error('Error fetching grades:', error);
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Guardar nota
+     */
+    async saveGrade(data: any) {
+      try {
+        const savedGrade = await teacherToolsService.saveGrade(data);
+        const index = this.grades.findIndex(g => g.estudiante.estudiante_id === data.estudiante_id);
+        if (index !== -1) {
+          this.grades[index] = savedGrade;
+        } else {
+          this.grades.push(savedGrade);
+        }
+        return savedGrade;
+      } catch (error: any) {
+        this.error = error.message || 'Error al guardar nota';
+        console.error('Error saving grade:', error);
+        throw error;
+      }
+    },
+
+    // ========== OBSERVACIONES ACTIONS ==========
+    /**
+     * Cargar observaciones con filtros
+     */
+    async fetchObservations(filters?: any) {
+      this.loading = true;
+      this.error = null;
+      try {
+        this.observations = await teacherToolsService.getAllObservations(filters);
+      } catch (error: any) {
+        this.error = error.message || 'Error al cargar observaciones';
+        console.error('Error fetching observations:', error);
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Crear observación
+     */
+    async createObservation(data: any) {
+      this.loading = true;
+      this.error = null;
+      try {
+        const newObservation = await teacherToolsService.createObservation(data);
+        this.observations.unshift(newObservation);
+        return newObservation;
+      } catch (error: any) {
+        this.error = error.message || 'Error al crear observación';
+        console.error('Error creating observation:', error);
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Actualizar observación
+     */
+    async updateObservation(observationId: number, data: any) {
+      this.loading = true;
+      this.error = null;
+      try {
+        const updated = await teacherToolsService.updateObservation(observationId, data);
+        const index = this.observations.findIndex(o => o.id === observationId);
+        if (index !== -1) {
+          this.observations[index] = updated;
+        }
+        return updated;
+      } catch (error: any) {
+        this.error = error.message || 'Error al actualizar observación';
+        console.error('Error updating observation:', error);
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Eliminar observación
+     */
+    async deleteObservation(observationId: number) {
+      this.loading = true;
+      this.error = null;
+      try {
+        await teacherToolsService.deleteObservation(observationId);
+        this.observations = this.observations.filter(o => o.id !== observationId);
+      } catch (error: any) {
+        this.error = error.message || 'Error al eliminar observación';
+        console.error('Error deleting observation:', error);
+        throw error;
+      } finally {
+        this.loading = false;
+      }
     }
   }
 });
