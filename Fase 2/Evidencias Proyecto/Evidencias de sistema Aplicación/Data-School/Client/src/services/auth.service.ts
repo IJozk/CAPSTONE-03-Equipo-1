@@ -75,35 +75,46 @@ class AuthService {
       }
 
       if (userData.role === 'PROFESOR') {
-        // if (!userData.fecha_contratacion) {
-        //   throw new Error('Los campos titulo_profesional, especialidad y fecha_contratacion son obligatorios para profesores');
-        // }
+        if (!userData.telefono) {
+          throw new Error('El teléfono es obligatorio para profesores');
+        }
         const response = await apiClient.post<AuthResponse>('/auth/register/profesor', {
           email: userData.email,
           password: userData.password,
-          role: userData.role,
+          colegio_id: userData.colegio_id,
           nombre_completo: userData.nombre_completo,
           rut: userData.rut,
-          colegio_id: userData.colegio_id,
-          telefono: userData.telefono || null,
-          fecha_contratacion: userData.fecha_contratacion
+          telefono: userData.telefono,
+          direccion: userData.direccion || null,
+          comuna: userData.comuna || null
         });
         return response.data;
       }
       
       if (userData.role === 'ESTUDIANTE_APODERADO') {
-        if ( !userData.fecha_nacimiento) {
-          throw new Error('Los campos curso_id y fecha_nacimiento son obligatorios para estudiantes');
+        if (!userData.fecha_nacimiento) {
+          throw new Error('Los campos fecha_nacimiento, direccion y genero son obligatorios para estudiantes');
         }
+
+        if (!userData.direccion) {
+          throw new Error('La dirección es obligatoria para estudiantes');
+        }
+
+        if (!userData.genero) {
+          throw new Error('El género es obligatorio para estudiantes');
+        }
+
         const response = await apiClient.post<AuthResponse>('/auth/register/estudiante', {
           email: userData.email,
           password: userData.password,
-          role: userData.role,
+          colegio_id: userData.colegio_id,
           nombre_completo: userData.nombre_completo,
           rut: userData.rut,
-          colegio_id: userData.colegio_id,
           telefono: userData.telefono || null,
-          fecha_nacimiento: userData.fecha_nacimiento
+          fecha_nacimiento: userData.fecha_nacimiento,
+          direccion: userData.direccion,
+          genero: userData.genero,
+          comuna: userData.comuna || null
         });
         return response.data;
       }
@@ -120,17 +131,45 @@ class AuthService {
       });
       
       return response.data;
-    } catch (error: any) {
-      // Manejar errores específicos
-      if (error.response?.status === 400) {
-        const message = error.response.data.message || 'Error de validación';
-        throw new Error(message);
-      }
-      if (error.response?.status === 401 || error.response?.status === 403) {
-        throw new Error('No tienes permisos para registrar usuarios');
-      }
-      throw new Error(error.response?.data?.message || 'Error al registrar usuario');
+  } catch (error: any) {
+    console.error('Error en auth.service.register:', error);
+
+if (error.response?.data) {
+  const data = error.response.data;
+  let message =
+    data.message ||
+    data.error ||
+    'Ocurrió un error al registrar usuario';
+
+      const traducciones: Record<string, string> = {
+        'A user with this email address has already been registered':
+          'Ya existe un usuario registrado con este correo electrónico.',
+        'Invalid login credentials':
+          'Correo o contraseña incorrectos.',
+        'Email not confirmed':
+          'Debes confirmar tu correo antes de iniciar sesión.',
+        'Password should be at least 6 characters':
+          'La contraseña debe tener al menos 6 caracteres.',
+      };
+
+      // Buscar si el mensaje en inglés coincide con alguna traducción
+      const traduccion = Object.entries(traducciones).find(([ingles]) =>
+        message.includes(ingles)
+      );
+
+      if (traduccion) message = traduccion[1]; // reemplaza por el texto en español
+
+      const backendError = new Error(message);
+      (backendError as any).response = {
+        data,
+        status: error.response.status,
+      };
+
+      throw backendError;
     }
+
+    throw new Error(error.message || 'No se pudo conectar con el servidor');
+  }
   }
 
   /**
