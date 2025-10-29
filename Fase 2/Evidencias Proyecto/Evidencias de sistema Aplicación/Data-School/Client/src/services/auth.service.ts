@@ -75,9 +75,9 @@ class AuthService {
       }
 
       if (userData.role === 'PROFESOR') {
-        if (!userData.titulo_profesional || !userData.especialidad || !userData.fecha_contratacion) {
-          throw new Error('Los campos titulo_profesional, especialidad y fecha_contratacion son obligatorios para profesores');
-        }
+        // if (!userData.fecha_contratacion) {
+        //   throw new Error('Los campos titulo_profesional, especialidad y fecha_contratacion son obligatorios para profesores');
+        // }
         const response = await apiClient.post<AuthResponse>('/auth/register/profesor', {
           email: userData.email,
           password: userData.password,
@@ -86,8 +86,6 @@ class AuthService {
           rut: userData.rut,
           colegio_id: userData.colegio_id,
           telefono: userData.telefono || null,
-          titulo_profesional: userData.titulo_profesional,
-          especialidad: userData.especialidad,
           fecha_contratacion: userData.fecha_contratacion
         });
         return response.data;

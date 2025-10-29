@@ -160,23 +160,8 @@
     <!-- Campos dinámicos según rol -->
     <!-- Profesor -->
     <div v-if="formData.role === UserRole.PROFESOR" class="space-y-4">
-      <div>
-        <label for="titulo_profesional" class="block text-sm font-medium text-gray-700 mb-2">Título Profesional *</label>
-        <input id="titulo_profesional" v-model="formData.titulo_profesional" type="text" :class="inputClass('titulo_profesional')" @blur="validateField('titulo_profesional')" />
-        <p v-if="errors.titulo_profesional" class="mt-1 text-sm text-red-600">{{ errors.titulo_profesional }}</p>
-      </div>
 
-      <div>
-        <label for="especialidad" class="block text-sm font-medium text-gray-700 mb-2">Especialidad *</label>
-        <input id="especialidad" v-model="formData.especialidad" type="text" :class="inputClass('especialidad')" @blur="validateField('especialidad')" />
-        <p v-if="errors.especialidad" class="mt-1 text-sm text-red-600">{{ errors.especialidad }}</p>
-      </div>
-
-      <div>
-        <label for="fecha_contratacion" class="block text-sm font-medium text-gray-700 mb-2">Fecha de Contratación *</label>
-        <input id="fecha_contratacion" v-model="formData.fecha_contratacion" type="date" :class="inputClass('fecha_contratacion')" @blur="validateField('fecha_contratacion')" />
-        <p v-if="errors.fecha_contratacion" class="mt-1 text-sm text-red-600">{{ errors.fecha_contratacion }}</p>
-      </div>
+      <p> Place holder falta algo aca</p>
     </div>
 
     <!-- Estudiante / Apoderado -->
@@ -328,7 +313,7 @@ import {
 import type { RegisterDTO, RegisterValidationErrors, RoleOption } from '@/types/auth.types';
 import { UserRole } from '@/types/auth.types';
 import { useSchoolStore } from '@/store/school.store';
-import { before } from 'node:test';
+
 
 const authStore = useAuthStore();
 const schoolStore = useSchoolStore();
@@ -368,8 +353,6 @@ const formData = ref<RegisterDTO>({
   colegio_id: '',
   telefono: '',
   // campos opcionales
-  titulo_profesional: undefined,
-  especialidad: undefined,
   fecha_contratacion: undefined,
   fecha_nacimiento: undefined,
   direccion: undefined,
@@ -399,9 +382,9 @@ const isFormValid = computed(() => {
     formData.value.role &&
     formData.value.colegio_id &&
     // campos específicos según rol
-    (formData.value.role === UserRole.PROFESOR
-      ? !!(formData.value.titulo_profesional && formData.value.especialidad && formData.value.fecha_contratacion)
-      : true) &&
+    // (formData.value.role === UserRole.PROFESOR
+    //   ? !!(formData.value.fecha_contratacion)
+    //   : true) &&
     (formData.value.role === UserRole.ESTUDIANTE_APODERADO
       ? !!(formData.value.fecha_nacimiento && formData.value.direccion && formData.value.genero)
       : true) &&
@@ -514,22 +497,8 @@ const validateField = (field: keyof RegisterDTO) => {
       }
       break;
     }
-    case 'titulo_profesional': {
-      if (formData.value.role === UserRole.PROFESOR) {
-        if (!formData.value.titulo_profesional) errors.value.titulo_profesional = 'El título profesional es requerido';
-        else delete errors.value.titulo_profesional;
-      }
-      break;
-    }
-    case 'especialidad': {
-      if (formData.value.role === UserRole.PROFESOR) {
-        if (!formData.value.especialidad) errors.value.especialidad = 'La especialidad es requerida';
-        else delete errors.value.especialidad;
-      }
-      break;
-    }
     case 'fecha_contratacion': {
-      if (formData.value.role === UserRole.PROFESOR || formData.value.role === UserRole.ADMINISTRADOR || formData.value.role === UserRole.ADMINISTRATIVO) {
+      if ( formData.value.role === UserRole.ADMINISTRADOR || formData.value.role === UserRole.ADMINISTRATIVO) {
         if (!formData.value.fecha_contratacion) errors.value.fecha_contratacion = 'Fecha de contratación requerida';
         else delete errors.value.fecha_contratacion;
       }
@@ -591,8 +560,6 @@ const handleRutInput = (event: Event) => {
 // Cuando cambia el rol, limpiar errores y algunos campos no relevantes
 const onRoleChange = () => {
   // limpiar errores de campos específicos
-  delete errors.value.titulo_profesional;
-  delete errors.value.especialidad;
   delete errors.value.fecha_contratacion;
   delete errors.value.fecha_nacimiento;
   delete errors.value.direccion;
@@ -601,11 +568,9 @@ const onRoleChange = () => {
   delete errors.value.area_id;
 
   // resetear campos que no aplican
-  if (formData.value.role !== UserRole.PROFESOR) {
-    formData.value.titulo_profesional = undefined;
-    formData.value.especialidad = undefined;
-    formData.value.fecha_contratacion = undefined;
-  }
+  // if (formData.value.role !== UserRole.PROFESOR) {
+  //   formData.value.fecha_contratacion = undefined;
+  // }
 
   if (formData.value.role !== UserRole.ESTUDIANTE_APODERADO) {
     formData.value.fecha_nacimiento = undefined;
@@ -670,11 +635,7 @@ const handleSubmit = async () => {
   validateField('confirmPassword');
   validateField('colegio_id');
   // Validaciones específicas según rol
-  if (formData.value.role === UserRole.PROFESOR) {
-    validateField('titulo_profesional');
-    validateField('especialidad');
-    validateField('fecha_contratacion');
-  }
+
   if (formData.value.role === UserRole.ESTUDIANTE_APODERADO) {
     validateField('fecha_nacimiento');
     validateField('direccion');
@@ -712,8 +673,6 @@ const resetForm = () => {
     colegio_id: '',
     telefono: ''
   ,
-    titulo_profesional: undefined,
-    especialidad: undefined,
     fecha_contratacion: undefined,
     fecha_nacimiento: undefined,
     direccion: undefined,

@@ -196,7 +196,7 @@ export class AuthController {
         const client = supabaseAdmin || supabase;
         const result = await client
           .from('Profesor')
-          .select('nombre_completo, titulo_profesional, especialidad, rut, telefono, fecha_contratacion')
+          .select('nombre_completo, rut, telefono')
           .eq('user_id', userData.user_id)
           .single();
 
@@ -428,10 +428,7 @@ export class AuthController {
         colegio_id,
         nombre_completo,
         rut,
-        telefono,
-        titulo_profesional,
-        especialidad,
-        fecha_contratacion
+        telefono
       } = req.body as RegisterProfesorDto
 
       // Validar campos requeridos
@@ -493,9 +490,6 @@ export class AuthController {
           nombre_completo,
           rut,
           telefono,
-          titulo_profesional,
-          especialidad,
-          fecha_contratacion,
           estado_activo: true
         })
         .select()
