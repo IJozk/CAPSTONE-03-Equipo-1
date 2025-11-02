@@ -15,9 +15,26 @@ class AdministrativoService {
    */
   async getAll(params?: UserQueryParams): Promise<Administrativo[]> {
     try {
+      console.log('🔄 Solicitando administrativos con params:', params);
+      
       const response = await apiClient.get<Administrativo[]>(this.endpoint, { params });
+      
+      console.log('📦 Respuesta del servidor:', response);
+      console.log('📊 Data recibida:', response.data);
+      console.log('📏 Total administrativos:', response.data?.length);
+      
+      if (response.data && response.data.length > 0) {
+        console.log('🔍 Primer administrativo completo:', response.data[0]);
+        console.log('  - RUT:', response.data[0].rut);
+        console.log('  - Nombre:', response.data[0].nombre_completo);
+        console.log('  - Email:', response.data[0].User?.email_address);
+        console.log('  - Estado:', response.data[0].estado_activo);
+      }
+      
       return response.data;
     } catch (error: any) {
+      console.error('❌ Error en getAll:', error);
+      console.error('❌ Error response:', error.response);
       throw new Error(
         error.response?.data?.message || 'Error al obtener la lista de administrativos'
       );
@@ -57,9 +74,12 @@ class AdministrativoService {
    */
   async update(id: string, data: UpdateAdministrativoDTO): Promise<Administrativo> {
     try {
+      console.log('💾 Actualizando administrativo:', id, data);
       const response = await apiClient.put<Administrativo>(`${this.endpoint}/${id}`, data);
+      console.log('✅ Administrativo actualizado:', response.data);
       return response.data;
     } catch (error: any) {
+      console.error('❌ Error al actualizar:', error);
       throw new Error(
         error.response?.data?.message || 'Error al actualizar el administrativo'
       );

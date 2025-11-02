@@ -34,28 +34,69 @@
         </div>
 
         <div v-else>
-          <!-- Filtro por rol -->
-          <div class="mb-6">
-            <label for="role-filter" class="block text-sm font-medium text-gray-700 mb-2">
-              Filtrar por rol
-            </label>
-            <select
-              id="role-filter"
-              v-model="selectedRole"
-              @change="currentPage = 1"
-              class="block w-full md:w-64 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-            >
-              <option value="">Todos los roles</option>
-              <option v-for="role in availableRoles" :key="role" :value="role">
-                {{ role }}
-              </option>
-            </select>
+          <!-- Filtros -->
+          <div class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Filtro por rol -->
+            <div>
+              <label for="role-filter" class="block text-sm font-medium text-gray-700 mb-2">
+                Filtrar por rol
+              </label>
+              <select
+                id="role-filter"
+                v-model="selectedRole"
+                @change="currentPage = 1"
+                class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+              >
+                <option value="">Todos los roles</option>
+                <option v-for="role in availableRoles" :key="role" :value="role">
+                  {{ role }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Filtro por búsqueda -->
+            <div>
+              <label for="search-filter" class="block text-sm font-medium text-gray-700 mb-2">
+                Buscar por nombre, email o RUT
+              </label>
+              <div class="relative">
+                <input
+                  id="search-filter"
+                  type="text"
+                  v-model="searchQuery"
+                  @input="currentPage = 1"
+                  placeholder="Buscar..."
+                  class="block w-full px-3 py-2 pl-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                />
+                <svg class="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <button
+                  v-if="searchQuery"
+                  @click="clearSearch"
+                  class="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                >
+                  <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
           </div>
           
           <!-- Información de paginación -->
-          <div class="mb-4 text-sm text-gray-600">
-            Mostrando {{ startIndex + 1 }} - {{ endIndex }} de {{ totalFilteredUsers }} usuarios
-            <span v-if="selectedRole" class="font-medium">(filtrado por: {{ selectedRole }})</span>
+          <div class="mb-4 flex items-center justify-between">
+            <div class="text-sm text-gray-600">
+              Mostrando {{ startIndex + 1 }} - {{ endIndex }} de {{ totalFilteredUsers }} usuarios
+              <span v-if="selectedRole || searchQuery" class="font-medium text-primary-600">(filtrado)</span>
+            </div>
+            <button
+              v-if="selectedRole || searchQuery"
+              @click="clearAllFilters"
+              class="text-sm text-primary-600 hover:text-primary-700 font-medium"
+            >
+              Limpiar filtros
+            </button>
           </div>
 
           <!-- Tabla de usuarios -->
@@ -63,18 +104,41 @@
             <table class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gray-50">
                 <tr>
+                  <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">RUT</th>
+                  <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre Completo</th>
                   <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                  <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha de Registro</th>
                   <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
+                  <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha de Registro</th>
+                  <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
+                <tr v-if="paginatedUsers.length === 0">
+                  <td colspan="6" class="px-6 py-8 text-center text-sm text-gray-500">
+                    No se encontraron usuarios con los filtros aplicados
+                  </td>
+                </tr>
                 <tr v-for="user in paginatedUsers" :key="user.user_id">
-                  <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-900">{{ user.email_address }}</td>
-                  <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-900">{{ formatDate(user.created_at) }}</td>
+                  <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-900">
+                    <span class="font-medium">{{ getUserRut(user) }}</span>
+                  </td>
+                  <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-900">
+                    {{ getUserName(user) }}
+                  </td>
+                  <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-900">
+                    {{ user.email_address }}
+                  </td>
                   <td class="px-6 py-4 text-center whitespace-nowrap">
                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" :class="getRoleBadgeClass(user.role)">
                       {{ user.role }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-900">
+                    {{ formatDate(user.created_at) }}
+                  </td>
+                  <td class="px-6 py-4 text-center whitespace-nowrap">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" :class="user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
+                      {{ user.is_active ? 'Activo' : 'Inactivo' }}
                     </span>
                   </td>
                 </tr>
@@ -83,7 +147,7 @@
           </div>
 
           <!-- Controles de paginación -->
-          <div class="mt-6 flex items-center justify-between border-t border-gray-200 pt-4">
+          <div v-if="totalPages > 1" class="mt-6 flex items-center justify-between border-t border-gray-200 pt-4">
             <div class="flex-1 flex justify-between sm:hidden">
               <button
                 @click="previousPage"
@@ -170,71 +234,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Modal de Edición -->
-      <div v-if="isEditModalOpen" class="fixed z-10 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-          <!-- Overlay -->
-          <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" @click="closeEditModal"></div>
-
-          <!-- Center modal -->
-          <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-          <!-- Modal panel -->
-          <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-              <div class="sm:flex sm:items-start">
-                <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
-                  <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4" id="modal-title">
-                    Editar Usuario
-                  </h3>
-                  
-                  <form @submit.prevent="saveUser" class="space-y-4">
-                    <!-- Email -->
-                    <div>
-                      <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-                      <input
-                        type="email"
-                        id="email"
-                        v-model="editForm.email"
-                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                        required
-                      />
-                    </div>
-
-                    <!-- Estado -->
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
-                      <div class="flex items-center space-x-4">
-                        <label class="inline-flex items-center cursor-pointer">
-                          <input
-                            type="radio"
-                            name="estado"
-                            :checked="editForm.estado_activo === true"
-                            @change="editForm.estado_activo = true"
-                            class="form-radio h-4 w-4 text-primary-600 focus:ring-primary-500"
-                          />
-                          <span class="ml-2 text-sm text-gray-700">Activo</span>
-                        </label>
-                        <label class="inline-flex items-center cursor-pointer">
-                          <input
-                            type="radio"
-                            name="estado"
-                            :checked="editForm.estado_activo === false"
-                            @change="editForm.estado_activo = false"
-                            class="form-radio h-4 w-4 text-primary-600 focus:ring-primary-500"
-                          />
-                          <span class="ml-2 text-sm text-gray-700">Inactivo</span>
-                        </label>
-                      </div>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   </AdminLayout>
 </template>
@@ -248,17 +247,7 @@ const userStore = useUserStore();
 const currentPage = ref(1);
 const itemsPerPage = 20;
 const selectedRole = ref('');
-
-// Estado del modal de edición
-const isEditModalOpen = ref(false);
-const editingUser = ref<any>(null);
-const editForm = ref<{
-  email: string;
-  estado_activo: boolean;
-}>({
-  email: '',
-  estado_activo: true
-});
+const searchQuery = ref('');
 
 // Obtener roles únicos disponibles
 const availableRoles = computed(() => {
@@ -266,12 +255,37 @@ const availableRoles = computed(() => {
   return Array.from(roles).sort();
 });
 
-// Usuarios filtrados por rol
+// Función para normalizar texto (quitar tildes y convertir a minúsculas)
+const normalizeText = (text: string) => {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[.-]/g, '');
+};
+
+// Usuarios filtrados por rol y búsqueda
 const filteredUsers = computed(() => {
-  if (!selectedRole.value) {
-    return userStore.users;
+  let users = userStore.users;
+
+  // Filtrar por rol
+  if (selectedRole.value) {
+    users = users.filter(user => user.role === selectedRole.value);
   }
-  return userStore.users.filter(user => user.role === selectedRole.value);
+
+  // Filtrar por búsqueda
+  if (searchQuery.value) {
+    const query = normalizeText(searchQuery.value);
+    users = users.filter(user => {
+      const name = normalizeText(getUserName(user));
+      const email = normalizeText(user.email_address || '');
+      const rut = normalizeText(getUserRut(user));
+      
+      return name.includes(query) || email.includes(query) || rut.includes(query);
+    });
+  }
+
+  return users;
 });
 
 // Computed properties para la paginación
@@ -305,6 +319,52 @@ const visiblePages = computed(() => {
   return pages;
 });
 
+const getUserName = (user: any): string => {
+  // Primero intentar obtener el nombre_completo directamente (ya viene mapeado del backend)
+  if (user.nombre_completo && user.nombre_completo !== '-') {
+    return user.nombre_completo;
+  }
+  
+  // Fallback al método anterior por si acaso
+  if (user.role === 'ESTUDIANTE_APODERADO' && user.Estudiante) {
+    return user.Estudiante.nombre_completo || '-';
+  } else if (user.role === 'PROFESOR' && user.Profesor) {
+    return user.Profesor.nombre_completo || '-';
+  } else if (user.role === 'ADMINISTRATIVO' && user.Administrativo) {
+    return user.Administrativo.nombre_completo || '-';
+  }
+  return '-';
+};
+
+const getUserRut = (user: any): string => {
+  // Primero intentar obtener el rut directamente (ya viene mapeado del backend)
+  if (user.rut && user.rut !== '-') {
+    return user.rut;
+  }
+  
+  // Fallback al método anterior por si acaso
+  if (user.role === 'ESTUDIANTE_APODERADO' && user.Estudiante) {
+    return user.Estudiante.rut || '-';
+  } else if (user.role === 'PROFESOR' && user.Profesor) {
+    return user.Profesor.rut || '-';
+  } else if (user.role === 'ADMINISTRATIVO' && user.Administrativo) {
+    return user.Administrativo.rut || '-';
+  }
+  return '-';
+};
+
+// Funciones de filtrado
+const clearSearch = () => {
+  searchQuery.value = '';
+  currentPage.value = 1;
+};
+
+const clearAllFilters = () => {
+  selectedRole.value = '';
+  searchQuery.value = '';
+  currentPage.value = 1;
+};
+
 // Métodos de navegación
 const nextPage = () => {
   if (currentPage.value < totalPages.value) {
@@ -336,44 +396,12 @@ const formatDate = (dateString: string) => {
 // Obtener clase CSS para el badge del rol
 const getRoleBadgeClass = (role: string) => {
   const roleClasses: Record<string, string> = {
-    'admin': 'bg-purple-100 text-purple-800',
-    'user': 'bg-blue-100 text-blue-800',
-    'moderator': 'bg-green-100 text-green-800',
-    'guest': 'bg-gray-100 text-gray-800'
+    'ADMINISTRADOR': 'bg-purple-100 text-purple-800',
+    'ESTUDIANTE_APODERADO': 'bg-blue-100 text-blue-800',
+    'PROFESOR': 'bg-green-100 text-green-800',
+    'ADMINISTRATIVO': 'bg-orange-100 text-orange-800'
   };
-  return roleClasses[role?.toLowerCase()] || 'bg-gray-100 text-gray-800';
-};
-
-// Funciones del modal
-const openEditModal = (user: any) => {
-  editingUser.value = user;
-  editForm.value = {
-    email: user.email_address,
-    estado_activo: user.is_active
-  };
-  isEditModalOpen.value = true;
-};
-
-const closeEditModal = () => {
-  isEditModalOpen.value = false;
-  editingUser.value = null;
-  editForm.value = {
-    email: '',
-    estado_activo: true
-  };
-};
-
-const saveUser = async () => {
-  try {
-    await userStore.updateUser(editingUser.value.user_id, {
-      email_address: editForm.value.email,
-      is_active: editForm.value.estado_activo
-    });
-    closeEditModal();
-    await userStore.fetchUsers();
-  } catch (error) {
-    console.error('Error al actualizar usuario:', error);
-  }
+  return roleClasses[role] || 'bg-gray-100 text-gray-800';
 };
 
 onMounted(async () => {
