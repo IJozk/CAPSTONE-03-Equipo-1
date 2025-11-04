@@ -3,8 +3,8 @@
     <div class="space-y-6">
       <div class="flex justify-between items-center">
         <div>
-          <h1 class="text-3xl font-bold text-gray-900">Gestión de Estudiantes</h1>
-          <p class="text-gray-600 mt-1">Administra los estudiantes del colegio</p>
+          <h1 class="text-3xl font-bold text-gray-900">Gestión de Administrativos</h1>
+          <p class="text-gray-600 mt-1">Administra todos los administrativos del sistema</p>
         </div>
         <router-link
           to="/register"
@@ -13,25 +13,25 @@
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
-          Nuevo Estudiante
+          Nuevo Administrativo
         </router-link>
       </div>
 
       <div class="bg-white rounded-lg shadow p-8">
-        <div v-if="studentStore.loading" class="text-center py-8">
-          <div class="text-gray-600">Cargando estudiantes...</div>
+        <div v-if="adminStore.loading" class="text-center py-8">
+          <div class="text-gray-600">Cargando administrativos...</div>
         </div>
         
-        <div v-else-if="studentStore.error" class="text-center py-8">
-          <div class="text-red-600">Error: {{ studentStore.error }}</div>
+        <div v-else-if="adminStore.error" class="text-center py-8">
+          <div class="text-red-600">Error: {{ adminStore.error }}</div>
         </div>
 
-        <div v-else-if="studentStore.estudiantes.length === 0" class="text-center py-8">
+        <div v-else-if="adminStore.administrativos.length === 0" class="text-center py-8">
           <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
-          <h2 class="text-2xl font-bold text-gray-900 mb-2">No hay estudiantes</h2>
-          <p class="text-gray-600">Aún no hay estudiantes registrados en el sistema.</p>
+          <h2 class="text-2xl font-bold text-gray-900 mb-2">No hay administrativos</h2>
+          <p class="text-gray-600">Aún no hay administrativos registrados en el sistema.</p>
         </div>
 
         <div v-else>
@@ -87,7 +87,7 @@
           <!-- Información de paginación -->
           <div class="mb-4 flex items-center justify-between">
             <div class="text-sm text-gray-600">
-              Mostrando {{ startIndex + 1 }} - {{ endIndex }} de {{ totalFilteredStudents }} estudiantes
+              Mostrando {{ startIndex + 1 }} - {{ endIndex }} de {{ totalFilteredAdmins }} administrativos
               <span v-if="rutFilter || statusFilter" class="font-medium text-primary-600">(filtrado)</span>
             </div>
             <button
@@ -99,7 +99,7 @@
             </button>
           </div>
 
-          <!-- Tabla de estudiantes -->
+          <!-- Tabla de administrativos -->
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gray-50">
@@ -107,39 +107,37 @@
                   <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">RUT</th>
                   <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre Completo</th>
                   <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                  <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha de Nacimiento</th>
+                  <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Cargo</th>
+                  <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Área</th>
                   <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha de Registro</th>
-                  <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Genero</th>
-                  <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Dirección</th>
                   <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Telefono</th>
                   <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                   <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
-                <tr v-if="paginatedStudents.length === 0">
-                  <td colspan="10" class="px-6 py-8 text-center text-sm text-gray-500">
-                    No se encontraron estudiantes con los filtros aplicados
+                <tr v-if="paginatedAdmins.length === 0">
+                  <td colspan="9" class="px-6 py-8 text-center text-sm text-gray-500">
+                    No se encontraron administrativos con los filtros aplicados
                   </td>
                 </tr>
-                <tr v-for="student in paginatedStudents" :key="student.user_id">
+                <tr v-for="admin in paginatedAdmins" :key="admin.user_id">
                   <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-900">
-                    <span class="font-medium">{{ student.rut }}</span>
+                    <span class="font-medium">{{ admin.rut }}</span>
                   </td>
-                  <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-900">{{ student.nombre_completo }}</td>
-                  <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-900">{{ student.email }}</td>
-                  <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-900">{{ student.fecha_nacimiento }}</td>
-                  <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-900">{{ formatDate(student.created_at) }}</td>
-                  <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-900">{{ student.genero }}</td>
-                  <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-900">{{ student.direccion }}</td>
-                  <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-900">{{ student.telefono }}</td>
+                  <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-900">{{ admin.nombre_completo }}</td>
+                  <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-900">{{ admin.User?.email_address }}</td>
+                  <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-900">{{ admin.cargo }}</td>
+                  <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-900">{{ admin.Area?.nombre_area }}</td>
+                  <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-900">{{ formatDate(admin.created_at) }}</td>
+                  <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-900">{{ admin.telefono }}</td>
                   <td class="px-6 py-4 text-center whitespace-nowrap text-sm">
-                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" :class="student.estado_activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
-                      {{ student.estado_activo ? 'Activo' : 'Inactivo' }}
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" :class="admin.estado_activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
+                      {{ admin.estado_activo ? 'Activo' : 'Inactivo' }}
                     </span>
                   </td>
                   <td class="px-6 py-4 text-center whitespace-nowrap text-sm font-medium">
-                    <button @click="openEditModal(student)" class="text-blue-600 hover:text-blue-900">Editar</button>
+                    <button @click="openEditModal(admin)" class="text-blue-600 hover:text-blue-900">Editar</button>
                   </td>
                 </tr>
               </tbody>
@@ -250,11 +248,10 @@
               <div class="sm:flex sm:items-start">
                 <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
                   <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4" id="modal-title">
-                    Editar Estudiante
+                    Editar Administrativo
                   </h3>
                   
-                  <form @submit.prevent="saveStudent" class="space-y-4">
-
+                  <form @submit.prevent="saveAdmin" class="space-y-4">
                     <!-- Nombre -->
                     <div>
                       <label for="nombre" class="block text-sm font-medium text-gray-700">Nombre</label>
@@ -267,42 +264,26 @@
                       />
                     </div>
 
-                    <!-- Email -->
+                    <!-- RUT -->
                     <div>
-                      <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                      <label for="rut" class="block text-sm font-medium text-gray-700">RUT</label>
                       <input
-                        type="email"
-                        id="email"
-                        v-model="editForm.email"
+                        type="text"
+                        id="rut"
+                        v-model="editForm.rut"
                         class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
                         required
                       />
                     </div>
 
-                    <!-- Género -->
+                    <!-- Cargo -->
                     <div>
-                      <label for="genero" class="block text-sm font-medium text-gray-700">Género</label>
-                      <select
-                        id="genero"
-                        v-model="editForm.genero"
-                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                        required
-                      >
-                        <option value="M">Masculino</option>
-                        <option value="F">Femenino</option>
-                        <option value="O">Otro</option>
-                      </select>
-                    </div>
-
-                    <!-- Dirección -->
-                    <div>
-                      <label for="direccion" class="block text-sm font-medium text-gray-700">Dirección</label>
+                      <label for="cargo" class="block text-sm font-medium text-gray-700">Cargo</label>
                       <input
                         type="text"
-                        id="direccion"
-                        v-model="editForm.direccion"
+                        id="cargo"
+                        v-model="editForm.cargo"
                         class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                        required
                       />
                     </div>
 
@@ -314,7 +295,6 @@
                         id="telefono"
                         v-model="editForm.telefono"
                         class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                        required
                       />
                     </div>
 
@@ -353,7 +333,7 @@
             <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
               <button
                 type="button"
-                @click="saveStudent"
+                @click="saveAdmin"
                 class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm"
               >
                 Guardar Cambios
@@ -375,10 +355,10 @@
 
 <script setup lang="ts">
 import AdminLayout from '@/layouts/AdminLayout.vue';
-import { useStudentStore } from '@/store/student.store';
+import { useAdministrativoStore } from '@/store/administrativo.store';
 import { onMounted, computed, ref } from 'vue';
 
-const studentStore = useStudentStore();
+const adminStore = useAdministrativoStore();
 const currentPage = ref(1);
 const itemsPerPage = 20;
 const rutFilter = ref('');
@@ -386,19 +366,17 @@ const statusFilter = ref('');
 
 // Estado del modal de edición
 const isEditModalOpen = ref(false);
-const editingStudent = ref<any>(null);
+const editingAdmin = ref<any>(null);
 const editForm = ref<{
   nombre_completo: string;
-  email: string;
-  genero: 'M' | 'F' | 'OTRO';
-  direccion: string;
+  rut: string;
+  cargo: string;
   telefono: string;
   estado_activo: boolean;
 }>({
   nombre_completo: '',
-  email: '',
-  genero: 'M',
-  direccion: '',
+  rut: '',
+  cargo: '',
   telefono: '',
   estado_activo: true
 });
@@ -408,15 +386,15 @@ const normalizeRut = (rut: string) => {
   return rut.replace(/[.-]/g, '').toLowerCase();
 };
 
-// Estudiantes filtrados
-const filteredStudents = computed(() => {
-  let students = studentStore.estudiantes;
+// Administrativos filtrados
+const filteredAdmins = computed(() => {
+  let admins = adminStore.administrativos;
 
   // Filtrar por RUT
   if (rutFilter.value) {
     const normalizedFilter = normalizeRut(rutFilter.value);
-    students = students.filter(student => {
-      const normalizedRut = normalizeRut(student.rut || '');
+    admins = admins.filter(admin => {
+      const normalizedRut = normalizeRut(admin.rut || '');
       return normalizedRut.includes(normalizedFilter);
     });
   }
@@ -424,26 +402,26 @@ const filteredStudents = computed(() => {
   // Filtrar por estado
   if (statusFilter.value !== '') {
     const isActive = statusFilter.value === 'true';
-    students = students.filter(student => {
-      return (student.estado_activo === isActive || 
-              student.estado_activo === Boolean(isActive));
+    admins = admins.filter(admin => {
+      return (admin.estado_activo === isActive || 
+              admin.estado_activo === Boolean(isActive));
     });
   }
 
-  return students;
+  return admins;
 });
 
 // Computed properties para la paginación
-const totalFilteredStudents = computed(() => filteredStudents.value.length);
+const totalFilteredAdmins = computed(() => filteredAdmins.value.length);
 
-const totalPages = computed(() => Math.ceil(totalFilteredStudents.value / itemsPerPage));
+const totalPages = computed(() => Math.ceil(totalFilteredAdmins.value / itemsPerPage));
 
 const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage);
 
-const endIndex = computed(() => Math.min(startIndex.value + itemsPerPage, totalFilteredStudents.value));
+const endIndex = computed(() => Math.min(startIndex.value + itemsPerPage, totalFilteredAdmins.value));
 
-const paginatedStudents = computed(() => {
-  return filteredStudents.value.slice(startIndex.value, endIndex.value);
+const paginatedAdmins = computed(() => {
+  return filteredAdmins.value.slice(startIndex.value, endIndex.value);
 });
 
 // Páginas visibles en la paginación
@@ -505,48 +483,46 @@ const formatDate = (dateString: string) => {
 };
 
 // Funciones del modal de edición
-const openEditModal = (student: any) => {
-  editingStudent.value = student;
+const openEditModal = (admin: any) => {
+  editingAdmin.value = admin;
   editForm.value = {
-    nombre_completo: student.nombre_completo,
-    email: student.email,
-    genero: student.genero as 'M' | 'F' | 'OTRO',
-    direccion: student.direccion,
-    telefono: student.telefono,
-    estado_activo: student.estado_activo === true || student.estado_activo === 'true'
+    nombre_completo: admin.nombre_completo,
+    rut: admin.rut,
+    cargo: admin.cargo || '',
+    telefono: admin.telefono || '',
+    estado_activo: admin.estado_activo === true || admin.estado_activo === 'true'
   };
   isEditModalOpen.value = true;
 };
 
 const closeEditModal = () => {
   isEditModalOpen.value = false;
-  editingStudent.value = null;
+  editingAdmin.value = null;
   editForm.value = {
     nombre_completo: '',
-    email: '',
-    genero: 'M',
-    direccion: '',
+    rut: '',
+    cargo: '',
     telefono: '',
     estado_activo: true
   };
 };
 
-const saveStudent = async () => {
+const saveAdmin = async () => {
   try {
-    await studentStore.updateEstudiantes(editingStudent.value.user_id, editForm.value);
+    await adminStore.updateAdministrativo(editingAdmin.value.administrativo_id, editForm.value);
     closeEditModal();
-    alert('Estudiante actualizado correctamente');
+    alert('Administrativo actualizado correctamente');
   } catch (error) {
-    console.error('Error al actualizar estudiante:', error);
-    alert('Error al actualizar el estudiante');
+    console.error('Error al actualizar administrativo:', error);
+    alert('Error al actualizar el administrativo');
   }
 };
 
 onMounted(async () => {
   try {
-    await studentStore.fetchEstudiantes();
+    await adminStore.fetchAdministrativos();
   } catch (error) {
-    console.error('Error fetching students:', error);
+    console.error('Error fetching administrativos:', error);
   }
 });
 </script>

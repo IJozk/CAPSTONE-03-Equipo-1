@@ -65,29 +65,34 @@ export class EstudianteController {
         }
     }
 
-    // Obtener todos los estudiantes activos
-    public async getAll(req: Request, res: Response): Promise<Response> {
+        // Obtener todos los estudiantes activos o todos
+        public async getAll(req: Request, res: Response): Promise<Response> {
         try {
-            const { incluir_inactivos } = req.query
+            const { incluir_inactivos } = req.query;
 
             let query = supabaseAdmin!
-                .from('Estudiante')
-                .select('*, User(email_address, is_active)')
+            .from('Estudiante')
+            .select('*, User(email_address, is_active)');
 
             if (incluir_inactivos !== 'true') {
-                query = query.eq('estado_activo', true)
+            query = query.eq('estado_activo', true);
             }
 
-            const { data, error } = await query
+            const { data, error } = await query;
 
-            if (error) throw error
+            if (error) throw error;
 
-            return res.status(200).json(data || [])
+            // 🔹 Reemplazar teléfonos vacíos por 'N/A'
+            const estudiantesFormateados = (data || []).map(e => ({
+            ...e,
+            telefono: e.telefono && e.telefono.trim() !== '' ? e.telefono : 'N/A'
+            }));
 
+            return res.status(200).json(estudiantesFormateados);
         } catch (error: any) {
-            return res.status(500).json({ message: error.message })
+            return res.status(500).json({ message: error.message });
         }
-    }
+        }
 
     // Obtener estudiante por ID
     public async getById(req: Request, res: Response): Promise<Response> {
@@ -135,7 +140,8 @@ export class EstudianteController {
                 genero,
                 direccion,
                 telefono,
-                email
+                email,
+                estado_activo
             } = req.body
 
             // Solo actualizar campos de la tabla Estudiante
@@ -147,6 +153,7 @@ export class EstudianteController {
             if (direccion !== undefined) updateData.direccion = direccion
             if (telefono !== undefined) updateData.telefono = telefono
             if (email !== undefined) updateData.email = email
+            if (estado_activo !== undefined) updateData.estado_activo = estado_activo
             updateData.updated_at = new Date().toISOString()
 
             const { data, error } = await supabaseAdmin!
