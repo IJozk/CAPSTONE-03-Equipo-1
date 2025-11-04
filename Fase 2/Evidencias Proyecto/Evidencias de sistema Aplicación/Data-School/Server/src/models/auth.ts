@@ -69,9 +69,6 @@ export interface RegisterProfesorDto {
   nombre_completo: string
   rut?: string
   telefono?: string
-  titulo_profesional?: string
-  especialidad?: string
-  fecha_contratacion?: string
 }
 
 // DTOs para registro de Estudiante

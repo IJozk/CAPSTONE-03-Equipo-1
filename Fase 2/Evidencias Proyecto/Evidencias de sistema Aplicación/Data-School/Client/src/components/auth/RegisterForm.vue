@@ -160,42 +160,119 @@
     <!-- Campos dinámicos según rol -->
     <!-- Profesor -->
     <div v-if="formData.role === UserRole.PROFESOR" class="space-y-4">
+      <!-- Teléfono (REQUERIDO para profesor) -->
       <div>
-        <label for="titulo_profesional" class="block text-sm font-medium text-gray-700 mb-2">Título Profesional *</label>
-        <input id="titulo_profesional" v-model="formData.titulo_profesional" type="text" :class="inputClass('titulo_profesional')" @blur="validateField('titulo_profesional')" />
-        <p v-if="errors.titulo_profesional" class="mt-1 text-sm text-red-600">{{ errors.titulo_profesional }}</p>
+        <label for="telefono_profesor" class="block text-sm font-medium text-gray-700 mb-2">
+          Teléfono *
+        </label>
+        <input
+          id="telefono_profesor"
+          v-model="formData.telefono"
+          type="tel"
+          :class="inputClass('telefono')"
+          placeholder="+56912345678"
+          @blur="validateField('telefono')"
+          @input="clearFieldError('telefono')"
+        />
+        <p class="mt-1 text-xs text-gray-500">Formato: +56912345678</p>
+        <p v-if="errors.telefono" class="mt-1 text-sm text-red-600">{{ errors.telefono }}</p>
       </div>
 
-      <div>
-        <label for="especialidad" class="block text-sm font-medium text-gray-700 mb-2">Especialidad *</label>
-        <input id="especialidad" v-model="formData.especialidad" type="text" :class="inputClass('especialidad')" @blur="validateField('especialidad')" />
-        <p v-if="errors.especialidad" class="mt-1 text-sm text-red-600">{{ errors.especialidad }}</p>
+      <!-- Separador visual -->
+      <div class="border-t border-gray-200 pt-4">
+        <p class="text-sm font-medium text-gray-600 mb-3">Información Adicional (Opcional)</p>
       </div>
 
+      <!-- Dirección (OPCIONAL) -->
       <div>
-        <label for="fecha_contratacion" class="block text-sm font-medium text-gray-700 mb-2">Fecha de Contratación *</label>
-        <input id="fecha_contratacion" v-model="formData.fecha_contratacion" type="date" :class="inputClass('fecha_contratacion')" @blur="validateField('fecha_contratacion')" />
-        <p v-if="errors.fecha_contratacion" class="mt-1 text-sm text-red-600">{{ errors.fecha_contratacion }}</p>
+        <label for="direccion_profesor" class="block text-sm font-medium text-gray-700 mb-2">
+          Dirección
+        </label>
+        <input
+          id="direccion_profesor"
+          v-model="formData.direccion"
+          type="text"
+          :class="inputClass('direccion')"
+          placeholder="Calle, número, depto"
+          @input="clearFieldError('direccion')"
+        />
+      </div>
+
+      <!-- Comuna (OPCIONAL) -->
+      <div>
+        <label for="comuna_profesor" class="block text-sm font-medium text-gray-700 mb-2">
+          Comuna
+        </label>
+        <input
+          id="comuna_profesor"
+          v-model="formData.comuna"
+          type="text"
+          :class="inputClass('comuna')"
+          placeholder="Ej: Santiago, Concepción, Coronel"
+          @input="clearFieldError('comuna')"
+        />
       </div>
     </div>
 
     <!-- Estudiante / Apoderado -->
     <div v-if="formData.role === UserRole.ESTUDIANTE_APODERADO" class="space-y-4">
       <div>
-        <label for="fecha_nacimiento" class="block text-sm font-medium text-gray-700 mb-2">Fecha de Nacimiento *</label>
-        <input id="fecha_nacimiento" v-model="formData.fecha_nacimiento" type="date" :class="inputClass('fecha_nacimiento')" @blur="validateField('fecha_nacimiento')" />
+        <label for="fecha_nacimiento" class="block text-sm font-medium text-gray-700 mb-2">
+          Fecha de Nacimiento *
+        </label>
+        <input
+          id="fecha_nacimiento"
+          v-model="formData.fecha_nacimiento"
+          type="date"
+          :class="inputClass('fecha_nacimiento')"
+          @blur="validateField('fecha_nacimiento')"
+          @input="clearFieldError('fecha_nacimiento')"
+        />
         <p v-if="errors.fecha_nacimiento" class="mt-1 text-sm text-red-600">{{ errors.fecha_nacimiento }}</p>
       </div>
 
       <div>
-        <label for="direccion" class="block text-sm font-medium text-gray-700 mb-2">Dirección *</label>
-        <input id="direccion" v-model="formData.direccion" type="text" :class="inputClass('direccion')" @blur="validateField('direccion')" />
+        <label for="direccion_estudiante" class="block text-sm font-medium text-gray-700 mb-2">
+          Dirección *
+        </label>
+        <input
+          id="direccion_estudiante"
+          v-model="formData.direccion"
+          type="text"
+          :class="inputClass('direccion')"
+          placeholder="Calle, número, depto"
+          @blur="validateField('direccion')"
+          @input="clearFieldError('direccion')"
+        />
         <p v-if="errors.direccion" class="mt-1 text-sm text-red-600">{{ errors.direccion }}</p>
       </div>
 
+      <!-- Comuna (OPCIONAL) -->
       <div>
-        <label for="genero" class="block text-sm font-medium text-gray-700 mb-2">Género *</label>
-        <select id="genero" v-model="formData.genero" :class="inputClass('genero')" @blur="validateField('genero')">
+        <label for="comuna_estudiante" class="block text-sm font-medium text-gray-700 mb-2">
+          Comuna
+        </label>
+        <input
+          id="comuna_estudiante"
+          v-model="formData.comuna"
+          type="text"
+          :class="inputClass('comuna')"
+          placeholder="Ej: Santiago, Concepción, Coronel"
+          @input="clearFieldError('comuna')"
+        />
+      </div>
+
+      <div>
+        <label for="genero" class="block text-sm font-medium text-gray-700 mb-2">
+          Género *
+        </label>
+        <select
+          id="genero"
+          v-model="formData.genero"
+          :class="inputClass('genero')"
+          @blur="validateField('genero')"
+          @change="clearFieldError('genero')"
+        >
           <option value="">Seleccionar</option>
           <option value="M">Masculino</option>
           <option value="F">Femenino</option>
@@ -224,23 +301,6 @@
         <input id="fecha_contratacion_admin" v-model="formData.fecha_contratacion" type="date" :class="inputClass('fecha_contratacion')" @blur="validateField('fecha_contratacion')" />
         <p v-if="errors.fecha_contratacion" class="mt-1 text-sm text-red-600">{{ errors.fecha_contratacion }}</p>
       </div>
-    </div>
-
-    <!-- Teléfono (opcional) -->
-    <div>
-      <label for="telefono" class="block text-sm font-medium text-gray-700 mb-2">
-        Teléfono (opcional)
-      </label>
-      <input
-        id="telefono"
-        v-model="formData.telefono"
-        type="tel"
-        :class="inputClass('telefono')"
-        placeholder="+56912345678"
-        @blur="validateField('telefono')"
-        @input="clearFieldError('telefono')"
-      />
-      <p v-if="errors.telefono" class="mt-1 text-sm text-red-600">{{ errors.telefono }}</p>
     </div>
 
     <!-- Error general -->
@@ -329,7 +389,7 @@ import {
 import type { RegisterDTO, RegisterValidationErrors, RoleOption } from '@/types/auth.types';
 import { UserRole } from '@/types/auth.types';
 import { useSchoolStore } from '@/store/school.store';
-import { before } from 'node:test';
+
 
 const authStore = useAuthStore();
 const schoolStore = useSchoolStore();
@@ -370,14 +430,13 @@ const formData = ref<RegisterDTO>({
   telefono: '',
   
   // campos opcionales
-  titulo_profesional: undefined,
-  especialidad: undefined,
   fecha_contratacion: undefined,
   fecha_nacimiento: undefined,
   direccion: '',
   genero: '',
   cargo: undefined,
-  area_id: undefined
+  area_id: undefined,
+  comuna: undefined
 });
 
 // UI state
@@ -402,7 +461,9 @@ const isFormValid = computed(() => {
     formData.value.colegio_id &&
     // campos específicos según rol
     (formData.value.role === UserRole.PROFESOR
-      ? !!(formData.value.titulo_profesional && formData.value.especialidad && formData.value.fecha_contratacion)
+      ? !!(
+          formData.value.telefono
+        )
       : true) &&
     (formData.value.role === UserRole.ESTUDIANTE_APODERADO
       ? !!(formData.value.fecha_nacimiento && formData.value.direccion && formData.value.genero)
@@ -504,34 +565,35 @@ const validateField = (field: keyof RegisterDTO) => {
       break;
     }
     case 'telefono': {
-      if (formData.value.telefono) {
-        const error = validateTelefono(formData.value.telefono);
-        if (error) {
-          errors.value.telefono = error;
+      // Para PROFESOR, telefono es REQUERIDO
+      if (formData.value.role === UserRole.PROFESOR) {
+        if (!formData.value.telefono) {
+          errors.value.telefono = 'El teléfono es requerido para profesores';
+        } else {
+          const error = validateTelefono(formData.value.telefono);
+          if (error) {
+            errors.value.telefono = error;
+          } else {
+            delete errors.value.telefono;
+          }
+        }
+      } else {
+        // Para otros roles es opcional, solo validar formato si tiene valor
+        if (formData.value.telefono) {
+          const error = validateTelefono(formData.value.telefono);
+          if (error) {
+            errors.value.telefono = error;
+          } else {
+            delete errors.value.telefono;
+          }
         } else {
           delete errors.value.telefono;
         }
-      } else {
-        delete errors.value.telefono;
-      }
-      break;
-    }
-    case 'titulo_profesional': {
-      if (formData.value.role === UserRole.PROFESOR) {
-        if (!formData.value.titulo_profesional) errors.value.titulo_profesional = 'El título profesional es requerido';
-        else delete errors.value.titulo_profesional;
-      }
-      break;
-    }
-    case 'especialidad': {
-      if (formData.value.role === UserRole.PROFESOR) {
-        if (!formData.value.especialidad) errors.value.especialidad = 'La especialidad es requerida';
-        else delete errors.value.especialidad;
       }
       break;
     }
     case 'fecha_contratacion': {
-      if (formData.value.role === UserRole.PROFESOR || formData.value.role === UserRole.ADMINISTRADOR || formData.value.role === UserRole.ADMINISTRATIVO) {
+      if ( formData.value.role === UserRole.ADMINISTRADOR || formData.value.role === UserRole.ADMINISTRATIVO) {
         if (!formData.value.fecha_contratacion) errors.value.fecha_contratacion = 'Fecha de contratación requerida';
         else delete errors.value.fecha_contratacion;
       }
@@ -601,26 +663,27 @@ const handleRutInput = (event: Event) => {
 // Cuando cambia el rol, limpiar errores y algunos campos no relevantes
 const onRoleChange = () => {
   // limpiar errores de campos específicos
-  delete errors.value.titulo_profesional;
-  delete errors.value.especialidad;
   delete errors.value.fecha_contratacion;
   delete errors.value.fecha_nacimiento;
   delete errors.value.direccion;
   delete errors.value.genero;
   delete errors.value.cargo;
   delete errors.value.area_id;
+  delete errors.value.telefono;
+  delete errors.value.comuna;
 
   // resetear campos que no aplican
   if (formData.value.role !== UserRole.PROFESOR) {
-    formData.value.titulo_profesional = undefined;
-    formData.value.especialidad = undefined;
-    formData.value.fecha_contratacion = undefined;
+    formData.value.telefono = '';
+    formData.value.direccion = undefined;
+    formData.value.comuna = undefined;
   }
 
   if (formData.value.role !== UserRole.ESTUDIANTE_APODERADO) {
     formData.value.fecha_nacimiento = undefined;
     formData.value.direccion = undefined;
     formData.value.genero = undefined;
+    formData.value.comuna = undefined;
   }
 
   if (!(formData.value.role === UserRole.ADMINISTRADOR || formData.value.role === UserRole.ADMINISTRATIVO)) {
@@ -681,9 +744,8 @@ const handleSubmit = async () => {
   validateField('colegio_id');
   // Validaciones específicas según rol
   if (formData.value.role === UserRole.PROFESOR) {
-    validateField('titulo_profesional');
-    validateField('especialidad');
-    validateField('fecha_contratacion');
+    validateField('telefono');
+    // direccion y comuna son opcionales, no es necesario validarlos
   }
   if (formData.value.role === UserRole.ESTUDIANTE_APODERADO) {
     validateField('fecha_nacimiento');
@@ -694,9 +756,6 @@ const handleSubmit = async () => {
     validateField('cargo');
     validateField('area_id');
     validateField('fecha_contratacion');
-  }
-  if (formData.value.telefono) {
-    validateField('telefono');
   }
 
   if (!isFormValid.value) return;
@@ -722,14 +781,13 @@ const resetForm = () => {
     colegio_id: '',
     telefono: ''
   ,
-    titulo_profesional: undefined,
-    especialidad: undefined,
     fecha_contratacion: undefined,
     fecha_nacimiento: undefined,
     direccion: undefined,
     genero: undefined,
     cargo: undefined,
-    area_id: undefined
+    area_id: undefined,
+    comuna: undefined
   };
   errors.value = {};
   passwordStrength.value = 'weak';

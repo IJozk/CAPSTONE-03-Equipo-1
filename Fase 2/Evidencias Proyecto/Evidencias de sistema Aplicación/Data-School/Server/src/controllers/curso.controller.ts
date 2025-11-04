@@ -13,7 +13,7 @@ export class CursoController {
   async getAll(req: Request, res: Response) {
     try {
       const {
-        nivel,
+        nivel_id,
         anio_academico,
         generacion
       } = req.query as unknown as FilterCursoDto
@@ -22,11 +22,11 @@ export class CursoController {
       let query = client
         .from('Curso')
         .select('*')
-        .order('nivel', { ascending: true })
+        .order('nivel_id', { ascending: true })
 
       // Aplicar filtros
-      if (nivel) {
-        query = query.eq('nivel', nivel)
+      if (nivel_id) {
+        query = query.eq('nivel_id', nivel_id)
       }
 
       if (anio_academico) {
@@ -114,9 +114,9 @@ export class CursoController {
       const cursoData = req.body as CreateCursoDto
 
       // Validar campos requeridos
-      if (!cursoData.nombre || !cursoData.nivel || !cursoData.anio_academico || !cursoData.generacion) {
+      if (!cursoData.nombre || !cursoData.nivel_id || !cursoData.anio_academico || !cursoData.generacion) {
         return res.status(400).json({
-          error: 'Nombre, nivel, año académico y generación son requeridos'
+          error: 'Nombre, nivel, año académico y generación son requeridos' 
         })
       }
 
@@ -141,7 +141,7 @@ export class CursoController {
         .from('Curso')
         .insert({
           nombre: cursoData.nombre,
-          nivel: cursoData.nivel,
+          nivel_id: cursoData.nivel_id,
           anio_academico: cursoData.anio_academico,
           generacion: cursoData.generacion,
           capacidad_maxima: cursoData.capacidad_maxima || null
@@ -223,6 +223,7 @@ export class CursoController {
         .single()
 
       if (error) {
+        console.log(updateData)
         console.error('Error actualizando curso:', error)
         return res.status(500).json({
           error: 'Error al actualizar curso',
@@ -339,7 +340,7 @@ export class CursoController {
         .from('Curso')
         .select('*')
         .eq('anio_academico', parseInt(anio))
-        .order('nivel', { ascending: true })
+        .order('nivel_id', { ascending: true })
 
       if (error) {
         console.error('Error obteniendo cursos por año:', error)

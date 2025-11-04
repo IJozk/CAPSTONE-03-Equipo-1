@@ -667,6 +667,58 @@ export type Database = {
           },
         ]
       }
+      Contrato: {
+        Row: {
+          created_at: string
+          de_planta: boolean
+          id_contrato: number
+          id_empleado: string
+          id_profesion: number
+          inicio_contrato: string
+          termino_contrato: string | null
+        }
+        Insert: {
+          created_at?: string
+          de_planta?: boolean
+          id_contrato?: number
+          id_empleado?: string
+          id_profesion: number
+          inicio_contrato: string
+          termino_contrato?: string | null
+        }
+        Update: {
+          created_at?: string
+          de_planta?: boolean
+          id_contrato?: number
+          id_empleado?: string
+          id_profesion?: number
+          inicio_contrato?: string
+          termino_contrato?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "Contrato_id_empleado_fkey"
+            columns: ["id_empleado"]
+            isOneToOne: false
+            referencedRelation: "Administrativo"
+            referencedColumns: ["administrativo_id"]
+          },
+          {
+            foreignKeyName: "Contrato_id_empleado_fkey1"
+            columns: ["id_empleado"]
+            isOneToOne: false
+            referencedRelation: "Profesor"
+            referencedColumns: ["profesor_id"]
+          },
+          {
+            foreignKeyName: "Contrato_id_profesion_fkey"
+            columns: ["id_profesion"]
+            isOneToOne: false
+            referencedRelation: "Profesion"
+            referencedColumns: ["id_profesion"]
+          },
+        ]
+      }
       Curso: {
         Row: {
           anio_academico: number
@@ -674,7 +726,7 @@ export type Database = {
           created_at: string | null
           curso_id: string
           generacion: number
-          nivel: string
+          nivel_id: number
           nombre: string
           updated_at: string | null
         }
@@ -684,7 +736,7 @@ export type Database = {
           created_at?: string | null
           curso_id?: string
           generacion: number
-          nivel: string
+          nivel_id: number
           nombre: string
           updated_at?: string | null
         }
@@ -694,11 +746,19 @@ export type Database = {
           created_at?: string | null
           curso_id?: string
           generacion?: number
-          nivel?: string
+          nivel_id?: number
           nombre?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "Curso_nivel_fkey"
+            columns: ["nivel_id"]
+            isOneToOne: false
+            referencedRelation: "NivelCurso"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       DatosEstudiante: {
         Row: {
@@ -832,6 +892,27 @@ export type Database = {
           },
         ]
       }
+      Especialidad: {
+        Row: {
+          created_at: string
+          id: number
+          nombre_especialidad: string
+          tipo_especialidad: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          nombre_especialidad: string
+          tipo_especialidad: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          nombre_especialidad?: string
+          tipo_especialidad?: string
+        }
+        Relationships: []
+      }
       EstadoMatricula: {
         Row: {
           descripcion: string | null
@@ -858,45 +939,51 @@ export type Database = {
       }
       Estudiante: {
         Row: {
-          created_at: string | null
-          direccion: string | null
+          comuna: string | null
+          created_at: string
+          direccion: string
           email: string | null
-          estado_activo: boolean | null
+          estado_activo: boolean
           estudiante_id: string
           fecha_nacimiento: string
-          genero: Database["public"]["Enums"]["genero_enum"] | null
+          foto_url: string | null
+          genero: Database["public"]["Enums"]["genero_enum"]
           nombre_completo: string
-          rut: string | null
+          rut: string
           telefono: string | null
-          updated_at: string | null
+          updated_at: string
           user_id: string | null
         }
         Insert: {
-          created_at?: string | null
-          direccion?: string | null
+          comuna?: string | null
+          created_at?: string
+          direccion: string
           email?: string | null
-          estado_activo?: boolean | null
+          estado_activo?: boolean
           estudiante_id?: string
           fecha_nacimiento: string
-          genero?: Database["public"]["Enums"]["genero_enum"] | null
+          foto_url?: string | null
+          genero: Database["public"]["Enums"]["genero_enum"]
           nombre_completo: string
-          rut?: string | null
+          rut: string
           telefono?: string | null
-          updated_at?: string | null
+          updated_at?: string
           user_id?: string | null
         }
         Update: {
-          created_at?: string | null
-          direccion?: string | null
+          comuna?: string | null
+          created_at?: string
+          direccion?: string
           email?: string | null
-          estado_activo?: boolean | null
+          estado_activo?: boolean
           estudiante_id?: string
           fecha_nacimiento?: string
-          genero?: Database["public"]["Enums"]["genero_enum"] | null
+          foto_url?: string | null
+          genero?: Database["public"]["Enums"]["genero_enum"]
           nombre_completo?: string
-          rut?: string | null
+          rut?: string
           telefono?: string | null
-          updated_at?: string | null
+          updated_at?: string
           user_id?: string | null
         }
         Relationships: [
@@ -1271,6 +1358,27 @@ export type Database = {
           },
         ]
       }
+      NivelCurso: {
+        Row: {
+          created_at: string
+          id: number
+          nivel: string
+          numero: number
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          nivel: string
+          numero: number
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          nivel?: string
+          numero?: number
+        }
+        Relationships: []
+      }
       Parentesco: {
         Row: {
           created_at: string | null
@@ -1330,44 +1438,62 @@ export type Database = {
           },
         ]
       }
+      Profesion: {
+        Row: {
+          created_at: string
+          descripcion: string | null
+          id_profesion: number
+          nombre: string | null
+        }
+        Insert: {
+          created_at?: string
+          descripcion?: string | null
+          id_profesion?: number
+          nombre?: string | null
+        }
+        Update: {
+          created_at?: string
+          descripcion?: string | null
+          id_profesion?: number
+          nombre?: string | null
+        }
+        Relationships: []
+      }
       Profesor: {
         Row: {
-          created_at: string | null
-          especialidad: string | null
-          estado_activo: boolean | null
-          fecha_contratacion: string | null
+          comuna: string | null
+          created_at: string
+          direccion: string | null
+          estado_activo: boolean
           nombre_completo: string
           profesor_id: string
-          rut: string | null
-          telefono: string | null
-          titulo_profesional: string | null
-          updated_at: string | null
+          rut: string
+          telefono: string
+          updated_at: string
           user_id: string
         }
         Insert: {
-          created_at?: string | null
-          especialidad?: string | null
-          estado_activo?: boolean | null
-          fecha_contratacion?: string | null
+          comuna?: string | null
+          created_at?: string
+          direccion?: string | null
+          estado_activo?: boolean
           nombre_completo: string
           profesor_id?: string
-          rut?: string | null
-          telefono?: string | null
-          titulo_profesional?: string | null
-          updated_at?: string | null
+          rut: string
+          telefono: string
+          updated_at?: string
           user_id: string
         }
         Update: {
-          created_at?: string | null
-          especialidad?: string | null
-          estado_activo?: boolean | null
-          fecha_contratacion?: string | null
+          comuna?: string | null
+          created_at?: string
+          direccion?: string | null
+          estado_activo?: boolean
           nombre_completo?: string
           profesor_id?: string
-          rut?: string | null
-          telefono?: string | null
-          titulo_profesional?: string | null
-          updated_at?: string | null
+          rut?: string
+          telefono?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -1377,6 +1503,45 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "User"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      Profesor_especialidad: {
+        Row: {
+          certificado_url: string | null
+          created_at: string
+          especialidad_id: number
+          fecha_certificacion: string | null
+          profesor_id: string
+        }
+        Insert: {
+          certificado_url?: string | null
+          created_at?: string
+          especialidad_id: number
+          fecha_certificacion?: string | null
+          profesor_id?: string
+        }
+        Update: {
+          certificado_url?: string | null
+          created_at?: string
+          especialidad_id?: number
+          fecha_certificacion?: string | null
+          profesor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "Profesor_especialidad_especialidad_id_fkey"
+            columns: ["especialidad_id"]
+            isOneToOne: false
+            referencedRelation: "Especialidad"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "Profesor_especialidad_profesor_id_fkey"
+            columns: ["profesor_id"]
+            isOneToOne: false
+            referencedRelation: "Profesor"
+            referencedColumns: ["profesor_id"]
           },
         ]
       }
@@ -1628,45 +1793,45 @@ export type Database = {
       }
       Tutor: {
         Row: {
-          created_at: string | null
-          direccion: string | null
-          email: string | null
-          estado_activo: boolean | null
+          comuna: string | null
+          created_at: string
+          direccion: string
+          email: string
+          estado_activo: boolean
           nombre_completo: string
           ocupacion: string | null
-          rut: string | null
-          telefono: string | null
-          telefono_emergencia: string | null
+          rut: string
+          telefono: string
           tutor_id: string
-          updated_at: string | null
+          updated_at: string
           user_id: string | null
         }
         Insert: {
-          created_at?: string | null
-          direccion?: string | null
-          email?: string | null
-          estado_activo?: boolean | null
+          comuna?: string | null
+          created_at?: string
+          direccion: string
+          email: string
+          estado_activo?: boolean
           nombre_completo: string
           ocupacion?: string | null
-          rut?: string | null
-          telefono?: string | null
-          telefono_emergencia?: string | null
+          rut: string
+          telefono: string
           tutor_id?: string
-          updated_at?: string | null
+          updated_at?: string
           user_id?: string | null
         }
         Update: {
-          created_at?: string | null
-          direccion?: string | null
-          email?: string | null
-          estado_activo?: boolean | null
+          comuna?: string | null
+          created_at?: string
+          direccion?: string
+          email?: string
+          estado_activo?: boolean
           nombre_completo?: string
           ocupacion?: string | null
-          rut?: string | null
-          telefono?: string | null
-          telefono_emergencia?: string | null
+          rut?: string
+          telefono?: string
           tutor_id?: string
-          updated_at?: string | null
+          updated_at?: string
           user_id?: string | null
         }
         Relationships: [
@@ -1767,7 +1932,6 @@ export type Database = {
           dia_semana: number | null
           hora_inicio: string | null
           hora_termino: string | null
-          nivel: string | null
           nombre_dia: string | null
           periodo: string | null
           profesor: string | null
@@ -1785,7 +1949,6 @@ export type Database = {
           estado_matricula: string | null
           estado_matricula_id: number | null
           estudiante_id: string | null
-          nivel: string | null
           nombre_completo: string | null
           promedio_general: number | null
           rut: string | null

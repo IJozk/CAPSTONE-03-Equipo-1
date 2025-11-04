@@ -105,6 +105,17 @@ export class EstudianteController {
                 .eq('estudiante_id', id)
                 .single()
 
+            const curso_actual = await supabaseAdmin!
+                .from('Estudiante_Curso')
+                .select('curso_id, Curso(nombre, nivel)')
+                .eq('estudiante_id', id)
+                .single()
+
+            const tutores = await supabaseAdmin!
+                .from('Tutor')
+                .select('Tutor(nombre_completo, telefono)')
+                .eq('estudiante_id', id)
+
             if (error) throw error
 
             if (!data) {

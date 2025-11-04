@@ -9,7 +9,16 @@ export interface StudentProfile {
     estudiante_id: string;
     nombre_completo: string;
     rut: string;
-    curso: {
+    fecha_nacimiento: Date; 
+    genero: 'M' | 'F' | 'O'; // Masculino, Femenino, Otro
+    direccion: string;
+    comuna: string;
+    telefono: string;
+    email: string;
+    foto_url?: string;
+    fecha_ingreso: Date;
+    estado_activo: boolean;
+    curso_actual: {
       curso_id: string;
       nombre: string;
       nivel: string;

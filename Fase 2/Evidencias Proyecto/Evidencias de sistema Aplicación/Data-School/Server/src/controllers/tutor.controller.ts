@@ -34,7 +34,7 @@ export class TutorController {
                     return res.status(404).json({ message: 'Usuario no encontrado' })
                 }
 
-                if (userData.role !== 'TUTOR') {
+                if (userData.role !== 'ESTUDIANTE_APODERADO') {
                     return res.status(400).json({ message: 'El usuario debe tener rol TUTOR' })
                 }
             }
@@ -249,52 +249,4 @@ export class TutorController {
         }
     }
 
-    // Asociar cuenta de usuario a tutor existente
-    public async linkUser(req: Request, res: Response): Promise<Response> {
-        try {
-            const { id } = req.params
-            const { user_id } = req.body
-
-            if (!user_id) {
-                return res.status(400).json({ message: 'user_id es requerido' })
-            }
-
-            // Verificar que el usuario existe y tiene role TUTOR
-            const { data: userData, error: userError } = await supabaseAdmin!
-                .from('User')
-                .select('role')
-                .eq('user_id', user_id)
-                .single()
-
-            if (userError || !userData) {
-                return res.status(404).json({ message: 'Usuario no encontrado' })
-            }
-
-            if (userData.role !== 'TUTOR') {
-                return res.status(400).json({ message: 'El usuario debe tener rol TUTOR' })
-            }
-
-            // Actualizar tutor con user_id
-            const { data, error } = await supabaseAdmin!
-                .from('Tutor')
-                .update({
-                    user_id,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('tutor_id', id)
-                .select()
-                .single()
-
-            if (error) throw error
-
-            if (!data) {
-                return res.status(404).json({ message: 'Tutor no encontrado' })
-            }
-
-            return res.status(200).json(data)
-
-        } catch (error: any) {
-            return res.status(500).json({ message: error.message })
-        }
-    }
 }

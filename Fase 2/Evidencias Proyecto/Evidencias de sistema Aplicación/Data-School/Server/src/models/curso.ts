@@ -7,7 +7,7 @@ export type CursoUpdate = Database['public']['Tables']['Curso']['Update']
 // DTO para crear curso
 export interface CreateCursoDto {
   nombre: string
-  nivel: string
+  nivel_id: number
   anio_academico: number
   generacion: number
   capacidad_maxima?: number | null
@@ -16,7 +16,7 @@ export interface CreateCursoDto {
 // DTO para actualizar curso
 export interface UpdateCursoDto {
   nombre?: string
-  nivel?: string
+  nivel_id?: number
   anio_academico?: number
   generacion?: number
   capacidad_maxima?: number | null
@@ -24,7 +24,7 @@ export interface UpdateCursoDto {
 
 // DTO para filtrar cursos
 export interface FilterCursoDto {
-  nivel?: string
+  nivel_id?: number
   anio_academico?: number
   generacion?: number
 }
