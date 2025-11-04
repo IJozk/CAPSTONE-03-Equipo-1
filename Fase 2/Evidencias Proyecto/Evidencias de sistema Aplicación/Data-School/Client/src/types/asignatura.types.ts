@@ -26,7 +26,6 @@ export interface Asignatura {
   Profesor?: {
     profesor_id: string
     nombre_completo: string
-    especialidad?: string
     email?: string
     telefono?: string
   }
