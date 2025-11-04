@@ -86,14 +86,16 @@ export class MatriculaController {
     // Obtener todas las matrículas
     public async getAll(req: Request, res: Response): Promise<Response> {
         try {
-            const { periodo, curso_id, estado_matricula_id } = req.query
+            const periodo = req.query.periodo as string | undefined
+            const curso_id = req.query.curso_id as string | undefined
+            const estado_matricula_id = req.query.estado_matricula_id as string | undefined
 
             let query = supabaseAdmin!
                 .from('Matricula')
                 .select(`
                     *,
                     Estudiante(estudiante_id, nombre_completo, rut),
-                    Curso(curso_id, nombre, nivel),
+                    Curso(curso_id, nombre, nivel_id),
                     Tutor(tutor_id, nombre_completo, telefono),
                     EstadoMatricula(estado_matricula_id, nombre_estado)
                 `)
@@ -107,7 +109,10 @@ export class MatriculaController {
             }
 
             if (estado_matricula_id) {
-                query = query.eq('estado_matricula_id', estado_matricula_id)
+                const estadoId = Number(estado_matricula_id)
+                if (!Number.isNaN(estadoId)) {
+                    query = query.eq('estado_matricula_id', estadoId)
+                }
             }
 
             const { data, error } = await query
@@ -131,7 +136,7 @@ export class MatriculaController {
                 .select(`
                     *,
                     Estudiante(estudiante_id, nombre_completo, rut, email, telefono),
-                    Curso(curso_id, nombre, nivel),
+                    Curso(curso_id, nombre, nivel_id),
                     Tutor(tutor_id, nombre_completo, telefono, email),
                     EstadoMatricula(estado_matricula_id, nombre_estado, descripcion)
                 `)
@@ -160,7 +165,7 @@ export class MatriculaController {
                 .from('Matricula')
                 .select(`
                     *,
-                    Curso(curso_id, nombre, nivel),
+                    Curso(curso_id, nombre, nivel_id),
                     EstadoMatricula(estado_matricula_id, nombre_estado)
                 `)
                 .eq('estudiante_id', estudiante_id)
