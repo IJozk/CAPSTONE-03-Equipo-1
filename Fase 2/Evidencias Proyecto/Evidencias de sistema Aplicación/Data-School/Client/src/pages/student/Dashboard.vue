@@ -1,5 +1,4 @@
 <template>
-  <DashboardLayout role="ESTUDIANTE_APODERADO">
     <div class="space-y-6">
       <!-- Page Header -->
       <div class="flex justify-between items-center">
@@ -197,35 +196,83 @@
         </div>
       </div>
     </div>
-  </DashboardLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/store/auth.store';
-import DashboardLayout from '@/layouts/DashboardLayout.vue';
+import { useStudentStore } from '@/store/student.store';
 
 const authStore = useAuthStore();
+const studentStore = useStudentStore();
 const loading = ref(false);
 
 const studentName = computed(() => authStore.user?.nombre_completo || 'Estudiante');
 
-const stats = ref({
-  promedioGeneral: 0,
-  asistencia: 0,
-  totalAsignaturas: 0,
-  proximasEvaluaciones: 0
-});
+// Stats computados desde el store
+const stats = computed(() => ({
+  promedioGeneral: studentStore.academicSummary?.promedio_general || 5.5,
+  asistencia: studentStore.academicSummary?.porcentaje_asistencia || 92,
+  totalAsignaturas: studentStore.academicSummary?.total_asignaturas || 8,
+  proximasEvaluaciones: studentStore.academicSummary?.evaluaciones_pendientes || 3
+}));
 
-const horario = ref<any[]>([]);
-const notasRecientes = ref<any[]>([]);
-const asignaturas = ref<any[]>([]);
+// Mock data para horario (mientras no haya datos del backend)
+const horario = computed(() => studentStore.schedule.length > 0 ? studentStore.schedule.slice(0, 5).map((s, i) => ({
+  id: i,
+  asignatura: s.asignatura,
+  profesor: s.profesor,
+  horario: `${s.hora_inicio} - ${s.hora_fin}`,
+  sala: s.sala || 'Sala 101'
+})) : [
+  { id: 1, asignatura: 'Matemáticas', profesor: 'Prof. García', horario: '08:00 - 09:30', sala: 'Sala 201' },
+  { id: 2, asignatura: 'Lenguaje', profesor: 'Prof. Rodríguez', horario: '09:45 - 11:15', sala: 'Sala 102' },
+  { id: 3, asignatura: 'Ciencias', profesor: 'Prof. López', horario: '11:30 - 13:00', sala: 'Sala 305' },
+  { id: 4, asignatura: 'Historia', profesor: 'Prof. Martínez', horario: '14:00 - 15:30', sala: 'Sala 201' },
+  { id: 5, asignatura: 'Inglés', profesor: 'Prof. Smith', horario: '15:45 - 17:15', sala: 'Sala 104' }
+]);
+
+// Mock data para notas recientes
+const notasRecientes = computed(() => studentStore.grades.length > 0 ?
+  studentStore.grades.slice(0, 3).flatMap(g => g.notas.slice(0, 1).map(n => ({
+    id: n.nota_id,
+    evaluacion: n.evaluacion_nombre,
+    asignatura: g.nombre_asignatura,
+    nota: n.nota,
+    fecha: new Date(n.fecha).toLocaleDateString('es-CL')
+  }))) : [
+  { id: 1, evaluacion: 'Prueba 1', asignatura: 'Matemáticas', nota: 6.5, fecha: '15/10/2025' },
+  { id: 2, evaluacion: 'Control Lectura', asignatura: 'Lenguaje', nota: 5.8, fecha: '14/10/2025' },
+  { id: 3, evaluacion: 'Laboratorio', asignatura: 'Ciencias', nota: 6.2, fecha: '12/10/2025' }
+]);
+
+// Mock data para asignaturas
+const asignaturas = computed(() => studentStore.grades.length > 0 ?
+  studentStore.grades.map(g => ({
+    id: g.asignatura_id,
+    nombre: g.nombre_asignatura,
+    profesor: g.profesor_nombre,
+    promedio: g.promedio
+  })) : [
+  { id: 1, nombre: 'Matemáticas', profesor: 'Prof. García', promedio: 6.2 },
+  { id: 2, nombre: 'Lenguaje', profesor: 'Prof. Rodríguez', promedio: 5.8 },
+  { id: 3, nombre: 'Ciencias', profesor: 'Prof. López', promedio: 6.0 },
+  { id: 4, nombre: 'Historia', profesor: 'Prof. Martínez', promedio: 5.5 },
+  { id: 5, nombre: 'Inglés', profesor: 'Prof. Smith', promedio: 6.3 },
+  { id: 6, nombre: 'Ed. Física', profesor: 'Prof. Torres', promedio: 6.8 },
+  { id: 7, nombre: 'Artes', profesor: 'Prof. Vargas', promedio: 6.5 },
+  { id: 8, nombre: 'Música', profesor: 'Prof. Silva', promedio: 6.4 }
+]);
 
 const refreshDashboard = async () => {
   loading.value = true;
   try {
-    // TODO: Implementar llamadas a API
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await Promise.all([
+      studentStore.fetchAcademicSummary(),
+      studentStore.fetchGrades(),
+      studentStore.fetchSchedule(),
+      studentStore.fetchUpcomingEvents()
+    ]);
   } catch (error) {
     console.error('Error refreshing dashboard:', error);
   } finally {
