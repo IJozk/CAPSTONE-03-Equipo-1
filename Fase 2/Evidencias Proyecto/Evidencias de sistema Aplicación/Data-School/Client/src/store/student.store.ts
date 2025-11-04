@@ -1,17 +1,35 @@
 import { defineStore } from 'pinia';
 import estudianteService from '@/services/estudiante.service';
+import studentService from '@/services/student.service';
+import gradesService from '@/services/grades.service';
+import attendanceService from '@/services/attendance.service';
+import notificationsService from '@/services/notifications.service';
 import type {
   Estudiante,
   CreateEstudianteDTO,
   UpdateEstudianteDTO,
   UserQueryParams
 } from '@/types/users.types';
-import { StudentProfile } from '@/types/student.types';
+import type {
+  StudentProfile,
+  AcademicSummary,
+  Subject,
+  Attendance,
+  Notification,
+  UpcomingEvent,
+  ScheduleSlot
+} from '@/types/student.types';
 
 interface StudentState {
   estudiantes: Estudiante[];
   currentEstudiante: Estudiante | null;
-  studentInfo: StudentProfile | null;
+  profile: StudentProfile | null;
+  academicSummary: AcademicSummary | null;
+  grades: Subject[];
+  attendance: Attendance[];
+  notifications: Notification[];
+  upcomingEvents: UpcomingEvent[];
+  schedule: ScheduleSlot[];
   loading: boolean;
   error: string | null;
 }
@@ -20,7 +38,13 @@ export const useStudentStore = defineStore('student', {
   state: (): StudentState => ({
     estudiantes: [],
     currentEstudiante: null,
-    studentInfo: null,
+    profile: null,
+    academicSummary: null,
+    grades: [],
+    attendance: [],
+    notifications: [],
+    upcomingEvents: [],
+    schedule: [],
     loading: false,
     error: null
   }),
@@ -44,6 +68,21 @@ export const useStudentStore = defineStore('student', {
     // Obtener estudiante por ID
     getEstudianteById: (state) => (id: string) => {
       return state.estudiantes.find(e => e.estudiante_id === id);
+    },
+
+    // Notificaciones no leídas
+    unreadNotifications: (state): number => {
+      return state.notifications.filter(n => !n.leida).length;
+    },
+
+    // Promedio general
+    promedioGeneral: (state): number => {
+      return state.academicSummary?.promedio_general || 0;
+    },
+
+    // Porcentaje de asistencia
+    porcentajeAsistencia: (state): number => {
+      return state.academicSummary?.porcentaje_asistencia || 0;
     }
   },
 
@@ -233,9 +272,110 @@ export const useStudentStore = defineStore('student', {
     resetState() {
       this.estudiantes = [];
       this.currentEstudiante = null;
-      this.studentInfo = null;
+      this.profile = null;
+      this.academicSummary = null;
+      this.grades = [];
+      this.attendance = [];
+      this.notifications = [];
+      this.upcomingEvents = [];
+      this.schedule = [];
       this.loading = false;
       this.error = null;
+    },
+
+    /**
+     * Obtener perfil del estudiante autenticado
+     */
+    async fetchProfile() {
+      this.loading = true;
+      this.error = null;
+      try {
+        this.profile = await studentService.getProfile();
+      } catch (error: any) {
+        this.error = error.message;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Obtener resumen académico
+     */
+    async fetchAcademicSummary() {
+      try {
+        this.academicSummary = await studentService.getAcademicSummary();
+      } catch (error: any) {
+        console.error('Error fetching academic summary:', error);
+      }
+    },
+
+    /**
+     * Obtener notas
+     */
+    async fetchGrades() {
+      try {
+        this.grades = await gradesService.getGrades();
+      } catch (error: any) {
+        console.error('Error fetching grades:', error);
+      }
+    },
+
+    /**
+     * Obtener asistencia
+     */
+    async fetchAttendance(startDate?: string, endDate?: string) {
+      try {
+        this.attendance = await attendanceService.getAttendance(startDate, endDate);
+      } catch (error: any) {
+        console.error('Error fetching attendance:', error);
+      }
+    },
+
+    /**
+     * Obtener notificaciones
+     */
+    async fetchNotifications() {
+      try {
+        this.notifications = await notificationsService.getNotifications();
+      } catch (error: any) {
+        console.error('Error fetching notifications:', error);
+      }
+    },
+
+    /**
+     * Marcar notificación como leída
+     */
+    async markNotificationAsRead(notificationId: string) {
+      try {
+        await notificationsService.markAsRead(notificationId);
+        const notification = this.notifications.find(n => n.id === notificationId);
+        if (notification) notification.leida = true;
+      } catch (error: any) {
+        console.error('Error marking notification as read:', error);
+      }
+    },
+
+    /**
+     * Obtener próximos eventos
+     */
+    async fetchUpcomingEvents() {
+      try {
+        const data = await studentService.getUpcomingEvents(5);
+        this.upcomingEvents = data.events;
+      } catch (error: any) {
+        console.error('Error fetching upcoming events:', error);
+      }
+    },
+
+    /**
+     * Obtener horario
+     */
+    async fetchSchedule() {
+      try {
+        this.schedule = await studentService.getSchedule();
+      } catch (error: any) {
+        console.error('Error fetching schedule:', error);
+      }
     }
   }
 });

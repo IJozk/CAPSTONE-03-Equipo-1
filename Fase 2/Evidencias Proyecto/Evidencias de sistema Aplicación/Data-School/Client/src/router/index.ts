@@ -400,6 +400,104 @@ const routes: RouteRecordRaw[] = [
     ]
   },
 
+  // ==========================================
+  // RUTAS DEL ESTUDIANTE/APODERADO
+  // ==========================================
+  {
+    path: '/student',
+    component: () => import('@/layouts/StudentLayout.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresRole: ['ESTUDIANTE_APODERADO', 'ADMINISTRADOR']
+    },
+    children: [
+      {
+        path: '',
+        redirect: '/student/dashboard'
+      },
+      {
+        path: 'dashboard',
+        name: 'StudentDashboard',
+        component: () => import('@/pages/student/Dashboard.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['ESTUDIANTE_APODERADO', 'ADMINISTRADOR'],
+          title: 'Mi Panel'
+        }
+      },
+      {
+        path: 'grades',
+        name: 'StudentGrades',
+        component: () => import('@/pages/student/Grades.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['ESTUDIANTE_APODERADO', 'ADMINISTRADOR'],
+          title: 'Mis Notas'
+        }
+      },
+      {
+        path: 'attendance',
+        name: 'StudentAttendance',
+        component: () => import('@/pages/student/Attendance.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['ESTUDIANTE_APODERADO', 'ADMINISTRADOR'],
+          title: 'Mi Asistencia'
+        }
+      },
+      {
+        path: 'schedule',
+        name: 'StudentSchedule',
+        component: () => import('@/pages/student/Schedule.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['ESTUDIANTE_APODERADO', 'ADMINISTRADOR'],
+          title: 'Mi Horario'
+        }
+      },
+      {
+        path: 'notifications',
+        name: 'StudentNotifications',
+        component: () => import('@/pages/student/Notifications.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['ESTUDIANTE_APODERADO', 'ADMINISTRADOR'],
+          title: 'Notificaciones'
+        }
+      },
+      {
+        path: 'events',
+        name: 'StudentEvents',
+        component: () => import('@/pages/student/Events.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['ESTUDIANTE_APODERADO', 'ADMINISTRADOR'],
+          title: 'Eventos'
+        }
+      },
+      {
+        path: 'profile',
+        name: 'StudentProfile',
+        component: () => import('@/pages/student/Profile.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['ESTUDIANTE_APODERADO', 'ADMINISTRADOR'],
+          title: 'Mi Perfil'
+        }
+      },
+      {
+        path: 'settings',
+        name: 'StudentSettings',
+        component: () => import('@/pages/student/Settings.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['ESTUDIANTE_APODERADO', 'ADMINISTRADOR'],
+          title: 'Configuración'
+        }
+      }
+    ]
+  },
+
   // Ruta 404 - cualquier ruta no definida redirige a login
   {
     path: '/:pathMatch(.*)*',
