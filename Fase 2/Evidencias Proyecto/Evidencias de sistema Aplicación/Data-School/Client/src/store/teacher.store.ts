@@ -15,12 +15,14 @@ import type {
   Grade,
   Observation,
   Schedule,
-  Upcoming
+  Upcoming,
+  Profesion
 } from '@/types/teacher.types';
 
 interface TeacherState {
   // Admin: gestión de profesores
   profesores: Profesor[];
+  profesiones: Profesion[];
   currentProfesor: Profesor | null;
 
   // Teacher: datos del dashboard y herramientas
@@ -43,8 +45,8 @@ export const useTeacherStore = defineStore('teacher', {
   state: (): TeacherState => ({
     // Admin
     profesores: [],
+    profesiones: [],
     currentProfesor: null,
-
     // Teacher
     dashboard: null,
     subjects: [],

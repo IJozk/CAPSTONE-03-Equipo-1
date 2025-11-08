@@ -143,7 +143,8 @@ const menuGroups = computed<MenuGroup[]>(() => [
     items: [
       { name: 'Usuarios', icon: 'users', route: '/admin/users' },
       { name: 'Profesores', icon: 'user-group', route: '/admin/teachers' },
-      { name: 'Estudiantes', icon: 'user-circle', route: '/admin/students' }
+      { name: 'Estudiantes', icon: 'user-circle', route: '/admin/students' },
+      { name: 'Administrativos', icon: 'briefcase', route: '/admin/administrativos' }
     ]
   },
   {
@@ -157,7 +158,6 @@ const menuGroups = computed<MenuGroup[]>(() => [
   {
     title: 'Configuración',
     items: [
-      { name: 'Configuración', icon: 'cog', route: '/admin/settings' },
       { name: 'Mi Perfil', icon: 'user', route: '/admin/profile' }
     ]
   }

@@ -22,11 +22,11 @@ export class CursoController {
       let query = client
         .from('Curso')
         .select('*')
-        .order('nivel', { ascending: true })
+        .order('nivel_id', { ascending: true })
 
       // Aplicar filtros
       if (nivel_id) {
-        query = query.eq('nivel', nivel_id)
+        query = query.eq('nivel_id', nivel_id)
       }
 
       if (anio_academico) {
@@ -116,7 +116,7 @@ export class CursoController {
       // Validar campos requeridos
       if (!cursoData.nombre || !cursoData.nivel_id || !cursoData.anio_academico || !cursoData.generacion) {
         return res.status(400).json({
-          error: 'Nombre, nivel, año académico y generación son requeridos' + cursoData.anio_academico 
+          error: 'Nombre, nivel, año académico y generación son requeridos' 
         })
       }
 
@@ -141,7 +141,7 @@ export class CursoController {
         .from('Curso')
         .insert({
           nombre: cursoData.nombre,
-          nivel: cursoData.nivel_id,
+          nivel_id: cursoData.nivel_id,
           anio_academico: cursoData.anio_academico,
           generacion: cursoData.generacion,
           capacidad_maxima: cursoData.capacidad_maxima || null
@@ -223,6 +223,7 @@ export class CursoController {
         .single()
 
       if (error) {
+        console.log(updateData)
         console.error('Error actualizando curso:', error)
         return res.status(500).json({
           error: 'Error al actualizar curso',
@@ -339,7 +340,7 @@ export class CursoController {
         .from('Curso')
         .select('*')
         .eq('anio_academico', parseInt(anio))
-        .order('nivel', { ascending: true })
+        .order('nivel_id', { ascending: true })
 
       if (error) {
         console.error('Error obteniendo cursos por año:', error)

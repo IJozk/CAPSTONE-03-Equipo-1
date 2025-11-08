@@ -10,7 +10,7 @@ export interface Curso {
   capacidad_maxima?: number | null
   created_at?: string | null
   updated_at?: string | null
-  nivel: Nivel
+  nivel_obj: Nivel
 }
 
 /**
@@ -18,7 +18,7 @@ export interface Curso {
  * Útil para vistas que necesitan mostrar el nombre del nivel
  */
 export interface CursoConNivel extends Curso {
-  nivel: Nivel
+  nivel_obj: Nivel
 }
 
 export interface CreateCursoDTO {

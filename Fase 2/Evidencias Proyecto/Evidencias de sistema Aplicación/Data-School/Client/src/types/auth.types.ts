@@ -18,6 +18,7 @@ export interface User {
   admin_profile?: {
     nombre_completo: string;
     rut: string;
+    cargo: string;
     telefono?: string;
     direccion?: string;
     genero?: string;

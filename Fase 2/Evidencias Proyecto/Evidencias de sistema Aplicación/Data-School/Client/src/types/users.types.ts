@@ -9,7 +9,6 @@ export interface Profesor {
   nombre_completo: string;
   rut: string;
   especialidad?: string;
-  titulo_profesional?: string;
   telefono?: string;
   fecha_contratacion?: string;
   estado_activo: boolean;
@@ -26,7 +25,6 @@ export interface CreateProfesorDTO {
   nombre_completo: string;
   rut?: string;
   especialidad?: string;
-  titulo_profesional?: string;
   telefono?: string;
   fecha_contratacion?: string;
 }
@@ -35,7 +33,6 @@ export interface UpdateProfesorDTO {
   nombre_completo?: string;
   rut?: string;
   especialidad?: string;
-  titulo_profesional?: string;
   telefono?: string;
   fecha_contratacion?: string;
 }
@@ -79,6 +76,7 @@ export interface UpdateEstudianteDTO {
   direccion?: string;
   telefono?: string;
   email?: string;
+  estado_activo?: boolean;
 }
 
 // ============= ADMINISTRATIVO =============

@@ -6,7 +6,7 @@ export class ProfesorController {
     // Crear nuevo profesor
     public async create(req: Request, res: Response): Promise<Response> {
         try {
-            const { user_id, nombre_completo, rut, especialidad, titulo_profesional, telefono, fecha_contratacion } = req.body
+            const { user_id, nombre_completo, rut, telefono} = req.body
 
             // Validar campos requeridos
             if (!user_id || !nombre_completo) {
@@ -35,10 +35,7 @@ export class ProfesorController {
                     user_id,
                     nombre_completo,
                     rut,
-                    especialidad,
-                    titulo_profesional,
                     telefono,
-                    fecha_contratacion,
                     estado_activo: true
                 })
                 .select()
@@ -105,16 +102,13 @@ export class ProfesorController {
     public async update(req: Request, res: Response): Promise<Response> {
         try {
             const { id } = req.params
-            const { nombre_completo, rut, especialidad, titulo_profesional, telefono, fecha_contratacion } = req.body
+            const { nombre_completo, rut, telefono } = req.body
 
             // Solo actualizar campos de la tabla Profesor
             const updateData: any = {}
             if (nombre_completo !== undefined) updateData.nombre_completo = nombre_completo
             if (rut !== undefined) updateData.rut = rut
-            if (especialidad !== undefined) updateData.especialidad = especialidad
-            if (titulo_profesional !== undefined) updateData.titulo_profesional = titulo_profesional
             if (telefono !== undefined) updateData.telefono = telefono
-            if (fecha_contratacion !== undefined) updateData.fecha_contratacion = fecha_contratacion
             updateData.updated_at = new Date().toISOString()
 
             const { data, error } = await supabaseAdmin!

@@ -57,9 +57,20 @@ class EstudianteService {
    */
   async update(id: string, data: UpdateEstudianteDTO): Promise<Estudiante> {
     try {
+      console.log('=== SERVICE DEBUG ===');
+      console.log('ID estudiante:', id);
+      console.log('Datos antes de enviar al backend:', JSON.stringify(data, null, 2));
+      console.log('estado_activo:', data.estado_activo, 'tipo:', typeof data.estado_activo);
+      
       const response = await apiClient.put<Estudiante>(`${this.endpoint}/${id}`, data);
+      
+      console.log('Respuesta del backend:', JSON.stringify(response.data, null, 2));
+      console.log('estado_activo en respuesta:', response.data.estado_activo);
+      console.log('=== FIN SERVICE DEBUG ===');
+      
       return response.data;
     } catch (error: any) {
+      console.error('Error en service.update:', error);
       throw new Error(
         error.response?.data?.message || 'Error al actualizar el estudiante'
       );
