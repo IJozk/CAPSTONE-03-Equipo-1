@@ -44,6 +44,11 @@ export class AsignaturaController {
           TipoAsignatura:tipo_asignatura_id (
             tipo_asignatura_id,
             nombre
+          ),
+          Materia:materia_id (
+            id,
+            nombre,
+            descripcion
           )
         `)
         .order('nombre', { ascending: true })
@@ -120,6 +125,11 @@ export class AsignaturaController {
           ),
           TipoAsignatura:tipo_asignatura_id (
             tipo_asignatura_id,
+            nombre,
+            descripcion
+          ),
+          Materia:materia_id (
+            id,
             nombre,
             descripcion
           )
