@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import { supabaseAdmin } from '@/config/supabase'
+import { validateAgeForNivel, VALIDATION_CONSTANTS } from '@/constants/validations.constants'
 
 export class MatriculaController {
 
@@ -18,16 +19,16 @@ export class MatriculaController {
             } = req.body
 
             // Validar campos requeridos
-            if (!estudiante_id || !curso_id || !tutor_titular_id || !periodo) {
+            if (!estudiante_id || !curso_id || !periodo) {
                 return res.status(400).json({
-                    message: 'estudiante_id, curso_id, tutor_titular_id y periodo son requeridos'
+                    message: 'estudiante_id, curso_id y periodo son requeridos'
                 })
             }
 
-            // Verificar que el estudiante existe
+            // Verificar que el estudiante existe y obtener sus datos completos
             const { data: estudiante, error: estudianteError } = await supabaseAdmin!
                 .from('Estudiante')
-                .select('estudiante_id')
+                .select('estudiante_id, nombre_completo, fecha_nacimiento, estado_activo')
                 .eq('estudiante_id', estudiante_id)
                 .single()
 
@@ -35,10 +36,38 @@ export class MatriculaController {
                 return res.status(404).json({ message: 'Estudiante no encontrado' })
             }
 
-            // Verificar que el curso existe
+            // Validar que el estudiante esté activo
+            if (!estudiante.estado_activo) {
+                return res.status(400).json({
+                    message: 'No se puede matricular a un estudiante inactivo',
+                    estudiante: estudiante.nombre_completo
+                })
+            }
+
+            // Verificar que el estudiante no tenga una matrícula activa en otro curso
+            const { data: matriculaActiva, error: matriculaActivaError } = await supabaseAdmin!
+                .from('Matricula')
+                .select('matricula_id, Curso(nombre)')
+                .eq('estudiante_id', estudiante_id)
+                .eq('estado_matricula_id', VALIDATION_CONSTANTS.ESTADO_MATRICULA_ACTIVA)
+                .single()
+
+            if (matriculaActiva) {
+                return res.status(400).json({
+                    message: `El estudiante ya tiene una matrícula activa en el curso: ${(matriculaActiva as any).Curso?.nombre || 'Desconocido'}`,
+                    estudiante: estudiante.nombre_completo
+                })
+            }
+
+            // Si hay error pero no es "no rows returned", lanzar el error
+            if (matriculaActivaError && matriculaActivaError.code !== 'PGRST116') {
+                throw matriculaActivaError
+            }
+
+            // Verificar que el curso existe y obtener su nivel
             const { data: curso, error: cursoError } = await supabaseAdmin!
                 .from('Curso')
-                .select('curso_id')
+                .select('curso_id, nombre, nivel_id, capacidad_maxima, anio_academico')
                 .eq('curso_id', curso_id)
                 .single()
 
@@ -46,15 +75,79 @@ export class MatriculaController {
                 return res.status(404).json({ message: 'Curso no encontrado' })
             }
 
-            // Verificar que el tutor existe
-            const { data: tutor, error: tutorError } = await supabaseAdmin!
-                .from('Tutor')
-                .select('tutor_id')
-                .eq('tutor_id', tutor_titular_id)
-                .single()
+            // Validar la edad del estudiante para el nivel del curso
+            if (estudiante.fecha_nacimiento) {
+                const ageValidation = validateAgeForNivel(estudiante.fecha_nacimiento, curso.nivel_id)
 
-            if (tutorError || !tutor) {
-                return res.status(404).json({ message: 'Tutor no encontrado' })
+                if (!ageValidation.valid) {
+                    return res.status(400).json({
+                        message: ageValidation.message,
+                        estudiante: estudiante.nombre_completo,
+                        edad: ageValidation.age,
+                        curso: curso.nombre
+                    })
+                }
+            } else {
+                return res.status(400).json({
+                    message: 'El estudiante no tiene fecha de nacimiento registrada',
+                    estudiante: estudiante.nombre_completo
+                })
+            }
+
+            // Verificar la capacidad del curso (si está definida)
+            if (curso.capacidad_maxima) {
+                const { count, error: countError } = await supabaseAdmin!
+                    .from('Matricula')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('curso_id', curso_id)
+                    .eq('estado_matricula_id', VALIDATION_CONSTANTS.ESTADO_MATRICULA_ACTIVA)
+
+                if (countError) throw countError
+
+                if (count !== null && count >= curso.capacidad_maxima) {
+                    return res.status(400).json({
+                        message: `El curso ${curso.nombre} ha alcanzado su capacidad máxima de ${curso.capacidad_maxima} estudiantes`,
+                        curso: curso.nombre,
+                        capacidad: curso.capacidad_maxima,
+                        matriculados: count
+                    })
+                }
+            }
+
+            // Verificar que el tutor existe y está activo (solo si se proporciona)
+            if (tutor_titular_id) {
+                const { data: tutor, error: tutorError } = await supabaseAdmin!
+                    .from('Tutor')
+                    .select('tutor_id, nombre_completo, estado_activo')
+                    .eq('tutor_id', tutor_titular_id)
+                    .single()
+
+                if (tutorError || !tutor) {
+                    return res.status(404).json({ message: 'Tutor no encontrado' })
+                }
+
+                if (!tutor.estado_activo) {
+                    return res.status(400).json({
+                        message: 'No se puede asignar un tutor inactivo',
+                        tutor: tutor.nombre_completo
+                    })
+                }
+
+                // Verificar que el tutor esté relacionado con el estudiante
+                const { data: parentesco, error: parentescoError } = await supabaseAdmin!
+                    .from('Parentesco')
+                    .select('estudiante_id')
+                    .eq('estudiante_id', estudiante_id)
+                    .eq('tutor_id', tutor_titular_id)
+                    .single()
+
+                if (parentescoError || !parentesco) {
+                    return res.status(400).json({
+                        message: 'El tutor no está relacionado con el estudiante',
+                        tutor: tutor.nombre_completo,
+                        estudiante: estudiante.nombre_completo
+                    })
+                }
             }
 
             // Crear matrícula

@@ -142,6 +142,16 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/admin/surveys',
+    name: 'AdminSurveys',
+    component: () => import('@/pages/admin/Surveys.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresRole: ['ADMINISTRADOR'],
+      title: 'Gestión de Encuestas'
+    }
+  },
+  {
     path: '/admin/teachers',
     name: 'AdminTeachers',
     component: () => import('@/pages/admin/Teachers.vue'),
