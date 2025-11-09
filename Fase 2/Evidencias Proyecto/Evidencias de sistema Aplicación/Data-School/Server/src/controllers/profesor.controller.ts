@@ -57,17 +57,53 @@ export class ProfesorController {
 
             let query = supabaseAdmin!
                 .from('Profesor')
-                .select('*, User(email_address, is_active)')
+                .select(`
+                    *,
+                    User(email_address, is_active)
+                `)
 
             if (incluir_inactivos !== 'true') {
                 query = query.eq('estado_activo', true)
             }
 
-            const { data, error } = await query
+            const { data: profesores, error } = await query
 
             if (error) throw error
 
-            return res.status(200).json(data || [])
+            // Para cada profesor, obtener contrato activo y especialidades
+            const profesoresConDetalles = await Promise.all(
+                (profesores || []).map(async (profesor) => {
+                    // Obtener contrato activo (sin fecha de término o fecha de término futura)
+                    const { data: contrato } = await supabaseAdmin!
+                        .from('Contrato')
+                        .select(`
+                            *,
+                            Profesion(id_profesion, nombre, descripcion)
+                        `)
+                        .eq('id_empleado', profesor.profesor_id)
+                        .or('termino_contrato.is.null,termino_contrato.gte.' + new Date().toISOString())
+                        .order('inicio_contrato', { ascending: false })
+                        .limit(1)
+                        .single()
+
+                    // Obtener especialidades
+                    const { data: especialidades } = await supabaseAdmin!
+                        .from('Profesor_especialidad')
+                        .select(`
+                            *,
+                            Especialidad(id, nombre_especialidad, tipo_especialidad)
+                        `)
+                        .eq('profesor_id', profesor.profesor_id)
+
+                    return {
+                        ...profesor,
+                        contrato: contrato || null,
+                        especialidades: especialidades || []
+                    }
+                })
+            )
+
+            return res.status(200).json(profesoresConDetalles)
 
         } catch (error: any) {
             return res.status(500).json({ message: error.message })
@@ -79,7 +115,7 @@ export class ProfesorController {
         try {
             const { id } = req.params
 
-            const { data, error } = await supabaseAdmin!
+            const { data: profesor, error } = await supabaseAdmin!
                 .from('Profesor')
                 .select('*, User(email_address, is_active)')
                 .eq('profesor_id', id)
@@ -87,11 +123,37 @@ export class ProfesorController {
 
             if (error) throw error
 
-            if (!data) {
+            if (!profesor) {
                 return res.status(404).json({ message: 'Profesor no encontrado' })
             }
 
-            return res.status(200).json(data)
+            // Obtener contrato activo
+            const { data: contrato } = await supabaseAdmin!
+                .from('Contrato')
+                .select(`
+                    *,
+                    Profesion(id_profesion, nombre, descripcion)
+                `)
+                .eq('id_empleado', profesor.profesor_id)
+                .or('termino_contrato.is.null,termino_contrato.gte.' + new Date().toISOString())
+                .order('inicio_contrato', { ascending: false })
+                .limit(1)
+                .single()
+
+            // Obtener especialidades
+            const { data: especialidades } = await supabaseAdmin!
+                .from('Profesor_especialidad')
+                .select(`
+                    *,
+                    Especialidad(id, nombre_especialidad, tipo_especialidad)
+                `)
+                .eq('profesor_id', profesor.profesor_id)
+
+            return res.status(200).json({
+                ...profesor,
+                contrato: contrato || null,
+                especialidades: especialidades || []
+            })
 
         } catch (error: any) {
             return res.status(500).json({ message: error.message })

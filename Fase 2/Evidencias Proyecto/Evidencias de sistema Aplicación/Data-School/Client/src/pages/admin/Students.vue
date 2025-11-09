@@ -113,12 +113,13 @@
                   <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Dirección</th>
                   <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Telefono</th>
                   <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                  <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Tutores</th>
                   <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
                 <tr v-if="paginatedStudents.length === 0">
-                  <td colspan="10" class="px-6 py-8 text-center text-sm text-gray-500">
+                  <td colspan="11" class="px-6 py-8 text-center text-sm text-gray-500">
                     No se encontraron estudiantes con los filtros aplicados
                   </td>
                 </tr>
@@ -137,6 +138,15 @@
                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" :class="student.estado_activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
                       {{ student.estado_activo ? 'Activo' : 'Inactivo' }}
                     </span>
+                  </td>
+                  <td class="px-6 py-4 text-center whitespace-nowrap text-sm font-medium">
+                    <button
+                      @click="openTutoresModal(student)"
+                      class="text-purple-600 hover:text-purple-900"
+                      title="Gestionar Tutores"
+                    >
+                      Ver Tutores
+                    </button>
                   </td>
                   <td class="px-6 py-4 text-center whitespace-nowrap text-sm font-medium">
                     <button @click="openEditModal(student)" class="text-blue-600 hover:text-blue-900">Editar</button>
@@ -369,6 +379,354 @@
           </div>
         </div>
       </div>
+
+      <!-- Modal de Gestión de Tutores -->
+      <div
+        v-if="showTutoresModal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+        @click.self="closeTutoresModal"
+      >
+        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div class="p-6">
+            <div class="flex justify-between items-center mb-6">
+              <div>
+                <h2 class="text-2xl font-bold text-gray-900">
+                  Gestionar Tutores - {{ selectedStudent?.nombre_completo }}
+                </h2>
+                <p class="text-gray-600 mt-1">
+                  RUT: {{ selectedStudent?.rut }}
+                </p>
+              </div>
+              <button @click="closeTutoresModal" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <!-- Botón para añadir tutor -->
+            <div class="mb-4">
+              <button
+                @click="showAddTutorSection = !showAddTutorSection"
+                :disabled="estudianteTutores.length >= 2"
+                class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Añadir Tutor
+              </button>
+              <p v-if="estudianteTutores.length >= 2" class="text-sm text-red-600 mt-2">
+                Máximo 2 tutores por estudiante
+              </p>
+            </div>
+
+            <!-- Sección para añadir tutor -->
+            <div v-if="showAddTutorSection && estudianteTutores.length < 2" class="bg-gray-50 rounded-lg p-4 mb-6">
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">Nuevo Tutor</h3>
+              <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre Completo *</label>
+                    <input
+                      v-model="newTutorForm.nombre_completo"
+                      type="text"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      placeholder="Juan Pérez"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">RUT</label>
+                    <input
+                      v-model="newTutorForm.rut"
+                      type="text"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      placeholder="12.345.678-9"
+                    />
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                    <input
+                      v-model="newTutorForm.telefono"
+                      type="text"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      placeholder="+56 9 1234 5678"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <input
+                    v-model="newTutorForm.email"
+                    type="email"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="juan@example.com"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
+                  <input
+                    v-model="newTutorForm.direccion"
+                    type="text"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="Calle 123, Comuna"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Ocupación</label>
+                  <input
+                    v-model="newTutorForm.ocupacion"
+                    type="text"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="Ingeniero, Profesor, etc."
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Parentesco *</label>
+                  <select
+                    v-model="newTutorForm.tipo_parentesco_id"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  >
+                    <option value="">Seleccione...</option>
+                    <option :value="1">Padre</option>
+                    <option :value="2">Madre</option>
+                    <option :value="3">Abuelo/a</option>
+                    <option :value="4">Tío/a</option>
+                    <option :value="5">Tutor Legal</option>
+                    <option :value="6">Otro</option>
+                  </select>
+                </div>
+
+                <div class="grid grid-cols-3 gap-4">
+                  <label class="flex items-center">
+                    <input
+                      v-model="newTutorForm.es_tutor_titular"
+                      type="checkbox"
+                      class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    <span class="ml-2 text-sm text-gray-700">Tutor Titular</span>
+                  </label>
+                  <label class="flex items-center">
+                    <input
+                      v-model="newTutorForm.es_contacto_emergencia"
+                      type="checkbox"
+                      class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    <span class="ml-2 text-sm text-gray-700">Contacto de Emergencia</span>
+                  </label>
+                  <label class="flex items-center">
+                    <input
+                      v-model="newTutorForm.puede_retirar"
+                      type="checkbox"
+                      class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    <span class="ml-2 text-sm text-gray-700">Puede Retirar</span>
+                  </label>
+                </div>
+
+                <div class="flex justify-end gap-3">
+                  <button
+                    @click="showAddTutorSection = false"
+                    class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    @click="createAndAssignTutor"
+                    :disabled="!newTutorForm.nombre_completo || !newTutorForm.tipo_parentesco_id || submitting"
+                    class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
+                    {{ submitting ? 'Creando...' : 'Crear Tutor' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Lista de tutores del estudiante -->
+            <div class="bg-white rounded-lg border border-gray-200">
+              <div class="px-4 py-3 border-b border-gray-200 bg-gray-50">
+                <h3 class="text-sm font-semibold text-gray-900">Tutores Asignados</h3>
+              </div>
+              <div v-if="loadingTutores" class="p-8 text-center">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+                <p class="text-gray-600 mt-2">Cargando tutores...</p>
+              </div>
+              <div v-else-if="estudianteTutores.length === 0" class="p-8 text-center text-gray-500">
+                No hay tutores asignados a este estudiante
+              </div>
+              <div v-else class="divide-y divide-gray-200">
+                <div
+                  v-for="parentesco in estudianteTutores"
+                  :key="parentesco.tutor_id"
+                  class="p-4 hover:bg-gray-50"
+                >
+                  <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                      <h4 class="text-lg font-semibold text-gray-900">{{ parentesco.Tutor?.nombre_completo }}</h4>
+                      <div class="mt-2 grid grid-cols-2 gap-2 text-sm">
+                        <div v-if="parentesco.Tutor?.rut">
+                          <span class="text-gray-600">RUT:</span>
+                          <span class="ml-1 text-gray-900">{{ parentesco.Tutor.rut }}</span>
+                        </div>
+                        <div v-if="parentesco.Tutor?.telefono">
+                          <span class="text-gray-600">Teléfono:</span>
+                          <span class="ml-1 text-gray-900">{{ parentesco.Tutor.telefono }}</span>
+                        </div>
+                        <div v-if="parentesco.Tutor?.email">
+                          <span class="text-gray-600">Email:</span>
+                          <span class="ml-1 text-gray-900">{{ parentesco.Tutor.email }}</span>
+                        </div>
+                        <div v-if="parentesco.Tutor?.ocupacion">
+                          <span class="text-gray-600">Ocupación:</span>
+                          <span class="ml-1 text-gray-900">{{ parentesco.Tutor.ocupacion }}</span>
+                        </div>
+                      </div>
+                      <div class="mt-2 flex gap-2">
+                        <span v-if="parentesco.es_tutor_titular" class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
+                          Titular
+                        </span>
+                        <span v-if="parentesco.es_contacto_emergencia" class="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded">
+                          Emergencia
+                        </span>
+                        <span v-if="parentesco.puede_retirar" class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">
+                          Puede Retirar
+                        </span>
+                      </div>
+                    </div>
+                    <div class="flex gap-2">
+                      <button
+                        @click="openEditTutorModal(parentesco)"
+                        class="text-blue-600 hover:text-blue-900"
+                        title="Editar relación"
+                      >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                      <button
+                        @click="confirmRemoveTutor(parentesco)"
+                        class="text-red-600 hover:text-red-900"
+                        title="Quitar tutor"
+                      >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Editar Relación Tutor -->
+      <div
+        v-if="showEditTutorModal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+        @click.self="showEditTutorModal = false"
+      >
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Editar Relación de Parentesco</h3>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Parentesco</label>
+              <select
+                v-model="editTutorForm.tipo_parentesco_id"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              >
+                <option :value="1">Padre</option>
+                <option :value="2">Madre</option>
+                <option :value="3">Abuelo/a</option>
+                <option :value="4">Tío/a</option>
+                <option :value="5">Tutor Legal</option>
+                <option :value="6">Otro</option>
+              </select>
+            </div>
+
+            <div class="space-y-2">
+              <label class="flex items-center">
+                <input
+                  v-model="editTutorForm.es_tutor_titular"
+                  type="checkbox"
+                  class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                />
+                <span class="ml-2 text-sm text-gray-700">Tutor Titular</span>
+              </label>
+              <label class="flex items-center">
+                <input
+                  v-model="editTutorForm.es_contacto_emergencia"
+                  type="checkbox"
+                  class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                />
+                <span class="ml-2 text-sm text-gray-700">Contacto de Emergencia</span>
+              </label>
+              <label class="flex items-center">
+                <input
+                  v-model="editTutorForm.puede_retirar"
+                  type="checkbox"
+                  class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                />
+                <span class="ml-2 text-sm text-gray-700">Puede Retirar</span>
+              </label>
+            </div>
+          </div>
+          <div class="flex justify-end gap-3 mt-6">
+            <button
+              @click="showEditTutorModal = false"
+              class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              @click="updateTutorRelation"
+              :disabled="submitting"
+              class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:bg-gray-400"
+            >
+              {{ submitting ? 'Guardando...' : 'Guardar Cambios' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Confirmar Quitar Tutor -->
+      <div
+        v-if="showRemoveTutorModal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+        @click.self="showRemoveTutorModal = false"
+      >
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Confirmar Eliminación</h3>
+          <p class="text-gray-600 mb-6">
+            ¿Estás seguro de que deseas quitar a
+            <span class="font-semibold">{{ tutorToRemove?.Tutor?.nombre_completo }}</span>
+            como tutor del estudiante?
+          </p>
+          <div class="flex justify-end gap-3">
+            <button
+              @click="showRemoveTutorModal = false"
+              class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              @click="removeTutor"
+              :disabled="submitting"
+              class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:bg-gray-400"
+            >
+              {{ submitting ? 'Quitando...' : 'Quitar Tutor' }}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </AdminLayout>
 </template>
@@ -377,6 +735,8 @@
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { useStudentStore } from '@/store/student.store';
 import { onMounted, computed, ref } from 'vue';
+import parentescoService from '@/services/parentesco.service';
+import type { Parentesco } from '@/services/parentesco.service';
 
 const studentStore = useStudentStore();
 const currentPage = ref(1);
@@ -401,6 +761,40 @@ const editForm = ref<{
   direccion: '',
   telefono: '',
   estado_activo: true
+});
+
+// Estado del modal de tutores
+const showTutoresModal = ref(false);
+const showAddTutorSection = ref(false);
+const showEditTutorModal = ref(false);
+const showRemoveTutorModal = ref(false);
+const selectedStudent = ref<any>(null);
+const loadingTutores = ref(false);
+const estudianteTutores = ref<Parentesco[]>([]);
+const submitting = ref(false);
+const tutorToRemove = ref<Parentesco | null>(null);
+const editingParentesco = ref<Parentesco | null>(null);
+
+// Formulario para nuevo tutor
+const newTutorForm = ref({
+  nombre_completo: '',
+  rut: '',
+  telefono: '',
+  email: '',
+  direccion: '',
+  ocupacion: '',
+  tipo_parentesco_id: '' as string | number,
+  es_tutor_titular: false,
+  es_contacto_emergencia: false,
+  puede_retirar: false
+});
+
+// Formulario para editar relación de parentesco
+const editTutorForm = ref({
+  tipo_parentesco_id: 1,
+  es_tutor_titular: false,
+  es_contacto_emergencia: false,
+  puede_retirar: false
 });
 
 // Normalizar RUT para comparación (quita puntos y guiones)
@@ -539,6 +933,141 @@ const saveStudent = async () => {
   } catch (error) {
     console.error('Error al actualizar estudiante:', error);
     alert('Error al actualizar el estudiante');
+  }
+};
+
+// Funciones para gestionar tutores
+const openTutoresModal = async (student: any) => {
+  selectedStudent.value = student;
+  showTutoresModal.value = true;
+  showAddTutorSection.value = false;
+
+  // Cargar tutores del estudiante
+  await loadEstudianteTutores();
+};
+
+const closeTutoresModal = () => {
+  showTutoresModal.value = false;
+  selectedStudent.value = null;
+  estudianteTutores.value = [];
+  showAddTutorSection.value = false;
+  resetNewTutorForm();
+};
+
+const loadEstudianteTutores = async () => {
+  if (!selectedStudent.value) return;
+
+  loadingTutores.value = true;
+  try {
+    const tutores = await parentescoService.getTutoresByEstudiante(selectedStudent.value.estudiante_id);
+    estudianteTutores.value = tutores;
+  } catch (error) {
+    console.error('Error cargando tutores del estudiante:', error);
+    alert('Error al cargar los tutores del estudiante');
+  } finally {
+    loadingTutores.value = false;
+  }
+};
+
+const resetNewTutorForm = () => {
+  newTutorForm.value = {
+    nombre_completo: '',
+    rut: '',
+    telefono: '',
+    email: '',
+    direccion: '',
+    ocupacion: '',
+    tipo_parentesco_id: '',
+    es_tutor_titular: false,
+    es_contacto_emergencia: false,
+    puede_retirar: false
+  };
+};
+
+const createAndAssignTutor = async () => {
+  if (!selectedStudent.value || !newTutorForm.value.nombre_completo || !newTutorForm.value.tipo_parentesco_id) {
+    alert('Por favor complete los campos requeridos');
+    return;
+  }
+
+  submitting.value = true;
+  try {
+    await parentescoService.createTutorAndAssign({
+      ...newTutorForm.value,
+      estudiante_id: selectedStudent.value.estudiante_id,
+      tipo_parentesco_id: Number(newTutorForm.value.tipo_parentesco_id)
+    });
+
+    alert('Tutor creado y asignado exitosamente');
+    resetNewTutorForm();
+    showAddTutorSection.value = false;
+    await loadEstudianteTutores();
+  } catch (error: any) {
+    console.error('Error creando tutor:', error);
+    alert(`Error: ${error.message || 'Error al crear el tutor'}`);
+  } finally {
+    submitting.value = false;
+  }
+};
+
+const openEditTutorModal = (parentesco: Parentesco) => {
+  editingParentesco.value = parentesco;
+  editTutorForm.value = {
+    tipo_parentesco_id: parentesco.tipo_parentesco_id,
+    es_tutor_titular: parentesco.es_tutor_titular,
+    es_contacto_emergencia: parentesco.es_contacto_emergencia,
+    puede_retirar: parentesco.puede_retirar
+  };
+  showEditTutorModal.value = true;
+};
+
+const updateTutorRelation = async () => {
+  if (!editingParentesco.value || !selectedStudent.value) return;
+
+  submitting.value = true;
+  try {
+    await parentescoService.update(
+      selectedStudent.value.estudiante_id,
+      editingParentesco.value.tutor_id,
+      editTutorForm.value
+    );
+
+    alert('Relación de parentesco actualizada exitosamente');
+    showEditTutorModal.value = false;
+    editingParentesco.value = null;
+    await loadEstudianteTutores();
+  } catch (error: any) {
+    console.error('Error actualizando relación:', error);
+    alert(`Error: ${error.message || 'Error al actualizar la relación'}`);
+  } finally {
+    submitting.value = false;
+  }
+};
+
+const confirmRemoveTutor = (parentesco: Parentesco) => {
+  tutorToRemove.value = parentesco;
+  showRemoveTutorModal.value = true;
+};
+
+const removeTutor = async () => {
+  if (!tutorToRemove.value || !selectedStudent.value) return;
+
+  submitting.value = true;
+  try {
+    await parentescoService.delete(
+      selectedStudent.value.estudiante_id,
+      tutorToRemove.value.tutor_id
+    );
+
+    alert('Tutor quitado exitosamente');
+    showRemoveTutorModal.value = false;
+    tutorToRemove.value = null;
+    await loadEstudianteTutores();
+  } catch (error: any) {
+    console.error('Error quitando tutor:', error);
+    alert(`Error: ${error.message || 'Error al quitar el tutor'}`);
+  } finally {
+    submitting.value = false;
   }
 };
 

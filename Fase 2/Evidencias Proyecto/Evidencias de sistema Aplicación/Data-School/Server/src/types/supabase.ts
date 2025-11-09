@@ -349,6 +349,7 @@ export type Database = {
           descripcion: string | null
           estado_activo: boolean | null
           horas_semanales: number | null
+          materia_id: number | null
           nombre: string
           periodo: string
           profesor_id: string
@@ -365,6 +366,7 @@ export type Database = {
           descripcion?: string | null
           estado_activo?: boolean | null
           horas_semanales?: number | null
+          materia_id?: number | null
           nombre: string
           periodo: string
           profesor_id: string
@@ -381,6 +383,7 @@ export type Database = {
           descripcion?: string | null
           estado_activo?: boolean | null
           horas_semanales?: number | null
+          materia_id?: number | null
           nombre?: string
           periodo?: string
           profesor_id?: string
@@ -395,6 +398,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "Curso"
             referencedColumns: ["curso_id"]
+          },
+          {
+            foreignKeyName: "Asignatura_materia_id_fkey"
+            columns: ["materia_id"]
+            isOneToOne: false
+            referencedRelation: "Materia"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "Asignatura_profesor_id_fkey"
@@ -496,7 +506,7 @@ export type Database = {
           auditoria_id: number
           datos_anteriores: Json | null
           datos_nuevos: Json | null
-          ip_address: unknown | null
+          ip_address: unknown
           registro_id: string | null
           tabla_afectada: string
           timestamp_accion: string | null
@@ -508,7 +518,7 @@ export type Database = {
           auditoria_id?: number
           datos_anteriores?: Json | null
           datos_nuevos?: Json | null
-          ip_address?: unknown | null
+          ip_address?: unknown
           registro_id?: string | null
           tabla_afectada: string
           timestamp_accion?: string | null
@@ -520,7 +530,7 @@ export type Database = {
           auditoria_id?: number
           datos_anteriores?: Json | null
           datos_nuevos?: Json | null
-          ip_address?: unknown | null
+          ip_address?: unknown
           registro_id?: string | null
           tabla_afectada?: string
           timestamp_accion?: string | null
@@ -752,7 +762,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "Curso_nivel_fkey"
+            foreignKeyName: "Curso_nivel_id_fkey"
             columns: ["nivel_id"]
             isOneToOne: false
             referencedRelation: "NivelCurso"
@@ -1276,6 +1286,27 @@ export type Database = {
             referencedColumns: ["sala_id"]
           },
         ]
+      }
+      Materia: {
+        Row: {
+          created_at: string
+          descripcion: string | null
+          id: number
+          nombre: string
+        }
+        Insert: {
+          created_at?: string
+          descripcion?: string | null
+          id?: number
+          nombre: string
+        }
+        Update: {
+          created_at?: string
+          descripcion?: string | null
+          id?: number
+          nombre?: string
+        }
+        Relationships: []
       }
       Matricula: {
         Row: {
@@ -1982,18 +2013,31 @@ export type Database = {
         }
         Returns: number
       }
-      format_rut: {
-        Args: { rut_input: string }
-        Returns: string
-      }
+      format_rut: { Args: { rut_input: string }; Returns: string }
       get_current_user_info: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           colegio_id: string
           email: string
           profile_completed: boolean
           role: Database["public"]["Enums"]["user_role_enum"]
           user_id: string
+        }[]
+      }
+      get_especialidades: {
+        Args: never
+        Returns: {
+          id: number
+          nombre_especialidad: string
+          tipo_especialidad: string
+        }[]
+      }
+      get_profesiones: {
+        Args: never
+        Returns: {
+          descripcion: string
+          id_profesion: number
+          nombre: string
         }[]
       }
       obtener_horario_estudiante: {
@@ -2018,14 +2062,8 @@ export type Database = {
           promedio: number
         }[]
       }
-      user_has_role: {
-        Args: { required_role: string }
-        Returns: boolean
-      }
-      validate_rut: {
-        Args: { rut_input: string }
-        Returns: boolean
-      }
+      user_has_role: { Args: { required_role: string }; Returns: boolean }
+      validate_rut: { Args: { rut_input: string }; Returns: boolean }
     }
     Enums: {
       dirigida_a_encuesta_enum:

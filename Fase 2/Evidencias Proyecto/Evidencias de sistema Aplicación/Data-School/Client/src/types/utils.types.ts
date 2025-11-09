@@ -8,3 +8,16 @@ export interface Nivel {
 }
 
 export type TipoNivel = 'Pre-Kinder' | 'Kinder' | 'Basico' | 'Medio'
+
+export interface Regiones {
+  name: string
+  romanNumber: string
+  number: string
+  id: string
+  communes: Comuna[]
+}
+
+export interface Comuna {
+  name: string
+  id: string
+}
