@@ -165,7 +165,7 @@ export class AuthController {
         try {
           const result = await client
             .from('Administrativo')
-            .select('administrativo_id, nombre_completo, cargo, rut, telefono, area_id, fecha_contratacion')
+            .select('administrativo_id, nombre_completo, cargo, rut, telefono, area_id, fecha_contratacion, colegio_id')
             .eq('user_id', userData.user_id)
             .maybeSingle(); // Usar maybeSingle() en lugar de single() para evitar error si no existe
 
@@ -495,7 +495,7 @@ export class AuthController {
           rut,
           telefono,
           estado_activo: true
-        })
+        } as any)
         .select()
         .single()
 
@@ -610,7 +610,7 @@ export class AuthController {
           direccion,
           genero,
           estado_activo: true
-        })
+        } as any)
         .select()
         .single()
 
@@ -688,7 +688,7 @@ export class AuthController {
           ocupacion,
           telefono_emergencia,
           estado_activo: true
-        })
+        } as any)
         .select()
         .single()
 

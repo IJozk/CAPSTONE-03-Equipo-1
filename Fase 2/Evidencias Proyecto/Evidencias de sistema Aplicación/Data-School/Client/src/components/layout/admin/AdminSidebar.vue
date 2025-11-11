@@ -133,7 +133,6 @@ const menuGroups = computed<MenuGroup[]>(() => [
     items: [
       { name: 'Cursos', icon: 'academic-cap', route: '/admin/courses' },
       { name: 'Asignaturas', icon: 'book-open', route: '/admin/subjects' },
-      { name: 'Horarios', icon: 'clock', route: '/admin/schedules' },
       { name: 'Calendario', icon: 'calendar', route: '/admin/calendar' },
       { name: 'Talleres', icon: 'puzzle', route: '/admin/workshops' },
       { name: 'Eventos', icon: 'calendar-event', route: '/admin/events' },
@@ -160,7 +159,7 @@ const menuGroups = computed<MenuGroup[]>(() => [
   {
     title: 'Configuración',
     items: [
-      { name: 'Configuración', icon: 'cog', route: '/admin/settings' },
+      { name: 'Configuración del Colegio', icon: 'cog', route: '/admin/config' },
       { name: 'Mi Perfil', icon: 'user', route: '/admin/profile' }
     ]
   }

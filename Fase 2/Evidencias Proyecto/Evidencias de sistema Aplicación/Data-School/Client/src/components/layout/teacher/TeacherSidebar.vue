@@ -142,7 +142,7 @@ const menuGroups = computed(() => [
       { name: 'Evaluaciones', icon: 'clipboard-check', route: '/teacher/evaluations', badge: evaluacionesPendientes.value || null },
       { name: 'Registro de Notas', icon: 'pencil', route: '/teacher/grades' },
       { name: 'Asistencia', icon: 'user-check', route: '/teacher/attendance', badge: asistenciasPendientes.value || null },
-      { name: 'Anotaciones', icon: 'annotation', route: '/teacher/observations' }
+      { name: 'Anotaciones', icon: 'annotation', route: '/teacher/anotaciones' }
     ]
   },
   {

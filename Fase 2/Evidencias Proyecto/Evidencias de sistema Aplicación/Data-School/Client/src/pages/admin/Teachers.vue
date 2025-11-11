@@ -18,6 +18,95 @@
         </router-link>
       </div>
 
+      <!-- Filters and Search -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <!-- Búsqueda -->
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Buscar</label>
+            <div class="relative">
+              <input
+                v-model="searchQuery"
+                type="text"
+                placeholder="Buscar por nombre, RUT, teléfono..."
+                @input="currentPage = 1"
+                class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+              <svg class="absolute left-3 top-2.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+          </div>
+
+          <!-- Filtro por Profesión -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Profesión</label>
+            <select
+              v-model="profesionFilter"
+              @change="currentPage = 1"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            >
+              <option value="">Todas las profesiones</option>
+              <option v-for="prof in allProfesiones" :key="prof.id_profesion" :value="prof.nombre">
+                {{ prof.nombre }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Filtro por Estado -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Opciones de visualización</label>
+            <div class="flex items-center h-10">
+              <input
+                id="show-inactive"
+                type="checkbox"
+                v-model="showInactive"
+                @change="currentPage = 1"
+                class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded cursor-pointer"
+              />
+              <label for="show-inactive" class="ml-2 text-sm text-gray-700 cursor-pointer">
+                Mostrar profesores inactivos
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botón para limpiar filtros -->
+        <div class="mt-4 flex justify-between items-center">
+          <button
+            @click="clearAllFilters"
+            class="text-sm text-gray-600 hover:text-gray-900 underline"
+          >
+            Limpiar filtros
+          </button>
+          <p class="text-sm text-gray-600">
+            Mostrando <span class="font-semibold">{{ filteredTeachers.length }}</span> de <span class="font-semibold">{{ teacherStore.profesores.length }}</span> profesores
+          </p>
+        </div>
+      </div>
+
+      <!-- Bulk Actions Bar -->
+      <div v-if="selectedTeachers.length > 0" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="text-sm font-medium text-blue-900">
+              {{ selectedTeachers.length }} profesor(es) seleccionado(s)
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button @click="deselectAll" class="px-3 py-1.5 text-sm text-blue-700 hover:text-blue-900 font-medium">
+              Deseleccionar todos
+            </button>
+            <button @click="confirmBulkDisable" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium">
+              Desactivar seleccionados
+            </button>
+            <button @click="confirmBulkEnable" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
+              Activar seleccionados
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Loading State -->
       <div v-if="teacherStore.loading" class="bg-white rounded-lg shadow p-8 text-center">
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
@@ -40,6 +129,15 @@
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
               <tr>
+                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                  <input
+                    type="checkbox"
+                    @change="toggleSelectAll"
+                    :checked="allPageSelected"
+                    :indeterminate="someSelected"
+                    class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded cursor-pointer"
+                  />
+                </th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">RUT</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre Completo</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teléfono</th>
@@ -50,12 +148,25 @@
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-if="teacherStore.profesores.length === 0">
-                <td colspan="7" class="px-6 py-8 text-center text-gray-500">
-                  No hay profesores registrados
+              <tr v-if="paginatedTeachers.length === 0">
+                <td colspan="8" class="px-6 py-8 text-center text-gray-500">
+                  {{ searchQuery || profesionFilter ? 'No se encontraron profesores con los filtros aplicados' : 'No hay profesores registrados' }}
                 </td>
               </tr>
-              <tr v-for="teacher in teacherStore.profesores" :key="teacher.profesor_id" class="hover:bg-gray-50">
+              <tr
+                v-for="teacher in paginatedTeachers"
+                :key="teacher.profesor_id"
+                class="hover:bg-gray-50 transition-colors"
+                :class="{ 'bg-blue-50': isSelected(teacher.profesor_id) }"
+              >
+                <td class="px-6 py-4 text-center whitespace-nowrap">
+                  <input
+                    type="checkbox"
+                    :checked="isSelected(teacher.profesor_id)"
+                    @change="toggleTeacher(teacher.profesor_id)"
+                    class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded cursor-pointer"
+                  />
+                </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ teacher.rut }}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ teacher.nombre_completo }}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ teacher.telefono || '-' }}</td>
@@ -112,6 +223,128 @@
                 </td>              </tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- Pagination -->
+        <div v-if="totalPages > 1" class="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+          <div class="flex-1 flex justify-between sm:hidden">
+            <button
+              @click="currentPage--"
+              :disabled="currentPage === 1"
+              class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Anterior
+            </button>
+            <button
+              @click="currentPage++"
+              :disabled="currentPage === totalPages"
+              class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Siguiente
+            </button>
+          </div>
+          <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+              <p class="text-sm text-gray-700">
+                Mostrando
+                <span class="font-medium">{{ ((currentPage - 1) * itemsPerPage) + 1 }}</span>
+                a
+                <span class="font-medium">{{ Math.min(currentPage * itemsPerPage, filteredTeachers.length) }}</span>
+                de
+                <span class="font-medium">{{ filteredTeachers.length }}</span>
+                resultados
+              </p>
+            </div>
+            <div>
+              <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                <button
+                  @click="currentPage--"
+                  :disabled="currentPage === 1"
+                  class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  </svg>
+                </button>
+                <button
+                  v-for="page in displayedPages"
+                  :key="page"
+                  @click="currentPage = page"
+                  :class="[
+                    page === currentPage
+                      ? 'z-10 bg-primary-50 border-primary-500 text-primary-600'
+                      : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50',
+                    'relative inline-flex items-center px-4 py-2 border text-sm font-medium'
+                  ]"
+                >
+                  {{ page }}
+                </button>
+                <button
+                  @click="currentPage++"
+                  :disabled="currentPage === totalPages"
+                  class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                  </svg>
+                </button>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Confirmación Desactivar en Lote -->
+      <div v-if="showBulkDisableModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg max-w-md w-full p-6">
+          <div class="flex items-start">
+            <div class="flex-shrink-0">
+              <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div class="ml-3 flex-1">
+              <h3 class="text-lg font-medium text-gray-900">Desactivar profesores</h3>
+              <p class="mt-2 text-sm text-gray-600">
+                ¿Estás seguro de que deseas desactivar {{ selectedTeachers.length }} profesor(es)?
+              </p>
+            </div>
+          </div>
+          <div class="mt-6 flex justify-end gap-3">
+            <button @click="showBulkDisableModal = false" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+              Cancelar
+            </button>
+            <button @click="handleBulkDisable" :disabled="bulkActionInProgress" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:bg-gray-400">
+              {{ bulkActionInProgress ? 'Desactivando...' : 'Desactivar' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Confirmación Activar en Lote -->
+      <div v-if="showBulkEnableModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg max-w-md w-full p-6">
+          <div class="flex items-start">
+            <div class="flex-shrink-0">
+              <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div class="ml-3 flex-1">
+              <h3 class="text-lg font-medium text-gray-900">Activar profesores</h3>
+              <p class="mt-2 text-sm text-gray-600">
+                ¿Estás seguro de que deseas activar {{ selectedTeachers.length }} profesor(es)?
+              </p>
+            </div>
+          </div>
+          <div class="mt-6 flex justify-end gap-3">
+            <button @click="showBulkEnableModal = false" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+              Cancelar
+            </button>
+            <button @click="handleBulkEnable" :disabled="bulkActionInProgress" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400">
+              {{ bulkActionInProgress ? 'Activando...' : 'Activar' }}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -468,6 +701,22 @@ import type { Contrato, Profesion } from '@/services/contrato.service';
 
 const teacherStore = useTeacherStore();
 
+// Búsqueda y filtros
+const searchQuery = ref('');
+const profesionFilter = ref('');
+const showInactive = ref(false);
+const currentPage = ref(1);
+const itemsPerPage = 20;
+
+// Catálogo de profesiones (ya existe más abajo, voy a usar la misma variable)
+const allProfesiones = todasProfesiones;
+
+// Selección múltiple
+const selectedTeachers = ref<string[]>([]);
+const showBulkDisableModal = ref(false);
+const showBulkEnableModal = ref(false);
+const bulkActionInProgress = ref(false);
+
 // Estado del modal de especialidades
 const showEspecialidadesModal = ref(false);
 const showAddEspecialidadSection = ref(false);
@@ -592,6 +841,159 @@ const finalizarContratoActual = async () => {
   } finally {
     submitting.value = false;
   }
+};
+
+// Computed: profesores filtrados
+const filteredTeachers = computed(() => {
+  let teachers = [...teacherStore.profesores];
+
+  // Filtrar por estado
+  if (!showInactive.value) {
+    teachers = teachers.filter(t => t.estado_activo === true);
+  }
+
+  // Filtrar por búsqueda
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase();
+    teachers = teachers.filter(t =>
+      t.nombre_completo.toLowerCase().includes(query) ||
+      t.rut.toLowerCase().includes(query) ||
+      (t.telefono && t.telefono.toLowerCase().includes(query))
+    );
+  }
+
+  // Filtrar por profesión
+  if (profesionFilter.value) {
+    teachers = teachers.filter(t =>
+      t.contrato?.Profesion?.nombre === profesionFilter.value
+    );
+  }
+
+  return teachers;
+});
+
+// Computed: paginación
+const totalPages = computed(() => Math.ceil(filteredTeachers.value.length / itemsPerPage));
+
+const paginatedTeachers = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  return filteredTeachers.value.slice(start, end);
+});
+
+const displayedPages = computed(() => {
+  const pages = [];
+  const maxPages = 5;
+  let startPage = Math.max(1, currentPage.value - Math.floor(maxPages / 2));
+  let endPage = Math.min(totalPages.value, startPage + maxPages - 1);
+
+  if (endPage - startPage < maxPages - 1) {
+    startPage = Math.max(1, endPage - maxPages + 1);
+  }
+
+  for (let i = startPage; i <= endPage; i++) {
+    pages.push(i);
+  }
+
+  return pages;
+});
+
+// Computed: selección
+const isSelected = (profesorId: string) => {
+  return selectedTeachers.value.includes(profesorId);
+};
+
+const allPageSelected = computed(() => {
+  if (paginatedTeachers.value.length === 0) return false;
+  return paginatedTeachers.value.every(t => isSelected(t.profesor_id));
+});
+
+const someSelected = computed(() => {
+  if (paginatedTeachers.value.length === 0) return false;
+  const selectedCount = paginatedTeachers.value.filter(t => isSelected(t.profesor_id)).length;
+  return selectedCount > 0 && selectedCount < paginatedTeachers.value.length;
+});
+
+// Funciones de selección
+const toggleTeacher = (profesorId: string) => {
+  const index = selectedTeachers.value.indexOf(profesorId);
+  if (index > -1) {
+    selectedTeachers.value.splice(index, 1);
+  } else {
+    selectedTeachers.value.push(profesorId);
+  }
+};
+
+const toggleSelectAll = () => {
+  if (allPageSelected.value) {
+    // Deseleccionar todos de la página actual
+    paginatedTeachers.value.forEach(t => {
+      const index = selectedTeachers.value.indexOf(t.profesor_id);
+      if (index > -1) {
+        selectedTeachers.value.splice(index, 1);
+      }
+    });
+  } else {
+    // Seleccionar todos de la página actual
+    paginatedTeachers.value.forEach(t => {
+      if (!isSelected(t.profesor_id)) {
+        selectedTeachers.value.push(t.profesor_id);
+      }
+    });
+  }
+};
+
+const deselectAll = () => {
+  selectedTeachers.value = [];
+};
+
+const confirmBulkDisable = () => {
+  showBulkDisableModal.value = true;
+};
+
+const confirmBulkEnable = () => {
+  showBulkEnableModal.value = true;
+};
+
+const handleBulkDisable = async () => {
+  bulkActionInProgress.value = true;
+  try {
+    for (const profesorId of selectedTeachers.value) {
+      await teacherStore.disableProfesor(profesorId);
+    }
+    selectedTeachers.value = [];
+    showBulkDisableModal.value = false;
+    await teacherStore.fetchProfesores();
+  } catch (error) {
+    console.error('Error al desactivar profesores:', error);
+    alert('Error al desactivar los profesores seleccionados');
+  } finally {
+    bulkActionInProgress.value = false;
+  }
+};
+
+const handleBulkEnable = async () => {
+  bulkActionInProgress.value = true;
+  try {
+    for (const profesorId of selectedTeachers.value) {
+      await teacherStore.enableProfesor(profesorId);
+    }
+    selectedTeachers.value = [];
+    showBulkEnableModal.value = false;
+    await teacherStore.fetchProfesores();
+  } catch (error) {
+    console.error('Error al activar profesores:', error);
+    alert('Error al activar los profesores seleccionados');
+  } finally {
+    bulkActionInProgress.value = false;
+  }
+};
+
+const clearAllFilters = () => {
+  searchQuery.value = '';
+  profesionFilter.value = '';
+  showInactive.value = false;
+  currentPage.value = 1;
 };
 
 // Computed: especialidades agrupadas por tipo

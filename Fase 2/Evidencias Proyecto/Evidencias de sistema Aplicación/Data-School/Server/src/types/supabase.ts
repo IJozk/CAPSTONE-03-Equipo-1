@@ -241,6 +241,58 @@ export type Database = {
           },
         ]
       }
+      Anotaciones: {
+        Row: {
+          created_at: string
+          descripcion: string | null
+          estudiante_id: string
+          fecha: string
+          id: number
+          profesor_id: string | null
+          tipo_anotacion: string
+        }
+        Insert: {
+          created_at?: string
+          descripcion?: string | null
+          estudiante_id?: string
+          fecha: string
+          id?: number
+          profesor_id?: string | null
+          tipo_anotacion: string
+        }
+        Update: {
+          created_at?: string
+          descripcion?: string | null
+          estudiante_id?: string
+          fecha?: string
+          id?: number
+          profesor_id?: string | null
+          tipo_anotacion?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "Anotaciones_estudiante_id_fkey"
+            columns: ["estudiante_id"]
+            isOneToOne: false
+            referencedRelation: "Estudiante"
+            referencedColumns: ["estudiante_id"]
+          },
+          {
+            foreignKeyName: "Anotaciones_estudiante_id_fkey"
+            columns: ["estudiante_id"]
+            isOneToOne: false
+            referencedRelation: "vista_resumen_estudiantes"
+            referencedColumns: ["estudiante_id"]
+          },
+          {
+            foreignKeyName: "Anotaciones_profesor_id_fkey"
+            columns: ["profesor_id"]
+            isOneToOne: false
+            referencedRelation: "Profesor"
+            referencedColumns: ["profesor_id"]
+          },
+        ]
+      }
       Area: {
         Row: {
           area_id: number

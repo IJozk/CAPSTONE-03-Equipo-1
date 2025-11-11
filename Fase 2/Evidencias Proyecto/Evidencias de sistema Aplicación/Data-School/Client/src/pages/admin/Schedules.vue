@@ -136,7 +136,7 @@
         <div class="col-span-3">
           <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sticky top-6">
             <h3 class="text-lg font-bold text-gray-900 mb-4">Asignaturas del Curso</h3>
-            <div class="space-y-2">
+            <div class="space-y-3">
               <div
                 v-for="asignatura in asignaturas"
                 :key="asignatura.asignatura_id"
@@ -145,6 +145,24 @@
               >
                 <p class="text-sm font-semibold text-gray-900">{{ asignatura.nombre }}</p>
                 <p class="text-xs text-gray-600 mt-1">{{ asignatura.profesor_nombre }}</p>
+
+                <!-- Indicador de horas -->
+                <div class="mt-2">
+                  <div class="flex justify-between items-center text-xs mb-1">
+                    <span class="text-gray-600">Horas asignadas</span>
+                    <span class="font-medium" :class="getHorasAsignadas(asignatura.asignatura_id) > asignatura.horas_semanales ? 'text-red-600' : 'text-gray-900'">
+                      {{ getHorasAsignadas(asignatura.asignatura_id).toFixed(1) }}h / {{ asignatura.horas_semanales }}h
+                    </span>
+                  </div>
+                  <!-- Barra de progreso -->
+                  <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      class="h-2 rounded-full transition-all"
+                      :class="getHorasAsignadas(asignatura.asignatura_id) > asignatura.horas_semanales ? 'bg-red-500' : getHorasAsignadas(asignatura.asignatura_id) === asignatura.horas_semanales ? 'bg-green-500' : 'bg-blue-500'"
+                      :style="{ width: Math.min((getHorasAsignadas(asignatura.asignatura_id) / asignatura.horas_semanales) * 100, 100) + '%' }"
+                    ></div>
+                  </div>
+                </div>
               </div>
               <div v-if="asignaturas.length === 0" class="text-center py-8 text-gray-500 text-sm">
                 No hay asignaturas asociadas a este curso
@@ -371,6 +389,7 @@ interface Asignatura {
   profesor_id: string
   profesor_nombre: string
   periodo: string
+  horas_semanales: number
 }
 
 interface Sala {
@@ -505,6 +524,52 @@ const getAsignaturaColor = (asignatura: any) => {
   return colors[hash % colors.length]
 }
 
+// Calcula las horas asignadas a una asignatura sumando la duración de todos sus bloques
+const getHorasAsignadas = (asignaturaId: string): number => {
+  const horariosAsignatura = horarios.value.filter(h => h.asignatura_id === asignaturaId)
+
+  let totalMinutos = 0
+  horariosAsignatura.forEach(horario => {
+    const [horaInicio, minInicio] = horario.hora_inicio.split(':').map(Number)
+    const [horaFin, minFin] = horario.hora_termino.split(':').map(Number)
+
+    const minutosInicio = horaInicio * 60 + minInicio
+    const minutosFin = horaFin * 60 + minFin
+
+    totalMinutos += minutosFin - minutosInicio
+  })
+
+  // Convertir minutos a horas con decimales
+  return totalMinutos / 60
+}
+
+// Verifica si agregar un nuevo bloque excedería las horas semanales
+const validarHorasDisponibles = (asignaturaId: string, horaInicio: string, horaTermino: string): { valido: boolean, mensaje: string } => {
+  const asignatura = asignaturas.value.find(a => a.asignatura_id === asignaturaId)
+  if (!asignatura || !asignatura.horas_semanales) {
+    return { valido: true, mensaje: '' }
+  }
+
+  const horasActuales = getHorasAsignadas(asignaturaId)
+
+  // Calcular duración del nuevo bloque
+  const [horaIni, minIni] = horaInicio.split(':').map(Number)
+  const [horaFin, minFin] = horaTermino.split(':').map(Number)
+  const minutosBloque = (horaFin * 60 + minFin) - (horaIni * 60 + minIni)
+  const horasBloque = minutosBloque / 60
+
+  const totalHoras = horasActuales + horasBloque
+
+  if (totalHoras > asignatura.horas_semanales) {
+    return {
+      valido: false,
+      mensaje: `Esta asignatura tiene ${asignatura.horas_semanales}h semanales. Ya tiene ${horasActuales.toFixed(1)}h asignadas. Este bloque suma ${horasBloque.toFixed(1)}h más, excediendo el límite.`
+    }
+  }
+
+  return { valido: true, mensaje: '' }
+}
+
 const loadCursos = async () => {
   try {
     await cursoStore.fetchAll()
@@ -530,7 +595,8 @@ const loadAsignaturas = async () => {
       curso_nombre: a.Curso?.nombre || a.curso?.nombre || '',
       profesor_id: a.profesor_id,
       profesor_nombre: a.Profesor?.nombre_completo || a.profesor?.nombre_completo || '',
-      periodo: a.periodo
+      periodo: a.periodo,
+      horas_semanales: a.horas_semanales || 0
     }))
 
     await loadHorarios()
@@ -646,6 +712,21 @@ const closeModal = () => {
 const handleSubmit = async () => {
   try {
     submitting.value = true
+
+    // Validar horas disponibles solo al crear o si cambió la asignatura/horas al editar
+    if (!isEditing.value || formData.value.asignatura_id) {
+      const validacion = validarHorasDisponibles(
+        formData.value.asignatura_id,
+        formData.value.hora_inicio,
+        formData.value.hora_termino
+      )
+
+      if (!validacion.valido) {
+        alert(validacion.mensaje)
+        submitting.value = false
+        return
+      }
+    }
 
     const data = {
       ...formData.value,
