@@ -165,7 +165,7 @@ export class AuthController {
         try {
           const result = await client
             .from('Administrativo')
-            .select('administrativo_id, nombre_completo, cargo, rut, telefono, area_id, fecha_contratacion')
+            .select('administrativo_id, nombre_completo, cargo, rut, telefono, area_id, fecha_contratacion, colegio_id')
             .eq('user_id', userData.user_id)
             .maybeSingle(); // Usar maybeSingle() en lugar de single() para evitar error si no existe
 
@@ -224,7 +224,7 @@ export class AuthController {
         const client = supabaseAdmin || supabase;
         const result = await client
           .from('Estudiante')
-          .select('nombre_completo, rut, telefono, fecha_nacimiento, genero, direccion')
+          .select('estudiante_id, nombre_completo, rut, telefono, fecha_nacimiento, genero, direccion')
           .eq('user_id', userData.user_id)
           .single();
 
@@ -267,6 +267,10 @@ export class AuthController {
           // Información adicional para profesores
           ...(userData.role === 'PROFESOR' && !teacherError && teacherData
             ? { teacher_profile: teacherData }
+            : {}),
+          // Información adicional para estudiantes
+          ...(userData.role === 'ESTUDIANTE_APODERADO' && !studentError && studentData
+            ? { estudiante_profile: studentData }
             : {})
         },
         session: data.session,
@@ -491,7 +495,7 @@ export class AuthController {
           rut,
           telefono,
           estado_activo: true
-        })
+        } as any)
         .select()
         .single()
 
@@ -606,7 +610,7 @@ export class AuthController {
           direccion,
           genero,
           estado_activo: true
-        })
+        } as any)
         .select()
         .single()
 
@@ -684,7 +688,7 @@ export class AuthController {
           ocupacion,
           telefono_emergencia,
           estado_activo: true
-        })
+        } as any)
         .select()
         .single()
 

@@ -241,6 +241,58 @@ export type Database = {
           },
         ]
       }
+      Anotaciones: {
+        Row: {
+          created_at: string
+          descripcion: string | null
+          estudiante_id: string
+          fecha: string
+          id: number
+          profesor_id: string | null
+          tipo_anotacion: string
+        }
+        Insert: {
+          created_at?: string
+          descripcion?: string | null
+          estudiante_id?: string
+          fecha: string
+          id?: number
+          profesor_id?: string | null
+          tipo_anotacion: string
+        }
+        Update: {
+          created_at?: string
+          descripcion?: string | null
+          estudiante_id?: string
+          fecha?: string
+          id?: number
+          profesor_id?: string | null
+          tipo_anotacion?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "Anotaciones_estudiante_id_fkey"
+            columns: ["estudiante_id"]
+            isOneToOne: false
+            referencedRelation: "Estudiante"
+            referencedColumns: ["estudiante_id"]
+          },
+          {
+            foreignKeyName: "Anotaciones_estudiante_id_fkey"
+            columns: ["estudiante_id"]
+            isOneToOne: false
+            referencedRelation: "vista_resumen_estudiantes"
+            referencedColumns: ["estudiante_id"]
+          },
+          {
+            foreignKeyName: "Anotaciones_profesor_id_fkey"
+            columns: ["profesor_id"]
+            isOneToOne: false
+            referencedRelation: "Profesor"
+            referencedColumns: ["profesor_id"]
+          },
+        ]
+      }
       Area: {
         Row: {
           area_id: number
@@ -870,6 +922,52 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "TipoEncuesta"
             referencedColumns: ["tipo_encuesta_id"]
+          },
+        ]
+      }
+      Encuesta_Estudiante: {
+        Row: {
+          created_at: string
+          estudiante_id: string
+          fecha_respuesta: string | null
+          id_encuesta: string
+          respuesta_encuesta: Json
+        }
+        Insert: {
+          created_at?: string
+          estudiante_id?: string
+          fecha_respuesta?: string | null
+          id_encuesta: string
+          respuesta_encuesta: Json
+        }
+        Update: {
+          created_at?: string
+          estudiante_id?: string
+          fecha_respuesta?: string | null
+          id_encuesta?: string
+          respuesta_encuesta?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "Encuesta_Estudiante_estudiante_id_fkey"
+            columns: ["estudiante_id"]
+            isOneToOne: false
+            referencedRelation: "Estudiante"
+            referencedColumns: ["estudiante_id"]
+          },
+          {
+            foreignKeyName: "Encuesta_Estudiante_estudiante_id_fkey"
+            columns: ["estudiante_id"]
+            isOneToOne: false
+            referencedRelation: "vista_resumen_estudiantes"
+            referencedColumns: ["estudiante_id"]
+          },
+          {
+            foreignKeyName: "Encuesta_Estudiante_id_encuesta_fkey"
+            columns: ["id_encuesta"]
+            isOneToOne: false
+            referencedRelation: "Encuesta"
+            referencedColumns: ["encuesta_id"]
           },
         ]
       }

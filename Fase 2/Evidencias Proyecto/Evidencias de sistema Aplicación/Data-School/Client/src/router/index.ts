@@ -112,6 +112,16 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/admin/schedules',
+    name: 'AdminSchedules',
+    component: () => import('@/pages/admin/Schedules.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresRole: ['ADMINISTRADOR'],
+      title: 'Gestión de Horarios'
+    }
+  },
+  {
     path: '/admin/calendar',
     name: 'AdminCalendar',
     component: () => import('@/pages/admin/Calendar.vue'),
@@ -199,6 +209,16 @@ const routes: RouteRecordRaw[] = [
       requiresAuth: true,
       requiresRole: ['ADMINISTRADOR'],
       title: 'Reportes'
+    }
+  },
+  {
+    path: '/admin/config',
+    name: 'AdminSchoolConfig',
+    component: () => import('@/pages/admin/SchoolConfig.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresRole: ['ADMINISTRADOR'],
+      title: 'Configuración del Colegio'
     }
   },
   {
@@ -328,9 +348,9 @@ const routes: RouteRecordRaw[] = [
         }
       },
       {
-        path: 'observations',
-        name: 'TeacherObservations',
-        component: () => import('@/pages/teacher/Observations.vue'),
+        path: 'anotaciones',
+        name: 'TeacherAnotaciones',
+        component: () => import('@/pages/teacher/Anotaciones.vue'),
         meta: {
           requiresAuth: true,
           requiresRole: ['PROFESOR', 'ADMINISTRADOR'],

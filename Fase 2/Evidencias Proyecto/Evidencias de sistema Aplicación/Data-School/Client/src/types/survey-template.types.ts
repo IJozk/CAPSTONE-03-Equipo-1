@@ -61,11 +61,10 @@ export interface Section {
 // Respuesta de un estudiante a una encuesta
 export interface SurveyResponse {
   encuesta_id: string;
-  estudiante_id: number;
-  answers: {
+  responses: {
     [questionId: string]: any; // El valor puede ser string, number, array, etc.
   };
-  submitted_at: string;
+  completed_at: string;
 }
 
 // Tipos para el builder

@@ -36,8 +36,11 @@ import grupoTallerRoutes from './grupoTaller.router'
 import areaRoutes from './area.router'
 import eventoRoutes from './evento.router'
 import encuestaRoutes from './encuesta.router'
+import encuestaEstudianteRoutes from './encuestaEstudiante.router'
 import configuracionColegioRoutes from './configuracionColegio.router'
 import datosEstudianteRoutes from './datosEstudiante.router'
+import anotacionesRoutes from './anotaciones.router'
+import zonaRoutes from './zona.router'
 
 const router = Router()
 
@@ -89,8 +92,11 @@ router.use('/inscripciones-taller', grupoTallerRoutes)
 router.use('/areas', areaRoutes)
 router.use('/eventos', eventoRoutes)
 router.use('/encuestas', encuestaRoutes)
+router.use('/encuesta-estudiante', encuestaEstudianteRoutes)
 router.use('/configuracion-colegio', configuracionColegioRoutes)
 router.use('/datos-estudiante', datosEstudianteRoutes)
+router.use('/anotaciones', anotacionesRoutes)
+router.use('/zonas', zonaRoutes)
 
 // Rutas protegidas
 router.use('/protected', protectedRoutes)

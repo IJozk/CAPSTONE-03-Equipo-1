@@ -123,6 +123,15 @@
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                   <button
+                    @click="goToSchedules(curso)"
+                    class="text-blue-600 hover:text-blue-900"
+                    title="Gestionar Horarios"
+                  >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </button>
+                  <button
                     @click="openEditModal(curso)"
                     class="text-primary-600 hover:text-primary-900"
                     title="Editar"
@@ -530,6 +539,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import { useCursoStore } from '@/store/curso.store'
 import { useStudentStore } from '@/store/student.store'
@@ -539,6 +549,8 @@ import type { Estudiante } from '@/types/users.types'
 import { NIVELES, getNivelDisplay } from '@/constants/niveles.constants'
 import matriculaService from '@/services/matricula.service'
 import type { Matricula } from '@/services/matricula.service'
+
+const router = useRouter()
 import parentescoService from '@/services/parentesco.service'
 import { validateAgeForNivel } from '@/constants/validations.constants'
 
@@ -683,6 +695,13 @@ const openEditModal = (curso: Curso) => {
     capacidad_maxima: curso.capacidad_maxima
   }
   showModal.value = true
+}
+
+const goToSchedules = (curso: Curso) => {
+  router.push({
+    path: '/admin/schedules',
+    query: { curso_id: curso.curso_id }
+  })
 }
 
 const closeModal = () => {
