@@ -87,31 +87,31 @@ const profesores = teacherStore.profesores;
 const loadData = async () => {
   try {
     loading.value = true;
-    console.log('🔍 [AreasTab] Iniciando carga de datos...');
-    console.log('🔍 [AreasTab] Usuario:', authStore.user);
+    console.log('[AreasTab] Iniciando carga de datos...');
+    console.log('[AreasTab] Usuario:', authStore.user);
 
     // Obtener colegio_id del usuario o del admin_profile
     const colegioId = authStore.user?.colegio_id;
     console.log('🔍 [AreasTab] Colegio ID:', colegioId);
 
     if (colegioId) {
-      console.log('🔍 [AreasTab] Llamando a areaService.getAll...');
+      console.log('[AreasTab] Llamando a areaService.getAll...');
       areas.value = await areaService.getAll(colegioId);
-      console.log('✅ [AreasTab] Áreas cargadas:', areas.value);
+      console.log('[AreasTab] Áreas cargadas:', areas.value);
 
       if (teacherStore.profesores.length === 0) {
-        console.log('🔍 [AreasTab] Cargando profesores...');
+        console.log('[AreasTab] Cargando profesores...');
         await teacherStore.fetchProfesores();
-        console.log('✅ [AreasTab] Profesores cargados:', teacherStore.profesores.length);
+        console.log('[AreasTab] Profesores cargados:', teacherStore.profesores.length);
       }
     } else {
-      console.warn('⚠️ [AreasTab] No hay colegio_id disponible');
+      console.warn('[AreasTab] No hay colegio_id disponible');
     }
   } catch (error) {
-    console.error('❌ [AreasTab] Error:', error);
+    console.error('[AreasTab] Error:', error);
   } finally {
     loading.value = false;
-    console.log('🏁 [AreasTab] Carga finalizada');
+    console.log('[AreasTab] Carga finalizada');
   }
 };
 

@@ -1,7 +1,6 @@
 <template>
-  <AdminSidebar />
-   <div class="min-h-screen bg-gray-50 p-6 md:ml-64">
-    <div class="max-w-7xl mx-auto">
+  <AdminLayout>
+    <div class="space-y-6">
       <!-- Header -->
       <div class="mb-6">
         <h1 class="text-2xl font-bold text-gray-900">Configuración del Colegio</h1>
@@ -58,20 +57,17 @@
         </div>
       </div>
     </div>
-  </div>
+  </AdminLayout>
 </template>
 
 <script setup lang="ts">
-import { ref, h, onMounted } from 'vue';
+import { ref, h } from 'vue';
+import AdminLayout from '@/layouts/AdminLayout.vue';
 import InfoGeneralTab from '../../components/admin/config/InfoGeneralTab.vue';
 import AnioAcademicoTab from '../../components/admin/config/AnioAcademicoTab.vue';
 import ZonasTab from '../../components/admin/config/ZonasTab.vue';
 import SalasTab from '../../components/admin/config/SalasTab.vue';
 import AreasTab from '../../components/admin/config/AreasTab.vue';
-import AdminSidebar from '../../components/layout/admin/AdminSidebar.vue';
-import { useAuthStore } from '@/store/auth.store';
-
-const authStore = useAuthStore()
 
 // Icons as components
 const InfoIcon = {
