@@ -36,6 +36,7 @@ export interface User {
     fecha_nacimiento?: string; // ISO date
   };
   estudiante_profile?: {
+    estudiante_id: string;
     nombre_completo: string;
     rut: string;
     fecha_nacimiento: string; // ISO date

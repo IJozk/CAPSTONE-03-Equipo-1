@@ -224,7 +224,7 @@ export class AuthController {
         const client = supabaseAdmin || supabase;
         const result = await client
           .from('Estudiante')
-          .select('nombre_completo, rut, telefono, fecha_nacimiento, genero, direccion')
+          .select('estudiante_id, nombre_completo, rut, telefono, fecha_nacimiento, genero, direccion')
           .eq('user_id', userData.user_id)
           .single();
 
@@ -267,6 +267,10 @@ export class AuthController {
           // Información adicional para profesores
           ...(userData.role === 'PROFESOR' && !teacherError && teacherData
             ? { teacher_profile: teacherData }
+            : {}),
+          // Información adicional para estudiantes
+          ...(userData.role === 'ESTUDIANTE_APODERADO' && !studentError && studentData
+            ? { estudiante_profile: studentData }
             : {})
         },
         session: data.session,
