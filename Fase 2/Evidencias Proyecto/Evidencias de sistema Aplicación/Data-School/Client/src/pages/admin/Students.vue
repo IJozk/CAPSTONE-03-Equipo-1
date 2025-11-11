@@ -68,30 +68,32 @@
 
             <!-- Filtro por Estado -->
             <div>
-              <label for="status-filter" class="block text-sm font-medium text-gray-700 mb-2">
-                Filtrar por Estado
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Opciones de visualización
               </label>
-              <select
-                id="status-filter"
-                v-model="statusFilter"
-                @change="currentPage = 1"
-                class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-              >
-                <option value="">Todos</option>
-                <option value="true">Activos</option>
-                <option value="false">Inactivos</option>
-              </select>
+              <div class="flex items-center h-10">
+                <input
+                  id="show-disabled"
+                  type="checkbox"
+                  v-model="showDisabled"
+                  @change="currentPage = 1"
+                  class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded cursor-pointer"
+                />
+                <label for="show-disabled" class="ml-2 text-sm text-gray-700 cursor-pointer">
+                  Mostrar estudiantes deshabilitados
+                </label>
+              </div>
             </div>
           </div>
 
-          <!-- Información de paginación -->
+          <!-- Información de paginación y acciones en lote -->
           <div class="mb-4 flex items-center justify-between">
             <div class="text-sm text-gray-600">
               Mostrando {{ startIndex + 1 }} - {{ endIndex }} de {{ totalFilteredStudents }} estudiantes
-              <span v-if="rutFilter || statusFilter" class="font-medium text-primary-600">(filtrado)</span>
+              <span v-if="rutFilter || showDisabled" class="font-medium text-primary-600">(filtrado)</span>
             </div>
             <button
-              v-if="rutFilter || statusFilter"
+              v-if="rutFilter || showDisabled"
               @click="clearAllFilters"
               class="text-sm text-primary-600 hover:text-primary-700 font-medium"
             >
@@ -99,11 +101,60 @@
             </button>
           </div>
 
+          <!-- Acciones en lote -->
+          <div v-if="selectedStudents.length > 0" class="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="text-sm font-medium text-blue-900">
+                  {{ selectedStudents.length }} estudiante(s) seleccionado(s)
+                </span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button
+                  @click="deselectAll"
+                  class="px-3 py-1.5 text-sm text-blue-700 hover:text-blue-900 font-medium"
+                >
+                  Deseleccionar todos
+                </button>
+                <button
+                  @click="confirmBulkDisable"
+                  class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2 text-sm"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                  </svg>
+                  Deshabilitar seleccionados
+                </button>
+                <button
+                  @click="confirmBulkEnable"
+                  class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 text-sm"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Habilitar seleccionados
+                </button>
+              </div>
+            </div>
+          </div>
+
           <!-- Tabla de estudiantes -->
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gray-50">
                 <tr>
+                  <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                    <input
+                      type="checkbox"
+                      @change="toggleSelectAll"
+                      :checked="allPageSelected"
+                      :indeterminate="someSelected"
+                      class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded cursor-pointer"
+                    />
+                  </th>
                   <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">RUT</th>
                   <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre Completo</th>
                   <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
@@ -119,11 +170,19 @@
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
                 <tr v-if="paginatedStudents.length === 0">
-                  <td colspan="11" class="px-6 py-8 text-center text-sm text-gray-500">
+                  <td colspan="12" class="px-6 py-8 text-center text-sm text-gray-500">
                     No se encontraron estudiantes con los filtros aplicados
                   </td>
                 </tr>
-                <tr v-for="student in paginatedStudents" :key="student.user_id">
+                <tr v-for="student in paginatedStudents" :key="student.user_id" :class="isSelected(student.estudiante_id) ? 'bg-blue-50' : ''">
+                  <td class="px-6 py-4 text-center whitespace-nowrap">
+                    <input
+                      type="checkbox"
+                      :checked="isSelected(student.estudiante_id)"
+                      @change="toggleStudent(student.estudiante_id)"
+                      class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded cursor-pointer"
+                    />
+                  </td>
                   <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-900">
                     <span class="font-medium">{{ student.rut }}</span>
                   </td>
@@ -728,6 +787,76 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal de confirmación para deshabilitar en lote -->
+    <div v-if="showBulkDisableModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-lg max-w-md w-full p-6">
+        <div class="flex items-start">
+          <div class="flex-shrink-0">
+            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <div class="ml-3 flex-1">
+            <h3 class="text-lg font-medium text-gray-900">Deshabilitar estudiantes</h3>
+            <p class="mt-2 text-sm text-gray-600">
+              ¿Estás seguro de que deseas deshabilitar {{ selectedStudents.length }} estudiante(s)? Los estudiantes deshabilitados no podrán acceder al sistema.
+            </p>
+          </div>
+        </div>
+        <div class="mt-6 flex justify-end gap-3">
+          <button
+            @click="showBulkDisableModal = false"
+            :disabled="bulkActionInProgress"
+            class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
+          >
+            Cancelar
+          </button>
+          <button
+            @click="handleBulkDisable"
+            :disabled="bulkActionInProgress"
+            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+          >
+            {{ bulkActionInProgress ? 'Deshabilitando...' : 'Deshabilitar' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de confirmación para habilitar en lote -->
+    <div v-if="showBulkEnableModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-lg max-w-md w-full p-6">
+        <div class="flex items-start">
+          <div class="flex-shrink-0">
+            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div class="ml-3 flex-1">
+            <h3 class="text-lg font-medium text-gray-900">Habilitar estudiantes</h3>
+            <p class="mt-2 text-sm text-gray-600">
+              ¿Estás seguro de que deseas habilitar {{ selectedStudents.length }} estudiante(s)? Los estudiantes habilitados podrán acceder nuevamente al sistema.
+            </p>
+          </div>
+        </div>
+        <div class="mt-6 flex justify-end gap-3">
+          <button
+            @click="showBulkEnableModal = false"
+            :disabled="bulkActionInProgress"
+            class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
+          >
+            Cancelar
+          </button>
+          <button
+            @click="handleBulkEnable"
+            :disabled="bulkActionInProgress"
+            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+          >
+            {{ bulkActionInProgress ? 'Habilitando...' : 'Habilitar' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </AdminLayout>
 </template>
 
@@ -742,7 +871,13 @@ const studentStore = useStudentStore();
 const currentPage = ref(1);
 const itemsPerPage = 20;
 const rutFilter = ref('');
-const statusFilter = ref('');
+const showDisabled = ref(false);
+
+// Estado de selección múltiple
+const selectedStudents = ref<string[]>([]);
+const showBulkDisableModal = ref(false);
+const showBulkEnableModal = ref(false);
+const bulkActionInProgress = ref(false);
 
 // Estado del modal de edición
 const isEditModalOpen = ref(false);
@@ -815,13 +950,9 @@ const filteredStudents = computed(() => {
     });
   }
 
-  // Filtrar por estado
-  if (statusFilter.value !== '') {
-    const isActive = statusFilter.value === 'true';
-    students = students.filter(student => {
-      return (student.estado_activo === isActive || 
-              student.estado_activo === Boolean(isActive));
-    });
+  // Filtrar por estado - Por defecto muestra solo activos, a menos que se marque el checkbox
+  if (!showDisabled.value) {
+    students = students.filter(student => student.estado_activo === true);
   }
 
   return students;
@@ -866,8 +997,109 @@ const clearRutFilter = () => {
 
 const clearAllFilters = () => {
   rutFilter.value = '';
-  statusFilter.value = '';
+  showDisabled.value = false;
   currentPage.value = 1;
+};
+
+// Funciones de selección múltiple
+const isSelected = (estudianteId: string) => {
+  return selectedStudents.value.includes(estudianteId);
+};
+
+const toggleStudent = (estudianteId: string) => {
+  const index = selectedStudents.value.indexOf(estudianteId);
+  if (index > -1) {
+    selectedStudents.value.splice(index, 1);
+  } else {
+    selectedStudents.value.push(estudianteId);
+  }
+};
+
+const allPageSelected = computed(() => {
+  if (paginatedStudents.value.length === 0) return false;
+  return paginatedStudents.value.every(student => isSelected(student.estudiante_id));
+});
+
+const someSelected = computed(() => {
+  const selectedCount = paginatedStudents.value.filter(student => isSelected(student.estudiante_id)).length;
+  return selectedCount > 0 && selectedCount < paginatedStudents.value.length;
+});
+
+const toggleSelectAll = () => {
+  if (allPageSelected.value) {
+    // Deseleccionar todos en esta página
+    paginatedStudents.value.forEach(student => {
+      const index = selectedStudents.value.indexOf(student.estudiante_id);
+      if (index > -1) {
+        selectedStudents.value.splice(index, 1);
+      }
+    });
+  } else {
+    // Seleccionar todos en esta página
+    paginatedStudents.value.forEach(student => {
+      if (!isSelected(student.estudiante_id)) {
+        selectedStudents.value.push(student.estudiante_id);
+      }
+    });
+  }
+};
+
+const deselectAll = () => {
+  selectedStudents.value = [];
+};
+
+const confirmBulkDisable = () => {
+  showBulkDisableModal.value = true;
+};
+
+const confirmBulkEnable = () => {
+  showBulkEnableModal.value = true;
+};
+
+const handleBulkDisable = async () => {
+  try {
+    bulkActionInProgress.value = true;
+
+    // Deshabilitar cada estudiante seleccionado
+    for (const estudianteId of selectedStudents.value) {
+      await studentStore.disableEstudiante(estudianteId);
+    }
+
+    // Recargar estudiantes
+    studentStore.fetchEstudiantes;
+
+    // Limpiar selección
+    selectedStudents.value = [];
+    showBulkDisableModal.value = false;
+  } catch (error) {
+    console.error('Error al deshabilitar estudiantes:', error);
+    alert('Error al deshabilitar los estudiantes seleccionados');
+  } finally {
+    bulkActionInProgress.value = false;
+  }
+};
+
+const handleBulkEnable = async () => {
+  try {
+    bulkActionInProgress.value = true;
+
+    // Habilitar cada estudiante seleccionado
+    for (const estudianteId of selectedStudents.value) {
+      await studentStore.enableEstudiante(estudianteId);
+    }
+
+    // Recargar estudiantes
+    studentStore.fetchEstudiantes;
+
+    // Limpiar selección
+    selectedStudents.value = [];
+    showBulkEnableModal.value = false;
+  } catch (error) {
+    console.error('Error al habilitar estudiantes:', error);
+    alert('Error al habilitar los estudiantes seleccionados');
+  } finally {
+    bulkActionInProgress.value = false;
+  }
 };
 
 // Métodos de navegación
