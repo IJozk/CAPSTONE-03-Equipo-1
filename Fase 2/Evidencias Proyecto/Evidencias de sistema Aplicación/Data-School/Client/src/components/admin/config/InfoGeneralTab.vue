@@ -82,7 +82,7 @@
           </div>
         </div>
 
-        <div v-if="configs.length === 0" class="text-center py-8 text-gray-500">
+        <div v-if="!configs" class="text-center py-8 text-gray-500">
           No hay configuraciones registradas
         </div>
       </div>
@@ -109,10 +109,10 @@ const loadData = async () => {
 
     // Obtener información del colegio
     if (authStore.user?.colegio_id) {
-      schoolInfo.value = await schoolService.getById(authStore.user?.colegio_id);
+      schoolInfo.value = await schoolService.getSchoolInfo();
 
       // Obtener configuraciones
-      configs.value = await configuracionColegioService.getAll(authStore.user?.colegio_id);
+      configs.value = await configuracionColegioService.getAll();
     }
   } catch (error) {
     console.error('Error loading data:', error);
@@ -131,7 +131,7 @@ const cancelEdit = () => {
   editValue.value = '';
 };
 
-const saveConfig = async (configId: string) => {
+const saveConfig = async (configId: number) => {
   try {
     await configuracionColegioService.update(configId, { valor: editValue.value });
     await loadData();
