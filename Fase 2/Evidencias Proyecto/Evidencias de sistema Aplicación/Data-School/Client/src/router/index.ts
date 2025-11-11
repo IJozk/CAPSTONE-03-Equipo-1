@@ -212,6 +212,16 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/admin/config',
+    name: 'AdminSchoolConfig',
+    component: () => import('@/pages/admin/SchoolConfig.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresRole: ['ADMINISTRADOR'],
+      title: 'Configuración del Colegio'
+    }
+  },
+  {
     path: '/admin/kpis',
     name: 'AdminKPIs',
     component: () => import('@/pages/admin/KPIs.vue'),
@@ -338,9 +348,9 @@ const routes: RouteRecordRaw[] = [
         }
       },
       {
-        path: 'observations',
-        name: 'TeacherObservations',
-        component: () => import('@/pages/teacher/Observations.vue'),
+        path: 'anotaciones',
+        name: 'TeacherAnotaciones',
+        component: () => import('@/pages/teacher/Anotaciones.vue'),
         meta: {
           requiresAuth: true,
           requiresRole: ['PROFESOR', 'ADMINISTRADOR'],

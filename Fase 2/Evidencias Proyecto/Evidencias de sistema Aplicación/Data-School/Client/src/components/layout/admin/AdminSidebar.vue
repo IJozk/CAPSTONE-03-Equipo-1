@@ -159,7 +159,7 @@ const menuGroups = computed<MenuGroup[]>(() => [
   {
     title: 'Configuración',
     items: [
-      { name: 'Configuración', icon: 'cog', route: '/admin/settings' },
+      { name: 'Configuración del Colegio', icon: 'cog', route: '/admin/config' },
       { name: 'Mi Perfil', icon: 'user', route: '/admin/profile' }
     ]
   }

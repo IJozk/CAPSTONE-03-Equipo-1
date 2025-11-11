@@ -19,6 +19,7 @@ export interface User {
     nombre_completo: string;
     rut: string;
     cargo: string;
+    colegio_id: string;
     telefono?: string;
     direccion?: string;
     genero?: string;
