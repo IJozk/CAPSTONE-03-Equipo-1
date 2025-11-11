@@ -267,7 +267,7 @@ export class HorarioController {
                         nombre,
                         codigo,
                         profesor_id,
-                        Curso(curso_id, nombre, nivel)
+                        Curso(curso_id, nombre, nivel_id)
                     ),
                     Sala(sala_id, nombre)
                 `)

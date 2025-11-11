@@ -130,7 +130,7 @@ class TeacherService {
 
   /**
    * Obtiene los estudiantes de una asignatura específica
-   * Primero obtiene la asignatura para saber el curso, luego obtiene los estudiantes del curso
+   * Primero obtiene la asignatura para saber el curso, luego obtiene las matrículas activas del curso
    */
   async getSubjectStudents(subjectId: string): Promise<Student[]> {
     try {
@@ -139,29 +139,38 @@ class TeacherService {
       const asignatura = asignaturaResponse.data;
 
       if (!asignatura || !asignatura.curso_id) {
+        console.log('No se encontró asignatura o curso_id');
         return [];
       }
 
-      // Obtener estudiantes del curso con filtro
-      const estudiantesResponse = await apiClient.get(`/estudiantes`, {
+      // Obtener matrículas del curso (sin filtrar por estado para incluir todas)
+      // Si solo quieres activas, agrega: estado_matricula_id: 1
+      const matriculasResponse = await apiClient.get(`/matriculas`, {
         params: {
           curso_id: asignatura.curso_id
+          // Sin filtro de estado_matricula_id para mostrar todas las matrículas
         }
       });
 
-      const estudiantes = estudiantesResponse.data || [];
+      const matriculas = matriculasResponse.data || [];
 
-      // Mapear al formato esperado
-      return estudiantes.map((estudiante: any) => ({
-        estudiante_id: estudiante.estudiante_id,
-        nombre_completo: estudiante.nombre_completo,
-        rut: estudiante.rut,
-        numero_lista: estudiante.numero_lista || 0,
+      if (matriculas.length === 0) {
+        console.log('No se encontraron matrículas activas para el curso:', asignatura.curso_id);
+        return [];
+      }
+
+      // Mapear al formato esperado - los estudiantes vienen en la relación Estudiante
+      return matriculas.map((matricula: any, index: number) => ({
+        estudiante_id: matricula.Estudiante?.estudiante_id || matricula.estudiante_id,
+        nombre_completo: matricula.Estudiante?.nombre_completo || 'Sin nombre',
+        rut: matricula.Estudiante?.rut || 'Sin RUT',
+        numero_lista: index + 1, // Asignar número de lista secuencial
         promedio_asignatura: 0, // TODO: Calcular desde evaluaciones
         asistencia_porcentaje: 0, // TODO: Calcular desde asistencias
         total_anotaciones_positivas: 0,
         total_anotaciones_negativas: 0
-      }));
+      }))
+      .sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo)); // Ordenar alfabéticamente
     } catch (error) {
       console.error('Error obteniendo estudiantes de asignatura:', error);
       return [];
@@ -169,6 +178,41 @@ class TeacherService {
   }
 
   // ========== EVALUACIONES ==========
+
+  /**
+   * Obtiene todas las evaluaciones del profesor (de todas sus asignaturas)
+   * Útil para mostrar en el calendario
+   */
+  async getAllMyEvaluations(): Promise<Evaluation[]> {
+    try {
+      // Primero obtener las asignaturas del profesor
+      const subjects = await this.getMySubjects();
+
+      // Obtener evaluaciones de cada asignatura
+      const evaluacionesPromises = subjects.map(subject =>
+        this.getSubjectEvaluations(subject.asignatura_id)
+      );
+
+      const evaluacionesArrays = await Promise.all(evaluacionesPromises);
+
+      // Aplanar el array de arrays y añadir info de asignatura
+      const todasLasEvaluaciones: Evaluation[] = [];
+      evaluacionesArrays.forEach((evaluaciones, index) => {
+        evaluaciones.forEach(ev => {
+          todasLasEvaluaciones.push({
+            ...ev,
+            asignatura_nombre: subjects[index].nombre,
+            curso_nombre: subjects[index].curso.nombre
+          } as any);
+        });
+      });
+
+      return todasLasEvaluaciones;
+    } catch (error) {
+      console.error('Error obteniendo todas las evaluaciones:', error);
+      return [];
+    }
+  }
 
   /**
    * Obtiene las evaluaciones de una asignatura
@@ -230,51 +274,178 @@ class TeacherService {
 
   /**
    * Obtiene las notas de una evaluación
-   * GET /api/teachers/evaluations/:evaluationId/grades
+   * GET /api/resultados-evaluacion/evaluacion/:evaluacionId
    */
   async getEvaluationGrades(evaluationId: number): Promise<Grade[]> {
-    const response = await apiClient.get<{ grades: Grade[] }>(`/teachers/evaluations/${evaluationId}/grades`);
-    return response.data.grades;
+    try {
+      const response = await apiClient.get(`/resultados-evaluacion/evaluacion/${evaluationId}`);
+      const resultados = response.data.data || response.data || [];
+
+      // Mapear al formato esperado por el frontend
+      return resultados.map((resultado: any) => ({
+        resultado_id: resultado.resultado_id,
+        evaluacion_id: resultado.evaluacion_id,
+        estudiante: {
+          estudiante_id: resultado.Estudiante?.estudiante_id || resultado.estudiante_id,
+          nombre_completo: resultado.Estudiante?.nombre_completo || 'Sin nombre',
+          numero_lista: resultado.Estudiante?.numero_lista || 0
+        },
+        puntaje_obtenido: resultado.puntaje_obtenido,
+        nota: resultado.nota,
+        porcentaje: resultado.porcentaje,
+        observaciones: resultado.observaciones || ''
+      }));
+    } catch (error) {
+      console.error('Error obteniendo notas de evaluación:', error);
+      return [];
+    }
   }
 
   /**
    * Registra o actualiza la nota de un estudiante
-   * POST /api/teachers/grades
+   * POST /api/resultados-evaluacion
+   * Se usa para crear nuevas notas
    */
   async saveGrade(data: GradeFormData): Promise<Grade> {
-    const response = await apiClient.post<{ resultado: Grade }>('/teachers/grades', data);
-    return response.data.resultado;
+    try {
+      const response = await apiClient.post('/resultados-evaluacion', data);
+      const resultado = response.data.data || response.data;
+
+      return {
+        resultado_id: resultado.resultado_id,
+        evaluacion_id: resultado.evaluacion_id,
+        estudiante: {
+          estudiante_id: data.estudiante_id,
+          nombre_completo: resultado.estudiante?.nombre_completo || 'Sin nombre',
+          numero_lista: resultado.estudiante?.numero_lista || 0
+        },
+        puntaje_obtenido: resultado.puntaje_obtenido,
+        nota: resultado.nota,
+        porcentaje: resultado.porcentaje,
+        observaciones: resultado.observaciones || ''
+      };
+    } catch (error) {
+      console.error('Error guardando nota:', error);
+      throw error;
+    }
   }
 
   /**
    * Actualiza una nota existente
-   * PUT /api/teachers/grades/:gradeId
+   * PUT /api/resultados-evaluacion/:resultadoId
    */
   async updateGrade(gradeId: number, data: Partial<GradeFormData>): Promise<Grade> {
-    const response = await apiClient.put<{ resultado: Grade }>(`/teachers/grades/${gradeId}`, data);
-    return response.data.resultado;
+    try {
+      const response = await apiClient.put(`/resultados-evaluacion/${gradeId}`, data);
+      const resultado = response.data.data || response.data;
+
+      return {
+        resultado_id: resultado.resultado_id,
+        evaluacion_id: resultado.evaluacion_id,
+        estudiante: {
+          estudiante_id: resultado.estudiante_id,
+          nombre_completo: resultado.estudiante?.nombre_completo || 'Sin nombre',
+          numero_lista: resultado.estudiante?.numero_lista || 0
+        },
+        puntaje_obtenido: resultado.puntaje_obtenido,
+        nota: resultado.nota,
+        porcentaje: resultado.porcentaje,
+        observaciones: resultado.observaciones || ''
+      };
+    } catch (error) {
+      console.error('Error actualizando nota:', error);
+      throw error;
+    }
   }
 
   // ========== ASISTENCIA ==========
 
   /**
    * Obtiene la asistencia de una asignatura en una fecha específica
-   * GET /api/teachers/subjects/:subjectId/attendance?fecha=:date
+   * GET /api/asistencias?asignatura_id=:id&fecha=:date
    */
   async getAttendance(subjectId: string, date: string): Promise<Attendance> {
-    const response = await apiClient.get<Attendance>(`/teachers/subjects/${subjectId}/attendance`, {
-      params: { fecha: date }
-    });
-    return response.data;
+    try {
+      const response = await apiClient.get('/asistencias', {
+        params: {
+          asignatura_id: subjectId,
+          fecha: date
+        }
+      });
+
+      const asistencias = response.data.data || response.data || [];
+
+      // Calcular estadísticas
+      const total_estudiantes = asistencias.length;
+      const presentes = asistencias.filter((a: any) => a.presente).length;
+      const ausentes = total_estudiantes - presentes;
+      const retrasos = asistencias.filter((a: any) => a.retraso_minutos > 0).length;
+      const porcentaje_asistencia = total_estudiantes > 0 ? (presentes / total_estudiantes) * 100 : 0;
+
+      return {
+        attendance: asistencias.map((a: any) => ({
+          estudiante_id: a.estudiante_id,
+          nombre_completo: a.Estudiante?.nombre_completo || 'Sin nombre',
+          numero_lista: a.Estudiante?.numero_lista || 0,
+          presente: a.presente,
+          retraso_minutos: a.retraso_minutos || 0,
+          retiro_anticipado_minutos: a.retiro_anticipado_minutos || 0,
+          justificado: a.justificado || false,
+          observaciones: a.observaciones || ''
+        })),
+        stats: {
+          total_estudiantes,
+          presentes,
+          ausentes,
+          retrasos,
+          porcentaje_asistencia
+        }
+      };
+    } catch (error) {
+      console.error('Error obteniendo asistencia:', error);
+      return {
+        attendance: [],
+        stats: {
+          total_estudiantes: 0,
+          presentes: 0,
+          ausentes: 0,
+          retrasos: 0,
+          porcentaje_asistencia: 0
+        }
+      };
+    }
   }
 
   /**
-   * Registra la asistencia de una clase
-   * POST /api/teachers/attendance
+   * Registra la asistencia de una clase usando endpoint bulk
+   * POST /api/asistencias/bulk
    */
   async saveAttendance(data: AttendanceFormData): Promise<{ message: string; total_registros: number }> {
-    const response = await apiClient.post<{ message: string; total_registros: number }>('/teachers/attendance', data);
-    return response.data;
+    try {
+      // Formatear datos para el endpoint bulk
+      const asistenciasBulk = data.asistencias.map(a => ({
+        asignatura_id: data.asignatura_id,
+        estudiante_id: a.estudiante_id,
+        fecha: data.fecha,
+        presente: a.presente,
+        retraso_minutos: a.retraso_minutos || 0,
+        retiro_anticipado_minutos: a.retiro_anticipado_minutos || 0,
+        justificado: a.justificado || false,
+        observaciones: a.observaciones || null
+      }));
+
+      const response = await apiClient.post('/asistencias/bulk', {
+        asistencias: asistenciasBulk
+      });
+
+      return {
+        message: response.data.message || 'Asistencia registrada exitosamente',
+        total_registros: asistenciasBulk.length
+      };
+    } catch (error) {
+      console.error('Error guardando asistencia:', error);
+      throw error;
+    }
   }
 
   // ========== ANOTACIONES/OBSERVACIONES ==========
@@ -341,11 +512,76 @@ class TeacherService {
 
   /**
    * Obtiene el horario semanal del profesor
-   * GET /api/teachers/me/schedule
+   * GET /api/horarios/profesor/:profesorId
    */
   async getMySchedule(): Promise<Schedule[]> {
-    const response = await apiClient.get<{ schedule: Schedule[] }>('/teachers/me/schedule');
-    return response.data.schedule;
+    try {
+      // Primero obtener el profesor_id del usuario actual
+      const userStr = localStorage.getItem('auth_user');
+      if (!userStr) {
+        console.error('No hay usuario autenticado');
+        throw new Error('No hay usuario autenticado');
+      }
+
+      const user = JSON.parse(userStr);
+      console.log('Usuario autenticado:', user.id);
+
+      // Obtener el profesor_id
+      const profesorResponse = await apiClient.get('/profesores');
+      const profesores = profesorResponse.data;
+      console.log('Total de profesores encontrados:', profesores.length);
+
+      const profesor = profesores.find((p: any) => p.user_id === user.id);
+
+      if (!profesor) {
+        console.error('No se encontró el perfil de profesor para user_id:', user.id);
+        throw new Error('No se encontró el perfil de profesor');
+      }
+
+      console.log('Profesor encontrado:', profesor.profesor_id, profesor.nombre_completo);
+
+      // Obtener horarios del profesor
+      console.log('Consultando horarios para profesor_id:', profesor.profesor_id);
+      const response = await apiClient.get(`/horarios/profesor/${profesor.profesor_id}`);
+      const horariosAgrupados = response.data.data || response.data || {};
+
+      console.log('Respuesta del backend:', horariosAgrupados);
+
+      // El backend devuelve un objeto agrupado por días: { "Lunes": [...], "Martes": [...], ... }
+      // Necesitamos convertirlo a un array plano
+      const horarios: any[] = [];
+
+      // Extraer todos los horarios del objeto agrupado
+      Object.values(horariosAgrupados).forEach((horariosDelDia: any) => {
+        if (Array.isArray(horariosDelDia)) {
+          horarios.push(...horariosDelDia);
+        }
+      });
+
+      console.log('Horarios encontrados (después de aplanar):', horarios.length);
+
+      if (horarios.length === 0) {
+        console.warn('No se encontraron horarios para este profesor');
+        return [];
+      }
+
+      // Mapear al formato esperado
+      return horarios.map((horario: any) => ({
+        horario_id: horario.horario_id,
+        dia_semana: horario.dia_semana,
+        hora_inicio: horario.hora_inicio,
+        hora_termino: horario.hora_termino,
+        asignatura: {
+          nombre: horario.Asignatura?.nombre || 'Sin nombre',
+          curso: horario.Asignatura?.Curso?.nombre || 'Sin curso',
+          sala: horario.Sala?.nombre || horario.sala_id || 'Sin sala'
+        }
+      }));
+    } catch (error: any) {
+      console.error('Error obteniendo horario:', error);
+      console.error('Detalle del error:', error.response?.data || error.message);
+      return [];
+    }
   }
 
   // ========== REPORTES ==========
