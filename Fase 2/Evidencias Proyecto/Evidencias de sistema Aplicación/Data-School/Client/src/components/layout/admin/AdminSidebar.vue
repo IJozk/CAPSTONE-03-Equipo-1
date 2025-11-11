@@ -133,7 +133,6 @@ const menuGroups = computed<MenuGroup[]>(() => [
     items: [
       { name: 'Cursos', icon: 'academic-cap', route: '/admin/courses' },
       { name: 'Asignaturas', icon: 'book-open', route: '/admin/subjects' },
-      { name: 'Horarios', icon: 'clock', route: '/admin/schedules' },
       { name: 'Calendario', icon: 'calendar', route: '/admin/calendar' },
       { name: 'Talleres', icon: 'puzzle', route: '/admin/workshops' },
       { name: 'Eventos', icon: 'calendar-event', route: '/admin/events' },
