@@ -138,7 +138,9 @@ class TeacherService {
       const asignaturaResponse = await apiClient.get(`/asignaturas/${subjectId}`);
       const asignatura = asignaturaResponse.data;
 
-      if (!asignatura || !asignatura.curso_id) {
+      console.log(asignatura)
+
+      if (!asignatura || !asignatura.data.Curso) {
         console.log('No se encontró asignatura o curso_id');
         return [];
       }
@@ -170,7 +172,7 @@ class TeacherService {
         total_anotaciones_positivas: 0,
         total_anotaciones_negativas: 0
       }))
-      .sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo)); // Ordenar alfabéticamente
+      .sort((a: { nombre_completo: string; } , b: { nombre_completo: any; }) => a.nombre_completo.localeCompare(b.nombre_completo)); // Ordenar alfabéticamente
     } catch (error) {
       console.error('Error obteniendo estudiantes de asignatura:', error);
       return [];
