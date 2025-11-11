@@ -79,7 +79,7 @@ export class AreaController {
                 `)
 
             if (colegio_id) {
-                query = query.eq('colegio_id', colegio_id)
+                query = query.eq('colegio_id', String(colegio_id))
             }
 
             query = query.order('nombre_area', { ascending: true })
@@ -107,7 +107,7 @@ export class AreaController {
                     Colegio(colegio_id, nombre, direccion),
                     Profesor(profesor_id, nombre_completo, telefono, email:User(email_address))
                 `)
-                .eq('area_id', id)
+                .eq('area_id', Number(id))
                 .single()
 
             if (error) throw error
@@ -139,7 +139,7 @@ export class AreaController {
                     estado_activo,
                     User(email_address)
                 `)
-                .eq('area_id', id)
+                .eq('area_id', Number(id))
                 .order('nombre_completo', { ascending: true })
 
             if (error) throw error
@@ -163,7 +163,7 @@ export class AreaController {
                     *,
                     Profesor(nombre_completo)
                 `)
-                .eq('area_id', id)
+                .eq('area_id', Number(id))
                 .single()
 
             if (areaError || !area) {
@@ -174,7 +174,7 @@ export class AreaController {
             const { data: personal, error: personalError } = await supabaseAdmin!
                 .from('Administrativo')
                 .select('administrativo_id, estado_activo')
-                .eq('area_id', id)
+                .eq('area_id', Number(id))
 
             if (personalError) throw personalError
 
@@ -216,7 +216,7 @@ export class AreaController {
             const { data, error } = await supabaseAdmin!
                 .from('Area')
                 .update(updateData)
-                .eq('area_id', id)
+                .eq('area_id', Number(id))
                 .select()
                 .single()
 
@@ -257,7 +257,7 @@ export class AreaController {
             const { data, error } = await supabaseAdmin!
                 .from('Area')
                 .update({ jefe_area_id })
-                .eq('area_id', id)
+                .eq('area_id', Number(id))
                 .select()
                 .single()
 
@@ -282,7 +282,7 @@ export class AreaController {
             const { data, error } = await supabaseAdmin!
                 .from('Area')
                 .update({ jefe_area_id: null })
-                .eq('area_id', id)
+                .eq('area_id', Number(id))
                 .select()
                 .single()
 
@@ -308,7 +308,7 @@ export class AreaController {
             const { data: personal } = await supabaseAdmin!
                 .from('Administrativo')
                 .select('administrativo_id')
-                .eq('area_id', id)
+                .eq('area_id', Number(id))
                 .limit(1)
 
             if (personal && personal.length > 0) {
@@ -320,7 +320,7 @@ export class AreaController {
             const { error } = await supabaseAdmin!
                 .from('Area')
                 .delete()
-                .eq('area_id', id)
+                .eq('area_id', Number(id))
 
             if (error) throw error
 
