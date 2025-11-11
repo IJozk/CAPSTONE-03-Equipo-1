@@ -45,8 +45,27 @@
         </div>
       </div>
 
+      <!-- Loading -->
+      <div v-if="loading" class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        <p class="mt-2 text-gray-600">Cargando estudiantes...</p>
+      </div>
+
+      <!-- No students message -->
+      <div v-else-if="selectedSubjectId && students.length === 0 && !loading" class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <div class="flex items-start">
+          <svg class="w-5 h-5 text-yellow-600 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+          </svg>
+          <div>
+            <p class="text-sm font-medium text-yellow-800">No se encontraron estudiantes matriculados en esta asignatura</p>
+            <p class="text-xs text-yellow-700 mt-1">Verifica que el curso tenga estudiantes con matrícula activa.</p>
+          </div>
+        </div>
+      </div>
+
       <!-- Students List -->
-      <div v-if="students.length > 0" class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div v-else-if="students.length > 0" class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full">
             <thead class="bg-gray-50 border-b">
@@ -151,6 +170,7 @@ const selectedSubjectId = ref('');
 const students = ref<Student[]>([]);
 const attendance = ref<Record<string, AttendanceRecord>>({});
 const saving = ref(false);
+const loading = ref(false);
 const successMessage = ref('');
 
 const stats = computed(() => {
@@ -171,20 +191,31 @@ const getRowClass = (record: AttendanceRecord) => {
 
 const loadStudents = async () => {
   if (!selectedSubjectId.value) return;
-  students.value = await teacherService.getSubjectStudents(selectedSubjectId.value);
-  attendance.value = {};
-  students.value.forEach(s => {
-    attendance.value[s.estudiante_id] = {
-      estudiante_id: s.estudiante_id,
-      nombre_completo: s.nombre_completo,
-      numero_lista: s.numero_lista,
-      presente: false,
-      retraso_minutos: 0,
-      retiro_anticipado_minutos: 0,
-      justificado: false,
-      observaciones: ''
-    };
-  });
+
+  loading.value = true;
+  try {
+    console.log('Cargando estudiantes para asignatura:', selectedSubjectId.value);
+    students.value = await teacherService.getSubjectStudents(selectedSubjectId.value);
+    console.log('Estudiantes cargados:', students.value.length);
+
+    attendance.value = {};
+    students.value.forEach(s => {
+      attendance.value[s.estudiante_id] = {
+        estudiante_id: s.estudiante_id,
+        nombre_completo: s.nombre_completo,
+        numero_lista: s.numero_lista,
+        presente: false,
+        retraso_minutos: 0,
+        retiro_anticipado_minutos: 0,
+        justificado: false,
+        observaciones: ''
+      };
+    });
+  } catch (error) {
+    console.error('Error cargando estudiantes:', error);
+  } finally {
+    loading.value = false;
+  }
 };
 
 const markAllPresent = () => {
