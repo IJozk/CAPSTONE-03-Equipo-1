@@ -196,16 +196,28 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal de Encuesta -->
+    <SurveyModal
+      v-if="showSurveyModal"
+      :encuesta="encuestaStore.primeraEncuestaPendiente"
+      @close="closeSurveyModal"
+      @submitted="closeSurveyModal"
+    />
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/store/auth.store';
 import { useStudentStore } from '@/store/student.store';
+import { useEncuestaEstudianteStore } from '@/store/encuestaEstudiante.store';
+import SurveyModal from '@/components/surveys/SurveyModal.vue';
 
 const authStore = useAuthStore();
 const studentStore = useStudentStore();
+const encuestaStore = useEncuestaEstudianteStore();
 const loading = ref(false);
+const showSurveyModal = ref(false);
 
 const studentName = computed(() => authStore.user?.nombre_completo || 'Estudiante');
 
@@ -280,7 +292,26 @@ const refreshDashboard = async () => {
   }
 };
 
-onMounted(() => {
-  refreshDashboard();
+const checkPendingSurveys = async () => {
+  try {
+    const estudianteId = authStore.user?.estudiante_profile?.estudiante_id;
+    if (estudianteId) {
+      await encuestaStore.fetchEncuestasPendientes(estudianteId);
+      if (encuestaStore.tieneEncuestasPendientes) {
+        showSurveyModal.value = true;
+      }
+    }
+  } catch (error) {
+    console.error('Error checking surveys:', error);
+  }
+};
+
+const closeSurveyModal = () => {
+  showSurveyModal.value = false;
+};
+
+onMounted(async () => {
+  await refreshDashboard();
+  await checkPendingSurveys();
 });
 </script>

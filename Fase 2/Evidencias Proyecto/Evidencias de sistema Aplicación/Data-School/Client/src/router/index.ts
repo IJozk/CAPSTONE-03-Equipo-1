@@ -112,6 +112,16 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/admin/schedules',
+    name: 'AdminSchedules',
+    component: () => import('@/pages/admin/Schedules.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresRole: ['ADMINISTRADOR'],
+      title: 'Gestión de Horarios'
+    }
+  },
+  {
     path: '/admin/calendar',
     name: 'AdminCalendar',
     component: () => import('@/pages/admin/Calendar.vue'),

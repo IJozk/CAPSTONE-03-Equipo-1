@@ -198,19 +198,40 @@
         />
       </div>
 
+      <!-- Region -->
+      <div>
+        <label for="region_profesor" class="block text-sm font-medium text-gray-700 mb-2">
+          Región
+        </label>
+        <select id="region_profesor"
+          v-model="regionSelected"
+          type="text"
+          placeholder="Ej: Región Metropolitana, Biobío, La Araucanía">
+          <option value="" disabled>Seleccionar región</option>
+          <option v-for="region in regiones" :key="region.id" :value="region.name">
+            {{ region.name }}
+          </option>
+        
+        </select>
+      </div>
+
       <!-- Comuna (OPCIONAL) -->
       <div>
         <label for="comuna_profesor" class="block text-sm font-medium text-gray-700 mb-2">
           Comuna
         </label>
-        <input
-          id="comuna_profesor"
+        <select id="comuna_profesor"
           v-model="formData.comuna"
           type="text"
           :class="inputClass('comuna')"
           placeholder="Ej: Santiago, Concepción, Coronel"
-          @input="clearFieldError('comuna')"
-        />
+          @input="clearFieldError('comuna')">
+          <option value="" disabled>Seleccionar comuna</option>
+          <option v-for="comuna in comunaByRegion(regionSelected)" :key="comuna.id" :value="comuna.name">
+            {{ comuna.name }}
+          </option>
+        
+        </select>
       </div>
     </div>
 
@@ -248,18 +269,40 @@
       </div>
 
       <!-- Comuna (OPCIONAL) -->
+            <!-- Region -->
       <div>
-        <label for="comuna_estudiante" class="block text-sm font-medium text-gray-700 mb-2">
+        <label for="region_profesor" class="block text-sm font-medium text-gray-700 mb-2">
+          Región
+        </label>
+        <select id="region_profesor"
+          v-model="regionSelected"
+          type="text"
+          placeholder="Ej: Región Metropolitana, Biobío, La Araucanía">
+          <option value="" disabled>Seleccionar región</option>
+          <option v-for="region in regiones" :key="region.id" :value="region.name">
+            {{ region.name }}
+          </option>
+        
+        </select>
+      </div>
+
+      <!-- Comuna (OPCIONAL) -->
+      <div>
+        <label for="comuna_profesor" class="block text-sm font-medium text-gray-700 mb-2">
           Comuna
         </label>
-        <input
-          id="comuna_estudiante"
+        <select id="comuna_profesor"
           v-model="formData.comuna"
           type="text"
           :class="inputClass('comuna')"
           placeholder="Ej: Santiago, Concepción, Coronel"
-          @input="clearFieldError('comuna')"
-        />
+          @input="clearFieldError('comuna')">
+          <option value="" disabled>Seleccionar comuna</option>
+          <option v-for="comuna in comunaByRegion(regionSelected)" :key="comuna.id" :value="comuna.name">
+            {{ comuna.name }}
+          </option>
+        
+        </select>
       </div>
 
       <div>
@@ -283,7 +326,7 @@
     </div>
 
     <!-- Admin / Administrativo (comparten campos) -->
-    <div v-if="formData.role === UserRole.ADMINISTRADOR || formData.role === UserRole.ADMINISTRATIVO" class="space-y-4">
+    <div v-if="isAdminOrAdministrativo" class="space-y-4">
       <div>
         <label for="cargo" class="block text-sm font-medium text-gray-700 mb-2">Cargo *</label>
         <input id="cargo" v-model="formData.cargo" type="text" :class="inputClass('cargo')" @blur="validateField('cargo')" />
@@ -389,10 +432,11 @@ import {
 import type { RegisterDTO, RegisterValidationErrors, RoleOption } from '@/types/auth.types';
 import { UserRole } from '@/types/auth.types';
 import { useSchoolStore } from '@/store/school.store';
-
+import { comunaByRegion, comunasList, regiones } from '@/types/utils.types';
 
 const authStore = useAuthStore();
 const schoolStore = useSchoolStore();
+const regionSelected = ref('');
 
 // Opciones de roles con descripciones
 const roleOptions: RoleOption[] = [
@@ -450,6 +494,10 @@ const isLoading = computed(() => authStore.registerState.loading);
 const registerError = computed(() => authStore.registerState.error);
 const registerSuccess = computed(() => authStore.registerState.success);
 
+const isAdminOrAdministrativo = computed(() => {
+  return formData.value.role === UserRole.ADMINISTRADOR || formData.value.role === UserRole.ADMINISTRATIVO;
+});
+
 const isFormValid = computed(() => {
   const hasAllRequired =
     formData.value.email &&
@@ -468,7 +516,7 @@ const isFormValid = computed(() => {
     (formData.value.role === UserRole.ESTUDIANTE_APODERADO
       ? !!(formData.value.fecha_nacimiento && formData.value.direccion && formData.value.genero)
       : true) &&
-    (formData.value.role === UserRole.ADMINISTRADOR || formData.value.role === UserRole.ADMINISTRATIVO
+    (isAdminOrAdministrativo.value
       ? !!(formData.value.cargo && formData.value.area_id && formData.value.fecha_contratacion)
       : true);
 

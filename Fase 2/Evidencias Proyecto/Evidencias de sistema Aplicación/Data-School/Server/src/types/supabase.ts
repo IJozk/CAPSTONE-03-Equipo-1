@@ -873,6 +873,52 @@ export type Database = {
           },
         ]
       }
+      Encuesta_Estudiante: {
+        Row: {
+          created_at: string
+          estudiante_id: string
+          fecha_respuesta: string | null
+          id_encuesta: string
+          respuesta_encuesta: Json
+        }
+        Insert: {
+          created_at?: string
+          estudiante_id?: string
+          fecha_respuesta?: string | null
+          id_encuesta: string
+          respuesta_encuesta: Json
+        }
+        Update: {
+          created_at?: string
+          estudiante_id?: string
+          fecha_respuesta?: string | null
+          id_encuesta?: string
+          respuesta_encuesta?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "Encuesta_Estudiante_estudiante_id_fkey"
+            columns: ["estudiante_id"]
+            isOneToOne: false
+            referencedRelation: "Estudiante"
+            referencedColumns: ["estudiante_id"]
+          },
+          {
+            foreignKeyName: "Encuesta_Estudiante_estudiante_id_fkey"
+            columns: ["estudiante_id"]
+            isOneToOne: false
+            referencedRelation: "vista_resumen_estudiantes"
+            referencedColumns: ["estudiante_id"]
+          },
+          {
+            foreignKeyName: "Encuesta_Estudiante_id_encuesta_fkey"
+            columns: ["id_encuesta"]
+            isOneToOne: false
+            referencedRelation: "Encuesta"
+            referencedColumns: ["encuesta_id"]
+          },
+        ]
+      }
       Encuesta_Evaluacion: {
         Row: {
           contenido: Json | null

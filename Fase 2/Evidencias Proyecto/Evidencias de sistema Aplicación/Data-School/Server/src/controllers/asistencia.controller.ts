@@ -119,11 +119,11 @@ export class AsistenciaController {
                 `)
 
             if (estudiante_id) {
-                query = query.eq('estudiante_id', estudiante_id)
+                query = query.eq('estudiante_id', String(estudiante_id))
             }
 
             if (asignatura_id) {
-                query = query.eq('asignatura_id', asignatura_id)
+                query = query.eq('asignatura_id', String(asignatura_id))
             }
 
             if (fecha_inicio) {
@@ -164,7 +164,7 @@ export class AsistenciaController {
                     Asignatura(asignatura_id, nombre, codigo, Curso(nombre, nivel)),
                     User(user_id, email_address)
                 `)
-                .eq('asistencia_id', id)
+                .eq('asistencia_id', Number(id))
                 .single()
 
             if (error) throw error
@@ -192,7 +192,7 @@ export class AsistenciaController {
                 .eq('estudiante_id', estudiante_id)
 
             if (asignatura_id) {
-                query = query.eq('asignatura_id', asignatura_id)
+                query = query.eq('asignatura_id', String(asignatura_id))
             }
 
             if (fecha_inicio) {
@@ -252,7 +252,7 @@ export class AsistenciaController {
             const { data, error } = await supabaseAdmin!
                 .from('Asistencia')
                 .update(updateData)
-                .eq('asistencia_id', id)
+                .eq('asistencia_id', Number(id))
                 .select()
                 .single()
 
@@ -277,7 +277,7 @@ export class AsistenciaController {
             const { error } = await supabaseAdmin!
                 .from('Asistencia')
                 .delete()
-                .eq('asistencia_id', id)
+                .eq('asistencia_id', Number(id))
 
             if (error) throw error
 
