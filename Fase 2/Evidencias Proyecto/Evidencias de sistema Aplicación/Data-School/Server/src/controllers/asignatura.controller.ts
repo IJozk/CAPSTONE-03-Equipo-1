@@ -109,19 +109,16 @@ export class AsignaturaController {
             curso_id,
             nombre,
             nivel_id,
-            anio
+            anio_academico
           ),
           Profesor:profesor_id (
             profesor_id,
-            nombre_completo,
-            especialidad,
-            titulo_profesional
+            nombre_completo
           ),
           Sala:sala_id (
             sala_id,
             nombre,
-            capacidad,
-            tipo
+            capacidad
           ),
           TipoAsignatura:tipo_asignatura_id (
             tipo_asignatura_id,
