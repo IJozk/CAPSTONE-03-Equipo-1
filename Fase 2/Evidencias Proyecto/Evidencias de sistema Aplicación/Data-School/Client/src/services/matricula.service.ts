@@ -18,7 +18,7 @@ export interface Matricula {
 export interface CreateMatriculaDTO {
   estudiante_id: string;
   curso_id: string;
-  tutor_titular_id: string;
+  tutor_titular_id?: string;
   periodo: string;
   monto_matricula?: number;
   fecha_pago?: string;

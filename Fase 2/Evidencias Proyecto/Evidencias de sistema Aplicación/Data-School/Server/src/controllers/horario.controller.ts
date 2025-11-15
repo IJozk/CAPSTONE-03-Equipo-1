@@ -135,7 +135,7 @@ export class HorarioController {
                         asignatura_id,
                         nombre,
                         codigo,
-                        Curso(curso_id, nombre, nivel),
+                        Curso(curso_id, nombre, nivel_id),
                         Profesor(profesor_id, nombre_completo)
                     ),
                     Sala(sala_id, nombre, zona_id)
@@ -188,7 +188,7 @@ export class HorarioController {
                         asignatura_id,
                         nombre,
                         codigo,
-                        Curso(curso_id, nombre, nivel),
+                        Curso(curso_id, nombre, nivel_id),
                         Profesor(profesor_id, nombre_completo)
                     ),
                     Sala(sala_id, nombre, capacidad, zona_id)
@@ -224,6 +224,7 @@ export class HorarioController {
                         nombre,
                         codigo,
                         curso_id,
+                        Curso(curso_id, nombre, nivel_id),
                         Profesor(profesor_id, nombre_completo)
                     ),
                     Sala(sala_id, nombre)
@@ -267,7 +268,7 @@ export class HorarioController {
                         nombre,
                         codigo,
                         profesor_id,
-                        Curso(curso_id, nombre, nivel)
+                        Curso(curso_id, nombre, nivel_id)
                     ),
                     Sala(sala_id, nombre)
                 `)
@@ -309,7 +310,7 @@ export class HorarioController {
                         asignatura_id,
                         nombre,
                         codigo,
-                        Curso(curso_id, nombre, nivel),
+                        Curso(curso_id, nombre, nivel_id),
                         Profesor(profesor_id, nombre_completo)
                     )
                 `)

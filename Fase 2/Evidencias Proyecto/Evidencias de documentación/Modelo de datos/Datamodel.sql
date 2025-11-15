@@ -5,7 +5,7 @@ CREATE TABLE public.Administrativo (
   administrativo_id uuid NOT NULL DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL,
   nombre_completo character varying NOT NULL,
-  rut character varying CHECK (validate_rut(rut)),
+  rut character varying UNIQUE CHECK (validate_rut(rut)),
   area_id smallint NOT NULL,
   cargo character varying,
   telefono character varying CHECK (telefono IS NULL OR telefono::text ~ '^\+?56[0-9]{8,9}$'::text),
@@ -98,11 +98,13 @@ CREATE TABLE public.Asignatura (
   estado_activo boolean DEFAULT true,
   created_at timestamp without time zone DEFAULT now(),
   updated_at timestamp without time zone DEFAULT now(),
+  materia_id bigint,
   CONSTRAINT Asignatura_pkey PRIMARY KEY (asignatura_id),
   CONSTRAINT Asignatura_profesor_id_fkey FOREIGN KEY (profesor_id) REFERENCES public.Profesor(profesor_id),
   CONSTRAINT Asignatura_sala_id_fkey FOREIGN KEY (sala_id) REFERENCES public.Sala(sala_id),
   CONSTRAINT Asignatura_curso_id_fkey FOREIGN KEY (curso_id) REFERENCES public.Curso(curso_id),
-  CONSTRAINT Asignatura_tipo_asignatura_id_fkey FOREIGN KEY (tipo_asignatura_id) REFERENCES public.TipoAsignatura(tipo_asignatura_id)
+  CONSTRAINT Asignatura_tipo_asignatura_id_fkey FOREIGN KEY (tipo_asignatura_id) REFERENCES public.TipoAsignatura(tipo_asignatura_id),
+  CONSTRAINT Asignatura_materia_id_fkey FOREIGN KEY (materia_id) REFERENCES public.Materia(id)
 );
 CREATE TABLE public.Asistencia (
   asistencia_id integer NOT NULL DEFAULT nextval('"Asistencia_asistencia_id_seq"'::regclass),
@@ -175,31 +177,45 @@ CREATE TABLE public.ConfiguracionColegio (
   CONSTRAINT ConfiguracionColegio_pkey PRIMARY KEY (config_id),
   CONSTRAINT ConfiguracionColegio_colegio_id_fkey FOREIGN KEY (colegio_id) REFERENCES public.Colegio(colegio_id)
 );
+CREATE TABLE public.Contrato (
+  id_contrato bigint GENERATED ALWAYS AS IDENTITY NOT NULL UNIQUE,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  id_empleado uuid NOT NULL DEFAULT gen_random_uuid(),
+  id_profesion bigint NOT NULL,
+  inicio_contrato date NOT NULL,
+  de_planta boolean NOT NULL DEFAULT false,
+  termino_contrato date,
+  CONSTRAINT Contrato_pkey PRIMARY KEY (id_contrato),
+  CONSTRAINT Contrato_id_profesion_fkey FOREIGN KEY (id_profesion) REFERENCES public.Profesion(id_profesion),
+  CONSTRAINT Contrato_id_empleado_fkey FOREIGN KEY (id_empleado) REFERENCES public.Administrativo(administrativo_id),
+  CONSTRAINT Contrato_id_empleado_fkey1 FOREIGN KEY (id_empleado) REFERENCES public.Profesor(profesor_id)
+);
 CREATE TABLE public.Curso (
   curso_id uuid NOT NULL DEFAULT gen_random_uuid(),
   nombre character varying NOT NULL,
-  nivel character varying NOT NULL,
+  nivel_id bigint NOT NULL,
   generacion smallint NOT NULL,
   capacidad_maxima smallint DEFAULT 35,
   anio_academico integer NOT NULL,
   created_at timestamp without time zone DEFAULT now(),
   updated_at timestamp without time zone DEFAULT now(),
-  CONSTRAINT Curso_pkey PRIMARY KEY (curso_id)
+  CONSTRAINT Curso_pkey PRIMARY KEY (curso_id),
+  CONSTRAINT Curso_nivel_id_fkey FOREIGN KEY (nivel_id) REFERENCES public.NivelCurso(id)
 );
 CREATE TABLE public.DatosEstudiante (
   estudiante_id uuid NOT NULL,
-  encuesta_id character varying NOT NULL,
+  encuesta_id uuid NOT NULL,
   contenido jsonb NOT NULL,
   contestado_en date NOT NULL,
   contestada_correctemente boolean,
   contestado_por uuid,
   CONSTRAINT DatosEstudiante_pkey PRIMARY KEY (estudiante_id),
   CONSTRAINT DatosEstudiante_estudiante_id_fkey FOREIGN KEY (estudiante_id) REFERENCES public.Estudiante(estudiante_id),
-  CONSTRAINT DatosEstudiante_encuesta_id_fkey FOREIGN KEY (encuesta_id) REFERENCES public.Encuesta(encuesta_id),
-  CONSTRAINT DatosEstudiante_contestado_por_fkey FOREIGN KEY (contestado_por) REFERENCES public.Tutor(tutor_id)
+  CONSTRAINT DatosEstudiante_contestado_por_fkey FOREIGN KEY (contestado_por) REFERENCES public.Tutor(tutor_id),
+  CONSTRAINT DatosEstudiante_encuesta_id_fkey FOREIGN KEY (encuesta_id) REFERENCES public.Encuesta(encuesta_id)
 );
 CREATE TABLE public.Encuesta (
-  encuesta_id character varying NOT NULL,
+  encuesta_id uuid NOT NULL,
   tipo_encuesta_id smallint NOT NULL,
   titulo character varying NOT NULL,
   descripcion text,
@@ -214,11 +230,18 @@ CREATE TABLE public.Encuesta (
 );
 CREATE TABLE public.Encuesta_Evaluacion (
   resultado_id smallint NOT NULL DEFAULT nextval('"Encuesta_Evaluacion_resultado_id_seq"'::regclass),
-  encuesta_id character varying,
+  encuesta_id uuid,
   contenido jsonb,
   contestada_en date,
   CONSTRAINT Encuesta_Evaluacion_pkey PRIMARY KEY (resultado_id),
   CONSTRAINT Encuesta_Evaluacion_encuesta_id_fkey FOREIGN KEY (encuesta_id) REFERENCES public.Encuesta(encuesta_id)
+);
+CREATE TABLE public.Especialidad (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL UNIQUE,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  nombre_especialidad character varying NOT NULL,
+  tipo_especialidad character varying NOT NULL,
+  CONSTRAINT Especialidad_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.EstadoMatricula (
   estado_matricula_id smallint NOT NULL DEFAULT nextval('"EstadoMatricula_estado_matricula_id_seq"'::regclass),
@@ -233,14 +256,16 @@ CREATE TABLE public.Estudiante (
   user_id uuid,
   nombre_completo character varying NOT NULL,
   fecha_nacimiento date NOT NULL,
-  rut character varying CHECK (validate_rut(rut)),
-  genero USER-DEFINED,
-  direccion character varying,
+  rut character varying NOT NULL UNIQUE CHECK (rut IS NULL OR length(rut::text) >= 2 AND length(rut::text) <= 12),
+  genero USER-DEFINED NOT NULL,
+  direccion character varying NOT NULL,
   telefono character varying CHECK (telefono IS NULL OR telefono::text ~ '^\+?56[0-9]{8,9}$'::text),
   email character varying,
-  estado_activo boolean DEFAULT true,
-  created_at timestamp without time zone DEFAULT now(),
-  updated_at timestamp without time zone DEFAULT now(),
+  estado_activo boolean NOT NULL DEFAULT true,
+  created_at timestamp without time zone NOT NULL DEFAULT now(),
+  updated_at timestamp without time zone NOT NULL DEFAULT now(),
+  comuna character varying,
+  foto_url text,
   CONSTRAINT Estudiante_pkey PRIMARY KEY (estudiante_id),
   CONSTRAINT Estudiante_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.User(user_id)
 );
@@ -260,7 +285,7 @@ CREATE TABLE public.Estudiante_Curso (
 CREATE TABLE public.Evaluacion (
   evaluacion_id integer NOT NULL DEFAULT nextval('"Evaluacion_evaluacion_id_seq"'::regclass),
   asignatura_id uuid NOT NULL,
-  encuesta_id character varying,
+  encuesta_id uuid,
   nombre character varying NOT NULL,
   descripcion text NOT NULL,
   tipo USER-DEFINED NOT NULL,
@@ -316,6 +341,13 @@ CREATE TABLE public.Horario (
   CONSTRAINT Horario_asignatura_id_fkey FOREIGN KEY (asignatura_id) REFERENCES public.Asignatura(asignatura_id),
   CONSTRAINT Horario_sala_id_fkey FOREIGN KEY (sala_id) REFERENCES public.Sala(sala_id)
 );
+CREATE TABLE public.Materia (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  nombre character varying NOT NULL,
+  descripcion text,
+  CONSTRAINT Materia_pkey PRIMARY KEY (id)
+);
 CREATE TABLE public.Matricula (
   matricula_id uuid NOT NULL DEFAULT gen_random_uuid(),
   estudiante_id uuid NOT NULL,
@@ -335,6 +367,13 @@ CREATE TABLE public.Matricula (
   CONSTRAINT Matricula_curso_id_fkey FOREIGN KEY (curso_id) REFERENCES public.Curso(curso_id),
   CONSTRAINT Matricula_estado_matricula_id_fkey FOREIGN KEY (estado_matricula_id) REFERENCES public.EstadoMatricula(estado_matricula_id)
 );
+CREATE TABLE public.NivelCurso (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL UNIQUE,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  nivel character varying NOT NULL,
+  numero smallint NOT NULL,
+  CONSTRAINT NivelCurso_pkey PRIMARY KEY (id)
+);
 CREATE TABLE public.Parentesco (
   tutor_id uuid NOT NULL,
   estudiante_id uuid NOT NULL,
@@ -348,20 +387,36 @@ CREATE TABLE public.Parentesco (
   CONSTRAINT Parentesco_estudiante_id_fkey FOREIGN KEY (estudiante_id) REFERENCES public.Estudiante(estudiante_id),
   CONSTRAINT Parentesco_tipo_parentesco_id_fkey FOREIGN KEY (tipo_parentesco_id) REFERENCES public.Tipo_parentesco(tipo_parentesco_id)
 );
+CREATE TABLE public.Profesion (
+  id_profesion bigint GENERATED ALWAYS AS IDENTITY NOT NULL UNIQUE,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  nombre character varying,
+  descripcion text,
+  CONSTRAINT Profesion_pkey PRIMARY KEY (id_profesion)
+);
 CREATE TABLE public.Profesor (
   profesor_id uuid NOT NULL DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL,
   nombre_completo character varying NOT NULL,
-  rut character varying CHECK (validate_rut(rut)),
-  especialidad character varying,
-  titulo_profesional character varying,
-  telefono character varying CHECK (telefono IS NULL OR telefono::text ~ '^\+?56[0-9]{8,9}$'::text),
-  estado_activo boolean DEFAULT true,
-  fecha_contratacion date,
-  created_at timestamp without time zone DEFAULT now(),
-  updated_at timestamp without time zone DEFAULT now(),
+  rut character varying NOT NULL UNIQUE CHECK (validate_rut(rut)),
+  telefono character varying NOT NULL CHECK (telefono IS NULL OR telefono::text ~ '^\+?56[0-9]{8,9}$'::text),
+  estado_activo boolean NOT NULL DEFAULT true,
+  created_at timestamp without time zone NOT NULL DEFAULT now(),
+  updated_at timestamp without time zone NOT NULL DEFAULT now(),
+  direccion character varying,
+  comuna character varying,
   CONSTRAINT Profesor_pkey PRIMARY KEY (profesor_id),
   CONSTRAINT Profesor_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.User(user_id)
+);
+CREATE TABLE public.Profesor_especialidad (
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  especialidad_id bigint NOT NULL,
+  profesor_id uuid NOT NULL DEFAULT gen_random_uuid(),
+  certificado_url text,
+  fecha_certificacion date,
+  CONSTRAINT Profesor_especialidad_pkey PRIMARY KEY (especialidad_id, profesor_id),
+  CONSTRAINT Profesor_especialidad_profesor_id_fkey FOREIGN KEY (profesor_id) REFERENCES public.Profesor(profesor_id),
+  CONSTRAINT Profesor_especialidad_especialidad_id_fkey FOREIGN KEY (especialidad_id) REFERENCES public.Especialidad(id)
 );
 CREATE TABLE public.ResultadoEvaluacion (
   resultado_id integer NOT NULL DEFAULT nextval('"ResultadoEvaluacion_resultado_id_seq"'::regclass),
@@ -439,15 +494,15 @@ CREATE TABLE public.Tutor (
   tutor_id uuid NOT NULL DEFAULT gen_random_uuid(),
   user_id uuid,
   nombre_completo character varying NOT NULL,
-  rut character varying CHECK (validate_rut(rut)),
-  telefono character varying CHECK (telefono IS NULL OR telefono::text ~ '^\+?56[0-9]{8,9}$'::text),
-  telefono_emergencia character varying CHECK (telefono_emergencia IS NULL OR telefono_emergencia::text ~ '^\+?56[0-9]{8,9}$'::text),
-  direccion character varying,
+  rut character varying NOT NULL UNIQUE CHECK (validate_rut(rut)),
+  telefono character varying NOT NULL CHECK (telefono IS NULL OR telefono::text ~ '^\+?56[0-9]{8,9}$'::text),
+  direccion character varying NOT NULL,
   ocupacion character varying,
-  email character varying,
-  estado_activo boolean DEFAULT true,
-  created_at timestamp without time zone DEFAULT now(),
-  updated_at timestamp without time zone DEFAULT now(),
+  email character varying NOT NULL,
+  estado_activo boolean NOT NULL DEFAULT true,
+  created_at timestamp without time zone NOT NULL DEFAULT now(),
+  updated_at timestamp without time zone NOT NULL DEFAULT now(),
+  comuna character varying,
   CONSTRAINT Tutor_pkey PRIMARY KEY (tutor_id),
   CONSTRAINT Tutor_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.User(user_id)
 );
