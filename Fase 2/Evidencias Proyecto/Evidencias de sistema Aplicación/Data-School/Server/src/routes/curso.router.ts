@@ -21,6 +21,17 @@ router.get(
 )
 
 /**
+ * GET /cursos/mis-cursos-jefe
+ * Obtener cursos donde el profesor autenticado es profesor jefe
+ * Acceso: PROFESOR
+ */
+router.get(
+  '/mis-cursos-jefe',
+  authorize(ROLES.PROFESOR),
+  cursoController.getMisCursosComoProfesorJefe.bind(cursoController)
+)
+
+/**
  * GET /cursos/:id
  * Obtener un curso por ID
  * Acceso: Todos los roles autenticados
@@ -70,6 +81,18 @@ router.put(
   '/:id',
   authorize(ROLES.ADMINISTRADOR, ROLES.DIRECTOR),
   cursoController.update.bind(cursoController)
+)
+
+/**
+ * PUT /cursos/:id/profesor-jefe
+ * Asignar o remover profesor jefe de un curso
+ * Body: { profesor_jefe_id: string | null }
+ * Acceso: ADMINISTRADOR, DIRECTOR
+ */
+router.put(
+  '/:id/profesor-jefe',
+  authorize(ROLES.ADMINISTRADOR, ROLES.DIRECTOR),
+  cursoController.asignarProfesorJefe.bind(cursoController)
 )
 
 /**

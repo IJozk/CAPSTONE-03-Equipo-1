@@ -11,6 +11,7 @@ export interface CreateCursoDto {
   anio_academico: number
   generacion: number
   capacidad_maxima?: number | null
+  profesor_jefe_id?: string | null
 }
 
 // DTO para actualizar curso
@@ -20,6 +21,12 @@ export interface UpdateCursoDto {
   anio_academico?: number
   generacion?: number
   capacidad_maxima?: number | null
+  profesor_jefe_id?: string | null
+}
+
+// DTO para asignar profesor jefe
+export interface AsignarProfesorJefeDto {
+  profesor_jefe_id: string | null
 }
 
 // DTO para filtrar cursos

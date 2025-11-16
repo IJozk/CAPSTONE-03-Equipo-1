@@ -67,67 +67,108 @@
                   v-for="dia in diasSemana"
                   :key="dia.value"
                   class="px-4 py-3 border-l border-gray-200"
+                  :class="getCellClass(bloque, dia.value)"
                 >
-                  <div
-                    v-for="horario in getHorariosByBloqueYDia(bloque, dia.value)"
-                    :key="horario.horario_id"
-                    class="mb-2"
-                  >
+                  <!-- Recreos y Almuerzo -->
+                  <div v-if="bloque.tipo === 'recreo' || bloque.tipo === 'almuerzo'" class="text-center py-2">
+                    <span class="text-xs font-medium text-gray-600">{{ bloque.nombre }}</span>
+                  </div>
+
+                  <!-- Bloque fuera del horario del viernes -->
+                  <div v-else-if="dia.value === 5 && bloque.hora_inicio >= '14:20'" class="text-center py-2">
+                    <span class="text-xs text-gray-400">-</span>
+                  </div>
+
+                  <!-- Bloques de clase disponibles -->
+                  <div v-else>
                     <div
-                      class="p-3 rounded-lg border-l-4 cursor-pointer hover:shadow-md transition-shadow"
-                      :class="getHorarioColor(horario)"
-                      @click="openEditModal(horario)"
+                      v-for="horario in getHorariosByBloqueYDia(bloque, dia.value)"
+                      :key="horario.horario_id"
+                      class="mb-2"
                     >
-                      <div class="flex items-start justify-between">
-                        <div class="flex-1">
-                          <p class="text-sm font-semibold text-gray-900">
-                            {{ horario.asignatura_nombre }}
-                          </p>
-                          <p class="text-xs text-gray-600 mt-1">
-                            {{ horario.profesor_nombre }}
-                          </p>
-                          <p v-if="horario.sala_nombre" class="text-xs text-gray-500 mt-1 flex items-center">
-                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                            </svg>
-                            {{ horario.sala_nombre }}
-                          </p>
-                        </div>
-                        <div class="flex gap-1 ml-2">
-                          <button
-                            @click.stop="openEditModal(horario)"
-                            class="p-1 text-gray-400 hover:text-primary-600"
-                          >
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </button>
-                          <button
-                            @click.stop="confirmDelete(horario)"
-                            class="p-1 text-gray-400 hover:text-red-600"
-                          >
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
+                      <div
+                        class="p-3 rounded-lg border-l-4 cursor-pointer hover:shadow-md transition-shadow"
+                        :class="getHorarioColor(horario)"
+                        @click="openEditModal(horario)"
+                      >
+                        <div class="flex items-start justify-between">
+                          <div class="flex-1">
+                            <p class="text-sm font-semibold text-gray-900">
+                              {{ horario.asignatura_nombre }}
+                            </p>
+                            <p class="text-xs text-gray-600 mt-1">
+                              {{ horario.profesor_nombre }}
+                            </p>
+                            <p v-if="horario.sala_nombre" class="text-xs text-gray-500 mt-1 flex items-center">
+                              <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                              </svg>
+                              {{ horario.sala_nombre }}
+                            </p>
+                          </div>
+                          <div class="flex gap-1 ml-2">
+                            <button
+                              @click.stop="openEditModal(horario)"
+                              class="p-1 text-gray-400 hover:text-primary-600"
+                            >
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                            <button
+                              @click.stop="confirmDelete(horario)"
+                              class="p-1 text-gray-400 hover:text-red-600"
+                            >
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
+                    <!-- Botón para agregar (solo en bloques de clase disponibles) -->
+                    <button
+                      v-if="getHorariosByBloqueYDia(bloque, dia.value).length === 0"
+                      @click="openCreateModalWithData(bloque, dia.value)"
+                      class="w-full p-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 hover:border-primary-400 hover:text-primary-600 transition-colors text-xs"
+                    >
+                      + Agregar
+                    </button>
                   </div>
-                  <!-- Botón para agregar siempre visible -->
-                  <button
-                    @click="openCreateModalWithData(bloque, dia.value)"
-                    class="w-full p-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 hover:border-primary-400 hover:text-primary-600 transition-colors text-xs mt-2"
-                  >
-                    + Agregar
-                  </button>
                 </td>
               </tr>
-              
+
             </tbody>
-            
+
           </table>
 
+            </div>
+
+            <!-- Leyenda -->
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
+              <h3 class="text-sm font-semibold text-gray-700 mb-3">Leyenda:</h3>
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                <div class="flex items-center">
+                  <div class="w-4 h-4 rounded bg-blue-50 border border-blue-200 mr-2"></div>
+                  <span class="text-gray-700">Recreo (15 min)</span>
+                </div>
+                <div class="flex items-center">
+                  <div class="w-4 h-4 rounded bg-orange-50 border border-orange-200 mr-2"></div>
+                  <span class="text-gray-700">Almuerzo (40 min)</span>
+                </div>
+                <div class="flex items-center">
+                  <div class="w-4 h-4 rounded bg-gray-100 border border-gray-300 mr-2"></div>
+                  <span class="text-gray-700">Fuera de horario</span>
+                </div>
+                <div class="flex items-center">
+                  <div class="w-4 h-4 rounded bg-white border border-gray-300 mr-2"></div>
+                  <span class="text-gray-700">Bloque de clase (40 min)</span>
+                </div>
+              </div>
+              <p class="mt-3 text-xs text-gray-600">
+                <strong>Horario:</strong> Lunes a Jueves: 8:30 - 16:20 | Viernes: 8:30 - 14:20
+              </p>
             </div>
           </div>
         </div>
@@ -251,30 +292,31 @@
             </div>
           </div>
 
-          <!-- Horarios -->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
-                Hora Inicio <span class="text-red-500">*</span>
-              </label>
-              <input
-                v-model="formData.hora_inicio"
-                type="time"
-                required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
-                Hora Término <span class="text-red-500">*</span>
-              </label>
-              <input
-                v-model="formData.hora_termino"
-                type="time"
-                required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              />
-            </div>
+          <!-- Bloque Horario -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              Bloque Horario <span class="text-red-500">*</span>
+            </label>
+            <select
+              v-model="selectedBloqueIndex"
+              @change="updateBloqueHorario"
+              required
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            >
+              <option value="" disabled>Seleccione un bloque</option>
+              <option
+                v-for="(bloque, index) in bloquesDisponiblesParaDia"
+                :key="index"
+                :value="index"
+                :disabled="bloque.tipo !== 'clase'"
+              >
+                {{ bloque.hora_inicio }} - {{ bloque.hora_termino }}
+                {{ bloque.tipo === 'recreo' ? ' (Recreo)' : bloque.tipo === 'almuerzo' ? ' (Almuerzo)' : '' }}
+              </option>
+            </select>
+            <p class="mt-1 text-xs text-gray-500">
+              Bloques de 40 minutos. Viernes termina a las 14:20.
+            </p>
           </div>
 
           <!-- Sala -->
@@ -413,12 +455,38 @@ interface Horario {
   estado_activo: boolean
 }
 
+interface BloqueHorario {
+  hora_inicio: string
+  hora_termino: string
+  tipo: 'clase' | 'recreo' | 'almuerzo'
+  nombre?: string
+}
+
 const diasSemana = [
   { value: 1, label: 'Lunes' },
   { value: 2, label: 'Martes' },
   { value: 3, label: 'Miércoles' },
   { value: 4, label: 'Jueves' },
   { value: 5, label: 'Viernes' }
+]
+
+// Definición de bloques horarios predefinidos (40 minutos cada uno)
+// Jornada: 8:30 - 16:20 (Lunes-Jueves), 8:30 - 14:20 (Viernes)
+// Recreos: 2 de 15 min + 1 de 40 min (almuerzo)
+const BLOQUES_PREDEFINIDOS: BloqueHorario[] = [
+  { hora_inicio: '08:30', hora_termino: '09:10', tipo: 'clase' },  // Bloque 1
+  { hora_inicio: '09:10', hora_termino: '09:50', tipo: 'clase' },  // Bloque 2
+  { hora_inicio: '09:50', hora_termino: '10:05', tipo: 'recreo', nombre: 'Recreo 1' }, // Recreo 15 min
+  { hora_inicio: '10:05', hora_termino: '10:45', tipo: 'clase' },  // Bloque 3
+  { hora_inicio: '10:45', hora_termino: '11:25', tipo: 'clase' },  // Bloque 4
+  { hora_inicio: '11:25', hora_termino: '11:40', tipo: 'recreo', nombre: 'Recreo 2' }, // Recreo 15 min
+  { hora_inicio: '11:40', hora_termino: '12:20', tipo: 'clase' },  // Bloque 5
+  { hora_inicio: '12:20', hora_termino: '13:00', tipo: 'clase' },  // Bloque 6
+  { hora_inicio: '13:00', hora_termino: '13:40', tipo: 'almuerzo', nombre: 'Almuerzo' }, // Almuerzo 40 min
+  { hora_inicio: '13:40', hora_termino: '14:20', tipo: 'clase' },  // Bloque 7
+  { hora_inicio: '14:20', hora_termino: '15:00', tipo: 'clase' },  // Bloque 8 (solo Lun-Jue)
+  { hora_inicio: '15:00', hora_termino: '15:40', tipo: 'clase' },  // Bloque 9 (solo Lun-Jue)
+  { hora_inicio: '15:40', hora_termino: '16:20', tipo: 'clase' }   // Bloque 10 (solo Lun-Jue)
 ]
 
 const filters = ref({
@@ -451,33 +519,30 @@ const formData = ref({
 })
 
 const editingHorarioId = ref<number | null>(null)
+const selectedBloqueIndex = ref<number | ''>('')
 
-// Bloques horarios únicos
-const bloquesHorarios = computed(() => {
-  const bloques: { hora_inicio: string; hora_termino: string }[] = []
-  const seen = new Set<string>()
-
-  horarios.value.forEach(h => {
-    const key = `${h.hora_inicio}-${h.hora_termino}`
-    if (!seen.has(key)) {
-      seen.add(key)
-      bloques.push({ hora_inicio: h.hora_inicio, hora_termino: h.hora_termino })
-    }
-  })
-
-  // Si no hay bloques, proporcionar bloques por defecto para que se puedan agregar horarios
-  if (bloques.length === 0 && filters.value.curso_id) {
-    return [
-      { hora_inicio: '08:00', hora_termino: '09:30' },
-      { hora_inicio: '09:45', hora_termino: '11:15' },
-      { hora_inicio: '11:30', hora_termino: '13:00' },
-      { hora_inicio: '14:00', hora_termino: '15:30' },
-      { hora_inicio: '15:45', hora_termino: '17:15' },
-      { hora_inicio: '17:30', hora_termino: '19:00' }
-    ]
+// Bloques disponibles según el día seleccionado en el formulario
+const bloquesDisponiblesParaDia = computed(() => {
+  if (!formData.value.dia_semana) {
+    return BLOQUES_PREDEFINIDOS
   }
+  return getBloquesPorDia(formData.value.dia_semana)
+})
 
-  return bloques.sort((a, b) => a.hora_inicio.localeCompare(b.hora_inicio))
+// Función para obtener bloques según el día (viernes termina a las 14:20)
+const getBloquesPorDia = (diaValue: number) => {
+  if (diaValue === 5) {
+    // Viernes: solo hasta las 14:20
+    return BLOQUES_PREDEFINIDOS.filter(b => b.hora_termino <= '14:20')
+  }
+  // Lunes a Jueves: jornada completa hasta 16:20
+  return BLOQUES_PREDEFINIDOS
+}
+
+// Bloques horarios a mostrar en la tabla (todos los bloques de lunes a jueves)
+const bloquesHorarios = computed(() => {
+  // Mostrar todos los bloques predefinidos (incluyendo recreos y almuerzo)
+  return BLOQUES_PREDEFINIDOS
 })
 
 const getViewTitle = () => {
@@ -493,9 +558,37 @@ const getViewTitle = () => {
 }
 
 const getHorariosByBloqueYDia = (bloque: { hora_inicio: string; hora_termino: string }, dia: number) => {
-  return horarios.value.filter(
-    h => h.hora_inicio === bloque.hora_inicio && h.hora_termino === bloque.hora_termino && h.dia_semana === dia
-  )
+  // Buscar horarios que estén dentro de este bloque de tiempo o que coincidan exactamente
+  return horarios.value.filter(h => {
+    if (h.dia_semana !== dia) return false
+
+    // Coincidencia exacta
+    if (h.hora_inicio === bloque.hora_inicio && h.hora_termino === bloque.hora_termino) {
+      return true
+    }
+
+    // Horarios que empiezan en este bloque (para compatibilidad con horarios antiguos)
+    const horaInicioBloque = bloque.hora_inicio.substring(0, 5)
+    const horaInicioHorario = h.hora_inicio.substring(0, 5)
+
+    // Si el horario inicia en este bloque, mostrarlo aquí
+    return horaInicioHorario >= horaInicioBloque && horaInicioHorario < bloque.hora_termino
+  })
+}
+
+const getCellClass = (bloque: BloqueHorario, diaValue: number) => {
+  // Recreo y almuerzo con fondo distintivo
+  if (bloque.tipo === 'recreo') {
+    return 'bg-blue-50'
+  }
+  if (bloque.tipo === 'almuerzo') {
+    return 'bg-orange-50'
+  }
+  // Bloques fuera del horario del viernes
+  if (diaValue === 5 && bloque.hora_inicio >= '14:20') {
+    return 'bg-gray-100'
+  }
+  return ''
 }
 
 const getHorarioColor = (horario: Horario) => {
@@ -660,8 +753,21 @@ const loadHorarios = async () => {
   }
 }
 
+// Función para actualizar las horas cuando se selecciona un bloque
+const updateBloqueHorario = () => {
+  if (selectedBloqueIndex.value !== '') {
+    const bloques = bloquesDisponiblesParaDia.value
+    const bloque = bloques[selectedBloqueIndex.value as number]
+    if (bloque && bloque.tipo === 'clase') {
+      formData.value.hora_inicio = bloque.hora_inicio
+      formData.value.hora_termino = bloque.hora_termino
+    }
+  }
+}
+
 const openCreateModal = () => {
   isEditing.value = false
+  selectedBloqueIndex.value = ''
   formData.value = {
     asignatura_id: filters.value.asignatura_id || '',
     dia_semana: null,
@@ -685,6 +791,12 @@ const openCreateModalWithData = (bloque: { hora_inicio: string; hora_termino: st
     sala_id: '',
     estado_activo: true
   }
+
+  // Encontrar el índice del bloque en los bloques disponibles para ese día
+  const bloques = getBloquesPorDia(dia)
+  const index = bloques.findIndex(b => b.hora_inicio === bloque.hora_inicio && b.hora_termino === bloque.hora_termino)
+  selectedBloqueIndex.value = index >= 0 ? index : ''
+
   showModal.value = true
 }
 
@@ -700,6 +812,12 @@ const openEditModal = (horario: Horario) => {
     sala_id: horario.sala_id || '',
     estado_activo: horario.estado_activo
   }
+
+  // Encontrar el índice del bloque
+  const bloques = getBloquesPorDia(horario.dia_semana)
+  const index = bloques.findIndex(b => b.hora_inicio === horario.hora_inicio && b.hora_termino === horario.hora_termino)
+  selectedBloqueIndex.value = index >= 0 ? index : ''
+
   showModal.value = true
 }
 
@@ -707,6 +825,7 @@ const closeModal = () => {
   showModal.value = false
   isEditing.value = false
   editingHorarioId.value = null
+  selectedBloqueIndex.value = ''
 }
 
 const handleSubmit = async () => {
