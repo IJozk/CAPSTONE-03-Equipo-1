@@ -196,7 +196,7 @@ export class AuthController {
         const client = supabaseAdmin || supabase;
         const result = await client
           .from('Profesor')
-          .select('nombre_completo, rut, telefono')
+          .select('profesor_id, nombre_completo, rut, telefono')
           .eq('user_id', userData.user_id)
           .single();
 

@@ -20,7 +20,16 @@
 
       <!-- Filters -->
       <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Búsqueda</label>
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Buscar evaluación..."
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
+          </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Asignatura</label>
             <select
@@ -30,8 +39,18 @@
             >
               <option value="">Todas las asignaturas</option>
               <option v-for="subject in teacherStore.subjects" :key="subject.asignatura_id" :value="subject.asignatura_id">
-                {{ subject.nombre }} - {{ subject.curso.nombre }}
+                {{ subject.nombre }}
               </option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Curso</label>
+            <select
+              v-model="filters.curso"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            >
+              <option value="">Todos los cursos</option>
+              <option v-for="curso in uniqueCourses" :key="curso" :value="curso">{{ curso }}</option>
             </select>
           </div>
           <div>
@@ -49,115 +68,182 @@
               <option value="OTROS">Otros</option>
             </select>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Búsqueda</label>
+        </div>
+        <div class="flex items-center mt-4 gap-4">
+          <label class="flex items-center cursor-pointer">
             <input
-              v-model="searchQuery"
-              type="text"
-              placeholder="Buscar evaluación..."
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              v-model="filters.pendientes"
+              type="checkbox"
+              class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500"
             />
-          </div>
+            <span class="ml-2 text-sm text-gray-700">Mostrar solo evaluaciones pendientes de calificación</span>
+          </label>
         </div>
       </div>
 
       <!-- Loading State -->
-      <div v-if="teacherStore.loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div v-for="i in 6" :key="i" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 animate-pulse">
-          <div class="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
-          <div class="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-          <div class="h-4 bg-gray-200 rounded w-2/3"></div>
+      <div v-if="teacherStore.loading" class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="divide-y divide-gray-200">
+          <div v-for="i in 5" :key="i" class="p-6 animate-pulse">
+            <div class="flex items-center justify-between">
+              <div class="flex-1">
+                <div class="h-5 bg-gray-200 rounded w-1/3 mb-2"></div>
+                <div class="h-4 bg-gray-200 rounded w-1/4"></div>
+              </div>
+              <div class="flex space-x-2">
+                <div class="h-8 w-20 bg-gray-200 rounded"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Evaluations Grid -->
-      <div v-else-if="filteredEvaluations.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div
-          v-for="evaluation in filteredEvaluations"
-          :key="evaluation.evaluacion_id"
-          class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
-        >
-          <div class="p-6">
-            <!-- Header -->
-            <div class="flex items-start justify-between mb-4">
-              <div class="flex-1">
-                <h3 class="text-lg font-bold text-gray-900">{{ evaluation.nombre }}</h3>
-                <p class="text-sm text-gray-600 mt-1">{{ getSubjectName(evaluation.asignatura_id) }}</p>
-              </div>
-              <span
-                :class="getTypeBadgeClass(evaluation.tipo)"
-                class="px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap"
+      <!-- Evaluations List -->
+      <div v-else-if="filteredEvaluations.length > 0" class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Evaluación</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asignatura</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Curso</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Calificados</th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr
+                v-for="evaluation in filteredEvaluations"
+                :key="evaluation.evaluacion_id"
+                class="hover:bg-gray-50 transition-colors"
+                :class="{ 'bg-yellow-50': isPending(evaluation) }"
               >
-                {{ getTypeLabel(evaluation.tipo) }}
-              </span>
-            </div>
+                <!-- Status -->
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span
+                    v-if="isPending(evaluation)"
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"
+                  >
+                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                    Pendiente
+                  </span>
+                  <span
+                    v-else-if="isUpcoming(evaluation)"
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                  >
+                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                    </svg>
+                    Próxima
+                  </span>
+                  <span
+                    v-else
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
+                  >
+                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                    Completa
+                  </span>
+                </td>
 
-            <!-- Description -->
-            <p v-if="evaluation.descripcion" class="text-sm text-gray-600 mb-4 line-clamp-2">
-              {{ evaluation.descripcion }}
-            </p>
+                <!-- Evaluation Name -->
+                <td class="px-6 py-4">
+                  <div>
+                    <div class="text-sm font-bold text-gray-900">{{ evaluation.nombre }}</div>
+                    <div v-if="evaluation.descripcion" class="text-xs text-gray-500 mt-1 line-clamp-1">
+                      {{ evaluation.descripcion }}
+                    </div>
+                    <div v-if="evaluation.is_recuperativa" class="mt-1">
+                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                        Recuperativa
+                      </span>
+                    </div>
+                  </div>
+                </td>
 
-            <!-- Details -->
-            <div class="space-y-2 mb-4">
-              <div class="flex items-center text-sm text-gray-600">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                {{ formatDate(evaluation.fecha_evaluacion) }}
-              </div>
-              <div class="flex items-center text-sm text-gray-600">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {{ evaluation.puntaje_maximo }} pts · {{ evaluation.porcentaje_nota }}% de la nota
-              </div>
-              <div v-if="evaluation.is_recuperativa" class="flex items-center text-sm text-blue-600">
-                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-                </svg>
-                Evaluación recuperativa
-              </div>
-            </div>
+                <!-- Subject -->
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900">{{ getSubjectNameOnly(evaluation.asignatura_id) }}</div>
+                </td>
 
-            <!-- Progress -->
-            <div class="mb-4">
-              <div class="flex justify-between text-sm mb-1">
-                <span class="text-gray-600">Calificados</span>
-                <span class="font-medium text-gray-900">
-                  {{ evaluation.total_estudiantes_evaluados || 0 }}/{{ evaluation.total_estudiantes || 0 }}
-                </span>
-              </div>
-              <div class="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  :style="{ width: getProgressPercentage(evaluation) + '%' }"
-                  :class="getProgressBarClass(evaluation)"
-                  class="h-2 rounded-full transition-all"
-                ></div>
-              </div>
-            </div>
+                <!-- Course -->
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900">{{ getCourseName(evaluation.asignatura_id) }}</div>
+                </td>
 
-            <!-- Actions -->
-            <div class="flex justify-end gap-2 pt-4 border-t border-gray-100">
-              <button
-                @click="goToGrade(evaluation.evaluacion_id)"
-                class="px-3 py-1 text-sm text-primary-600 hover:bg-primary-50 rounded transition-colors"
-              >
-                Calificar
-              </button>
-              <button
-                @click="openEditModal(evaluation)"
-                class="px-3 py-1 text-sm text-gray-600 hover:bg-gray-50 rounded transition-colors"
-              >
-                Editar
-              </button>
-              <button
-                @click="confirmDelete(evaluation)"
-                class="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded transition-colors"
-              >
-                Eliminar
-              </button>
-            </div>
-          </div>
+                <!-- Date -->
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900">{{ formatDateShort(evaluation.fecha_evaluacion) }}</div>
+                  <div class="text-xs text-gray-500">{{ getRelativeDate(evaluation.fecha_evaluacion) }}</div>
+                </td>
+
+                <!-- Type -->
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span
+                    :class="getTypeBadgeClass(evaluation.tipo)"
+                    class="px-2.5 py-0.5 rounded-full text-xs font-medium"
+                  >
+                    {{ getTypeLabel(evaluation.tipo) }}
+                  </span>
+                </td>
+
+                <!-- Graded Progress -->
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center">
+                    <div class="flex-1 mr-2">
+                      <div class="text-sm text-gray-900">
+                        {{ evaluation.total_estudiantes_evaluados || 0 }}/{{ evaluation.total_estudiantes || 0 }}
+                      </div>
+                      <div class="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                        <div
+                          :style="{ width: getProgressPercentage(evaluation) + '%' }"
+                          :class="getProgressBarClass(evaluation)"
+                          class="h-1.5 rounded-full transition-all"
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Actions -->
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <div class="flex justify-end space-x-2">
+                    <button
+                      @click="goToGrade(evaluation.evaluacion_id)"
+                      class="px-3 py-1 bg-primary-600 text-white text-sm rounded-lg hover:bg-primary-700 transition-colors"
+                      title="Calificar"
+                    >
+                      Calificar
+                    </button>
+                    <button
+                      @click="openEditModal(evaluation)"
+                      class="px-3 py-1 bg-gray-50 text-gray-700 text-sm rounded-lg hover:bg-gray-100 transition-colors"
+                      title="Editar"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                    <button
+                      @click="confirmDelete(evaluation)"
+                      class="px-3 py-1 bg-red-50 text-red-700 text-sm rounded-lg hover:bg-red-100 transition-colors"
+                      title="Eliminar"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -390,7 +476,9 @@ const teacherStore = useTeacherStore();
 const searchQuery = ref('');
 const filters = ref({
   asignatura_id: '',
-  tipo: ''
+  curso: '',
+  tipo: '',
+  pendientes: false
 });
 
 const showModal = ref(false);
@@ -411,18 +499,34 @@ const showDeleteConfirm = ref(false);
 const evaluationToDelete = ref<Evaluation | null>(null);
 const deleting = ref(false);
 
-// Computed
+// Computed - Obtener cursos únicos para el filtro
+const uniqueCourses = computed(() => {
+  const courses = teacherStore.subjects.map(s => s.curso.nombre); // Nombre completo del curso
+  return [...new Set(courses)].sort();
+});
+
 const filteredEvaluations = computed(() => {
   let result = teacherStore.evaluations;
 
+  // Filter by subject
   if (filters.value.asignatura_id) {
     result = result.filter(e => e.asignatura_id === filters.value.asignatura_id);
   }
 
+  // Filter by course
+  if (filters.value.curso) {
+    result = result.filter(e => {
+      const courseName = getCourseName(e.asignatura_id);
+      return courseName === filters.value.curso;
+    });
+  }
+
+  // Filter by type
   if (filters.value.tipo) {
     result = result.filter(e => e.tipo === filters.value.tipo);
   }
 
+  // Filter by search query
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
     result = result.filter(e =>
@@ -430,6 +534,31 @@ const filteredEvaluations = computed(() => {
       e.descripcion?.toLowerCase().includes(query)
     );
   }
+
+  // Filter pending (evaluations with missing grades)
+  if (filters.value.pendientes) {
+    result = result.filter(e => {
+      const today = new Date();
+      const evalDate = new Date(e.fecha_evaluacion);
+      // Show evaluations that are past due and not fully graded
+      return evalDate < today && (e.total_estudiantes_evaluados || 0) < (e.total_estudiantes || 0);
+    });
+  }
+
+  // Sort by date - closest first (ascending), with pending evaluations at the top
+  result = [...result].sort((a, b) => {
+    const isPendingA = isPending(a);
+    const isPendingB = isPending(b);
+
+    // Pending evaluations first
+    if (isPendingA && !isPendingB) return -1;
+    if (!isPendingA && isPendingB) return 1;
+
+    // Then sort by date (closest first)
+    const dateA = new Date(a.fecha_evaluacion).getTime();
+    const dateB = new Date(b.fecha_evaluacion).getTime();
+    return dateA - dateB;
+  });
 
   return result;
 });
@@ -525,6 +654,54 @@ const goToGrade = (evaluationId: number) => {
 const getSubjectName = (asignaturaId: string) => {
   const subject = teacherStore.subjects.find(s => s.asignatura_id === asignaturaId);
   return subject ? `${subject.nombre} - ${subject.curso.nombre}` : 'Asignatura';
+};
+
+const getSubjectNameOnly = (asignaturaId: string) => {
+  const subject = teacherStore.subjects.find(s => s.asignatura_id === asignaturaId);
+  return subject?.nombre || 'Asignatura';
+};
+
+const getCourseName = (asignaturaId: string) => {
+  const subject = teacherStore.subjects.find(s => s.asignatura_id === asignaturaId);
+  return subject?.curso.nombre || 'Curso'; // Retorna el nombre completo del curso, ej: "1°ro Básico B"
+};
+
+const isPending = (evaluation: Evaluation): boolean => {
+  const today = new Date();
+  const evalDate = new Date(evaluation.fecha_evaluacion);
+  // Evaluation is pending if it's past due and not fully graded
+  return evalDate < today && (evaluation.total_estudiantes_evaluados || 0) < (evaluation.total_estudiantes || 0);
+};
+
+const isUpcoming = (evaluation: Evaluation): boolean => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const evalDate = new Date(evaluation.fecha_evaluacion);
+  evalDate.setHours(0, 0, 0, 0);
+  // Evaluation is upcoming if it's today or in the future
+  return evalDate >= today;
+};
+
+const formatDateShort = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' });
+};
+
+const getRelativeDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  date.setHours(0, 0, 0, 0);
+
+  const diffTime = date.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return 'Hoy';
+  if (diffDays === 1) return 'Mañana';
+  if (diffDays === -1) return 'Ayer';
+  if (diffDays > 0) return `En ${diffDays} días`;
+  if (diffDays < 0) return `Hace ${Math.abs(diffDays)} días`;
+  return '';
 };
 
 const getTypeLabel = (tipo: EvaluationType) => {

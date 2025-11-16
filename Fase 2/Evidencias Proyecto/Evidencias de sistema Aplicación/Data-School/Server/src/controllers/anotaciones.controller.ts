@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { supabase } from '../config/supabase';
+import { supabase, supabaseAdmin } from '../config/supabase';
 
 /**
  * Obtener todas las anotaciones de un estudiante
@@ -60,14 +60,26 @@ export const getAnotacionesByAsignatura = async (req: Request, res: Response) =>
   try {
     const { asignatura_id } = req.params;
 
+    console.log('🔍 Buscando anotaciones para asignatura:', asignatura_id);
+
     // Primero obtener los estudiantes del curso de la asignatura
     const { data: asignatura, error: asignaturaError } = await supabase
       .from('Asignatura')
       .select('curso_id')
       .eq('asignatura_id', asignatura_id)
-      .single();
+      .maybeSingle();
 
-    if (asignaturaError) throw asignaturaError;
+    if (asignaturaError) {
+      console.error('❌ Error al buscar asignatura:', asignaturaError);
+      throw asignaturaError;
+    }
+
+    if (!asignatura) {
+      console.warn('⚠️ Asignatura no encontrada:', asignatura_id);
+      return res.json([]);
+    }
+
+    console.log('✅ Asignatura encontrada, curso_id:', asignatura.curso_id);
 
     // Obtener estudiantes matriculados en el curso
     const { data: matriculas, error: matriculasError } = await supabase
@@ -76,11 +88,17 @@ export const getAnotacionesByAsignatura = async (req: Request, res: Response) =>
       .eq('curso_id', asignatura.curso_id)
       .eq('estado', 'Activo');
 
-    if (matriculasError) throw matriculasError;
+    if (matriculasError) {
+      console.error('❌ Error al buscar matrículas:', matriculasError);
+      throw matriculasError;
+    }
 
-    const estudianteIds = matriculas.map(m => m.estudiante_id);
+    console.log('✅ Matrículas encontradas:', matriculas?.length || 0);
+
+    const estudianteIds = matriculas?.map(m => m.estudiante_id) || [];
 
     if (estudianteIds.length === 0) {
+      console.log('⚠️ No hay estudiantes en el curso');
       return res.json([]);
     }
 
@@ -95,11 +113,16 @@ export const getAnotacionesByAsignatura = async (req: Request, res: Response) =>
       .in('estudiante_id', estudianteIds)
       .order('fecha', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Error al buscar anotaciones:', error);
+      throw error;
+    }
 
-    res.json(data);
+    console.log('✅ Anotaciones encontradas:', data?.length || 0);
+
+    res.json(data || []);
   } catch (error: any) {
-    console.error('Error fetching anotaciones by asignatura:', error);
+    console.error('❌ Error fetching anotaciones by asignatura:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -121,7 +144,11 @@ export const createAnotacion = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'tipo_anotacion debe ser Positiva, Negativa o Neutra' });
     }
 
-    const { data, error } = await supabase
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin client not configured');
+    }
+
+    const { data, error } = await supabaseAdmin
       .from('Anotaciones')
       .insert({
         estudiante_id,
@@ -165,7 +192,11 @@ export const updateAnotacion = async (req: Request, res: Response) => {
     if (descripcion !== undefined) updates.descripcion = descripcion;
     if (fecha !== undefined) updates.fecha = fecha;
 
-    const { data, error } = await supabase
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin client not configured');
+    }
+
+    const { data, error } = await supabaseAdmin
       .from('Anotaciones')
       .update(updates)
       .eq('id', id)
@@ -196,7 +227,11 @@ export const deleteAnotacion = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const { error } = await supabase
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin client not configured');
+    }
+
+    const { error } = await supabaseAdmin
       .from('Anotaciones')
       .delete()
       .eq('id', id);
