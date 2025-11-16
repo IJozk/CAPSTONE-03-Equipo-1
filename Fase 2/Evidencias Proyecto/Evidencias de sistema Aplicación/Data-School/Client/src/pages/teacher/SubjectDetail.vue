@@ -292,7 +292,7 @@
           <!-- Tab: Asistencia -->
           <div v-if="activeTab === 'attendance'">
             <div class="flex justify-between items-center mb-4">
-              <h2 class="text-xl font-bold text-gray-900">Registro de Asistencia</h2>
+              <h2 class="text-xl font-bold text-gray-900">Resumen de Asistencia</h2>
               <button
                 @click="goToAttendance"
                 class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center"
@@ -304,26 +304,71 @@
               </button>
             </div>
 
-            <div class="bg-white border border-gray-200 rounded-lg p-8 text-center">
+            <!-- Students attendance table -->
+            <div v-if="students.length > 0" class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+              <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Clases Totales</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Presentes</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ausentes</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">% Asistencia</th>
+                    </tr>
+                  </thead>
+                  <tbody class="bg-white divide-y divide-gray-200">
+                    <tr v-for="student in students" :key="student.estudiante_id" class="hover:bg-gray-50">
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {{ student.numero_lista }}
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">{{ student.nombre_completo }}</div>
+                        <div class="text-xs text-gray-500">{{ student.rut }}</div>
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {{ student.total_clases || 0 }}
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          {{ student.clases_presentes || 0 }}
+                        </span>
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          {{ student.clases_ausentes || 0 }}
+                        </span>
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                          <div class="flex-1 mr-2">
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                              <div
+                                :class="getAttendanceBarClass(student.asistencia_porcentaje)"
+                                class="h-2 rounded-full"
+                                :style="{ width: `${student.asistencia_porcentaje || 0}%` }"
+                              ></div>
+                            </div>
+                          </div>
+                          <span :class="getAttendanceClass(student.asistencia_porcentaje)" class="text-sm font-semibold min-w-[3rem] text-right">
+                            {{ student.asistencia_porcentaje ? student.asistencia_porcentaje.toFixed(1) : '0.0' }}%
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Empty state -->
+            <div v-else class="bg-white border border-gray-200 rounded-lg p-8 text-center">
               <svg class="w-20 h-20 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
               </svg>
-              <h3 class="text-lg font-medium text-gray-900 mb-2">Control de Asistencia</h3>
-              <p class="text-gray-600 mb-4">Registra y gestiona la asistencia de tus estudiantes</p>
-              <div class="flex justify-center space-x-3">
-                <button
-                  @click="goToAttendance"
-                  class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-                >
-                  Registrar Asistencia Hoy
-                </button>
-                <button
-                  @click="goToAttendanceReport"
-                  class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  Ver Reportes
-                </button>
-              </div>
+              <h3 class="text-lg font-medium text-gray-900 mb-2">No hay estudiantes</h3>
+              <p class="text-gray-600 mb-4">Esta asignatura no tiene estudiantes inscritos</p>
             </div>
           </div>
 
@@ -379,6 +424,41 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 </div>
+              </div>
+            </div>
+
+            <!-- Grades Chart -->
+            <div class="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+              <h3 class="text-lg font-bold text-gray-900 mb-4">Notas Promedio por Evaluación</h3>
+              <div v-if="evaluations.length > 0" class="space-y-4">
+                <div v-for="evaluation in evaluations" :key="evaluation.evaluacion_id" class="space-y-2">
+                  <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                      <p class="text-sm font-medium text-gray-900 truncate">{{ evaluation.nombre }}</p>
+                      <p class="text-xs text-gray-500">{{ formatDate(evaluation.fecha_evaluacion) }}</p>
+                    </div>
+                    <div class="flex items-center ml-4">
+                      <span :class="getGradeClass(evaluation.promedio_nota)" class="text-lg font-bold min-w-[3rem] text-right">
+                        {{ evaluation.promedio_nota ? evaluation.promedio_nota.toFixed(1) : 'S/N' }}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="relative w-full bg-gray-200 rounded-full h-3">
+                    <div
+                      v-if="evaluation.promedio_nota"
+                      :class="getGradeBarClass(evaluation.promedio_nota)"
+                      class="h-3 rounded-full transition-all"
+                      :style="{ width: `${(evaluation.promedio_nota / 7.0) * 100}%` }"
+                    >
+                      <span class="absolute right-2 top-0 text-xs text-white font-semibold">
+                        {{ evaluation.total_estudiantes_evaluados || 0 }}/{{ evaluation.total_estudiantes || 0 }} estudiantes
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="text-center py-8 text-gray-500">
+                <p>No hay evaluaciones para mostrar</p>
               </div>
             </div>
 
@@ -650,12 +730,28 @@ const getGradeClass = (grade: number | null) => {
   return 'text-red-700';
 };
 
+const getGradeBarClass = (grade: number | null) => {
+  if (!grade) return 'bg-gray-400';
+  if (grade >= 6.0) return 'bg-green-500';
+  if (grade >= 5.0) return 'bg-blue-500';
+  if (grade >= 4.0) return 'bg-yellow-500';
+  return 'bg-red-500';
+};
+
 const getAttendanceClass = (percentage: number | null) => {
   if (!percentage) return 'text-gray-400';
   if (percentage >= 90) return 'text-green-700';
   if (percentage >= 80) return 'text-blue-700';
   if (percentage >= 70) return 'text-yellow-700';
   return 'text-red-700';
+};
+
+const getAttendanceBarClass = (percentage: number | null) => {
+  if (!percentage) return 'bg-gray-400';
+  if (percentage >= 90) return 'bg-green-500';
+  if (percentage >= 80) return 'bg-blue-500';
+  if (percentage >= 70) return 'bg-yellow-500';
+  return 'bg-red-500';
 };
 
 const getEvaluationTypeBadge = (tipo: string) => {
