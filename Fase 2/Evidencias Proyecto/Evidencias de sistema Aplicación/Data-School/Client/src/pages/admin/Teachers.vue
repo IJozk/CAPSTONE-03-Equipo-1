@@ -708,9 +708,6 @@ const showInactive = ref(false);
 const currentPage = ref(1);
 const itemsPerPage = 20;
 
-// Catálogo de profesiones (ya existe más abajo, voy a usar la misma variable)
-const allProfesiones = todasProfesiones;
-
 // Selección múltiple
 const selectedTeachers = ref<string[]>([]);
 const showBulkDisableModal = ref(false);
@@ -746,6 +743,9 @@ const fechaTerminoContrato = ref('');
 
 // Catálogo de profesiones
 const todasProfesiones = ref<Profesion[]>([]);
+
+// Alias para usar en el filtro del template
+const allProfesiones = todasProfesiones;
 
 // Formulario para nuevo contrato
 const newContratoForm = ref({
