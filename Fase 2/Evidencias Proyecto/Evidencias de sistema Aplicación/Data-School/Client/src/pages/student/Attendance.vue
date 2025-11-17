@@ -2,7 +2,11 @@
   <div class="space-y-6">
     <div class="flex justify-between items-center">
       <h1 class="text-3xl font-bold text-gray-900">Mi Asistencia</h1>
-      <select v-model="selectedMonth" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+      <select
+        v-model="selectedMonth"
+        @change="loadAttendance"
+        class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      >
         <option value="01">Enero</option>
         <option value="02">Febrero</option>
         <option value="03">Marzo</option>
@@ -65,12 +69,23 @@
       </div>
     </div>
 
+    <!-- Loading State -->
+    <div v-if="loading" class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      <p class="mt-2 text-gray-600">Cargando asistencia...</p>
+    </div>
+
     <!-- Attendance Table -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+    <div v-else class="bg-white rounded-lg shadow-sm border border-gray-200">
       <div class="px-6 py-4 border-b border-gray-200">
         <h2 class="text-xl font-semibold text-gray-900">Historial de Asistencia</h2>
       </div>
-      <div class="overflow-x-auto">
+
+      <div v-if="attendanceRecords.length === 0" class="p-8 text-center text-gray-500">
+        No hay registros de asistencia para este mes
+      </div>
+
+      <div v-else class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
@@ -114,96 +129,93 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useStudentStore } from '@/store/student.store'
+import { useAuthStore } from '@/store/auth.store'
+import asistenciaService from '@/services/asistencia.service'
+import type { AsistenciaRecord } from '@/services/asistencia.service'
 import StatCard from '@/components/student/StatCard.vue'
 
-const studentStore = useStudentStore()
-const selectedMonth = ref('10')
+const authStore = useAuthStore()
+const selectedMonth = ref(new Date().getMonth().toString().padStart(2, '0'))
+const currentYear = ref(new Date().getFullYear())
 const loading = ref(false)
+const asistencias = ref<AsistenciaRecord[]>([])
+const resumenData = ref<any>(null)
 
-// Mock attendance data
-const mockAttendanceRecords = [
-  { id: 1, fecha: '2025-10-22', asignatura: 'Matemáticas', estado: 'PRESENTE', observacion: '-' },
-  { id: 2, fecha: '2025-10-22', asignatura: 'Lenguaje', estado: 'PRESENTE', observacion: '-' },
-  { id: 3, fecha: '2025-10-21', asignatura: 'Ciencias', estado: 'ATRASADO', observacion: 'Llegó 10 minutos tarde' },
-  { id: 4, fecha: '2025-10-21', asignatura: 'Historia', estado: 'PRESENTE', observacion: '-' },
-  { id: 5, fecha: '2025-10-20', asignatura: 'Inglés', estado: 'PRESENTE', observacion: '-' },
-  { id: 6, fecha: '2025-10-20', asignatura: 'Matemáticas', estado: 'PRESENTE', observacion: '-' },
-  { id: 7, fecha: '2025-10-19', asignatura: 'Ed. Física', estado: 'AUSENTE', observacion: 'Ausencia médica' },
-  { id: 8, fecha: '2025-10-19', asignatura: 'Artes', estado: 'JUSTIFICADO', observacion: 'Certificado médico presentado' },
-  { id: 9, fecha: '2025-10-18', asignatura: 'Música', estado: 'PRESENTE', observacion: '-' },
-  { id: 10, fecha: '2025-10-18', asignatura: 'Lenguaje', estado: 'PRESENTE', observacion: '-' },
-  { id: 11, fecha: '2025-10-17', asignatura: 'Matemáticas', estado: 'ATRASADO', observacion: 'Llegó 5 minutos tarde' },
-  { id: 12, fecha: '2025-10-17', asignatura: 'Ciencias', estado: 'PRESENTE', observacion: '-' },
-  { id: 13, fecha: '2025-10-16', asignatura: 'Historia', estado: 'PRESENTE', observacion: '-' },
-  { id: 14, fecha: '2025-10-16', asignatura: 'Inglés', estado: 'PRESENTE', observacion: '-' },
-  { id: 15, fecha: '2025-10-15', asignatura: 'Matemáticas', estado: 'PRESENTE', observacion: '-' },
-  { id: 16, fecha: '2025-10-15', asignatura: 'Ed. Física', estado: 'PRESENTE', observacion: '-' },
-  { id: 17, fecha: '2025-10-14', asignatura: 'Artes', estado: 'AUSENTE', observacion: 'Sin justificación' },
-  { id: 18, fecha: '2025-10-14', asignatura: 'Música', estado: 'PRESENTE', observacion: '-' },
-  { id: 19, fecha: '2025-10-13', asignatura: 'Lenguaje', estado: 'PRESENTE', observacion: '-' },
-  { id: 20, fecha: '2025-10-13', asignatura: 'Ciencias', estado: 'ATRASADO', observacion: 'Llegó 15 minutos tarde' }
-]
-
-const mockAttendanceSummary = {
-  porcentaje: 85,
-  diasPresente: 15,
-  ausencias: 2,
-  atrasos: 3
-}
-
-const mockAttendanceAlerts = [
-  'Has tenido 3 atrasos este mes',
-  'Tienes 1 ausencia sin justificar'
-]
+const estudianteId = computed(() => authStore.user?.estudiante_profile?.estudiante_id)
 
 const summary = computed(() => {
-  // El store tiene 'attendance' que es un array, no 'attendanceSummary'
-  // Calculamos el resumen desde los datos de attendance
-  if (studentStore.attendance && studentStore.attendance.length > 0) {
-    const records = studentStore.attendance
-    const presente = records.filter(r => r.estado === 'PRESENTE').length
-    const ausente = records.filter(r => r.estado === 'AUSENTE').length
-    const atrasado = records.filter(r => r.estado === 'ATRASADO').length
-    const total = records.length
-    const porcentaje = total > 0 ? Math.round(((presente + atrasado * 0.5) / total) * 100) : 0
+  if (resumenData.value) {
+    return {
+      porcentaje: resumenData.value.porcentaje_asistencia || 0,
+      diasPresente: resumenData.value.presentes || 0,
+      ausencias: resumenData.value.ausentes || 0,
+      atrasos: resumenData.value.retrasos || 0
+    }
+  }
+
+  // Calcular desde asistencias si no hay resumen
+  if (asistencias.value.length > 0) {
+    const presentes = asistencias.value.filter(a => a.presente).length
+    const ausentes = asistencias.value.filter(a => !a.presente).length
+    const retrasos = asistencias.value.filter(a => a.retraso_minutos && a.retraso_minutos > 0).length
+    const total = asistencias.value.length
+    const porcentaje = total > 0 ? Math.round((presentes / total) * 100) : 0
 
     return {
       porcentaje,
-      diasPresente: presente,
-      ausencias: ausente,
-      atrasos: atrasado
+      diasPresente: presentes,
+      ausencias: ausentes,
+      atrasos: retrasos
     }
   }
-  return mockAttendanceSummary
+
+  return {
+    porcentaje: 0,
+    diasPresente: 0,
+    ausencias: 0,
+    atrasos: 0
+  }
 })
 
 const attendanceRecords = computed(() => {
-  if (studentStore.attendance && studentStore.attendance.length > 0) {
-    return studentStore.attendance.map(a => ({
-      id: a.id,
+  return asistencias.value.map(a => {
+    let estado = 'PRESENTE'
+    if (!a.presente && a.justificado) {
+      estado = 'JUSTIFICADO'
+    } else if (!a.presente) {
+      estado = 'AUSENTE'
+    } else if (a.retraso_minutos && a.retraso_minutos > 0) {
+      estado = 'ATRASADO'
+    }
+
+    let observacion = a.observaciones || '-'
+    if (a.retraso_minutos && a.retraso_minutos > 0) {
+      observacion = `Llegó ${a.retraso_minutos} minutos tarde${a.observaciones ? ' - ' + a.observaciones : ''}`
+    }
+
+    return {
+      id: a.asistencia_id,
       fecha: new Date(a.fecha).toLocaleDateString('es-CL'),
-      asignatura: a.asignatura_nombre,
-      estado: a.estado,
-      observacion: a.observacion || '-'
-    }))
-  }
-  return mockAttendanceRecords
+      asignatura: a.Asignatura?.nombre || 'Sin asignatura',
+      estado,
+      observacion
+    }
+  })
 })
 
 const alerts = computed(() => {
-  // Generar alertas basadas en los datos reales si existen
-  if (studentStore.attendance && studentStore.attendance.length > 0) {
-    const atrasos = studentStore.attendance.filter(r => r.estado === 'ATRASADO').length
-    const ausenciasSinJustificar = studentStore.attendance.filter(r => r.estado === 'AUSENTE').length
+  const alertas: string[] = []
 
-    const alertas: string[] = []
-    if (atrasos > 0) alertas.push(`Has tenido ${atrasos} atrasos este mes`)
-    if (ausenciasSinJustificar > 0) alertas.push(`Tienes ${ausenciasSinJustificar} ausencia(s) sin justificar`)
-
-    return alertas.length > 0 ? alertas : []
+  if (summary.value.atrasos > 2) {
+    alertas.push(`Has tenido ${summary.value.atrasos} atrasos este mes`)
   }
-  return mockAttendanceAlerts
+
+  const ausenciasSinJustificar = asistencias.value.filter(a => !a.presente && !a.justificado).length
+  if (ausenciasSinJustificar > 0) {
+    alertas.push(`Tienes ${ausenciasSinJustificar} ausencia(s) sin justificar`)
+  }
+
+  return alertas
 })
 
 const getStatusBadgeClass = (estado: string) => {
@@ -221,17 +233,50 @@ const getStatusBadgeClass = (estado: string) => {
   }
 }
 
-onMounted(async () => {
+const loadAttendance = async () => {
+  console.log('🔍 Cargando asistencia...')
+  console.log('👤 Estudiante ID:', estudianteId.value)
+  console.log('📅 Mes seleccionado:', selectedMonth.value)
+
+  if (!estudianteId.value) {
+    console.warn('❌ No se encontró el ID del estudiante')
+    return
+  }
+
   loading.value = true
+
   try {
-    // Fetch attendance data from store
-    if (studentStore.fetchAttendance) {
-      await studentStore.fetchAttendance()
-    }
+    // Obtener asistencias del mes
+    console.log('📞 Llamando a asistenciaService.getByMonth')
+    const asistenciasData = await asistenciaService.getByMonth(
+      estudianteId.value,
+      currentYear.value,
+      selectedMonth.value
+    )
+    console.log('✅ Asistencias recibidas:', asistenciasData)
+    asistencias.value = asistenciasData
+
+    // Obtener resumen del mes
+    console.log('📞 Llamando a asistenciaService.getResumenEstudiante')
+    const fecha_inicio = `${currentYear.value}-${selectedMonth.value}-01`
+    const lastDay = new Date(currentYear.value, parseInt(selectedMonth.value), 0).getDate()
+    const fecha_fin = `${currentYear.value}-${selectedMonth.value}-${lastDay.toString().padStart(2, '0')}`
+
+    const resumen = await asistenciaService.getResumenEstudiante(estudianteId.value, {
+      fecha_inicio,
+      fecha_fin
+    })
+    console.log('✅ Resumen recibido:', resumen)
+    resumenData.value = resumen
+
   } catch (error) {
-    console.error('Error fetching attendance data:', error)
+    console.error('❌ Error loading attendance:', error)
   } finally {
     loading.value = false
   }
+}
+
+onMounted(async () => {
+  await loadAttendance()
 })
 </script>

@@ -51,7 +51,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm text-gray-600">Asistencia</p>
-              <p class="text-3xl font-bold text-gray-900 mt-1">{{ stats.asistencia || 0 }}%</p>
+              <p class="text-3xl font-bold text-gray-900 mt-1">{{ stats.asistencia }}%</p>
             </div>
             <div class="bg-green-100 rounded-full p-3">
               <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -66,7 +66,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm text-gray-600">Asignaturas</p>
-              <p class="text-3xl font-bold text-gray-900 mt-1">{{ stats.totalAsignaturas || 0 }}</p>
+              <p class="text-3xl font-bold text-gray-900 mt-1">{{ stats.totalAsignaturas }}</p>
             </div>
             <div class="bg-purple-100 rounded-full p-3">
               <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -81,7 +81,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm text-gray-600">Próximas Eval.</p>
-              <p class="text-3xl font-bold text-gray-900 mt-1">{{ stats.proximasEvaluaciones || 0 }}</p>
+              <p class="text-3xl font-bold text-gray-900 mt-1">{{ stats.proximasEvaluaciones }}</p>
             </div>
             <div class="bg-yellow-100 rounded-full p-3">
               <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -97,19 +97,19 @@
         <!-- Horario Semanal -->
         <div class="bg-white rounded-lg shadow">
           <div class="p-6 border-b border-gray-200">
-            <h2 class="text-xl font-bold text-gray-900">Mi Horario</h2>
+            <h2 class="text-xl font-bold text-gray-900">Mi Horario de Hoy</h2>
           </div>
           <div class="p-6">
             <div v-if="loading" class="text-center py-8">
               <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
             </div>
-            <div v-else-if="horario.length === 0" class="text-center py-8 text-gray-500">
-              No hay horario disponible
+            <div v-else-if="horarioHoy.length === 0" class="text-center py-8 text-gray-500">
+              No hay clases programadas para hoy
             </div>
             <div v-else class="space-y-3">
               <div
-                v-for="clase in horario"
-                :key="clase.id"
+                v-for="(clase, index) in horarioHoy"
+                :key="index"
                 class="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <div class="flex justify-between items-start">
@@ -211,6 +211,10 @@ import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/store/auth.store';
 import { useStudentStore } from '@/store/student.store';
 import { useEncuestaEstudianteStore } from '@/store/encuestaEstudiante.store';
+import horarioService from '@/services/horario.service';
+import evaluacionService from '@/services/evaluacion.service';
+import asistenciaService from '@/services/attendance.service';
+import asignaturaService from '@/services/asignatura.service';
 import SurveyModal from '@/components/surveys/SurveyModal.vue';
 
 const authStore = useAuthStore();
@@ -219,84 +223,121 @@ const encuestaStore = useEncuestaEstudianteStore();
 const loading = ref(false);
 const showSurveyModal = ref(false);
 
-const studentName = computed(() => authStore.user?.nombre_completo || 'Estudiante');
+const studentName = computed(() =>
+  authStore.user?.estudiante_profile?.nombre_completo ||
+  authStore.user?.nombre_completo ||
+  'Estudiante'
+);
 
-// Stats computados desde el store
-const stats = computed(() => ({
-  promedioGeneral: studentStore.academicSummary?.promedio_general || 5.5,
-  asistencia: studentStore.academicSummary?.porcentaje_asistencia || 92,
-  totalAsignaturas: studentStore.academicSummary?.total_asignaturas || 8,
-  proximasEvaluaciones: studentStore.academicSummary?.evaluaciones_pendientes || 3
-}));
+const estudianteId = computed(() => authStore.user?.estudiante_profile?.estudiante_id);
 
-// Mock data para horario (mientras no haya datos del backend)
-const horario = computed(() => studentStore.schedule.length > 0 ? studentStore.schedule.slice(0, 5).map((s, i) => ({
-  id: i,
-  asignatura: s.asignatura,
-  profesor: s.profesor,
-  horario: `${s.hora_inicio} - ${s.hora_fin}`,
-  sala: s.sala || 'Sala 101'
-})) : [
-  { id: 1, asignatura: 'Matemáticas', profesor: 'Prof. García', horario: '08:00 - 09:30', sala: 'Sala 201' },
-  { id: 2, asignatura: 'Lenguaje', profesor: 'Prof. Rodríguez', horario: '09:45 - 11:15', sala: 'Sala 102' },
-  { id: 3, asignatura: 'Ciencias', profesor: 'Prof. López', horario: '11:30 - 13:00', sala: 'Sala 305' },
-  { id: 4, asignatura: 'Historia', profesor: 'Prof. Martínez', horario: '14:00 - 15:30', sala: 'Sala 201' },
-  { id: 5, asignatura: 'Inglés', profesor: 'Prof. Smith', horario: '15:45 - 17:15', sala: 'Sala 104' }
-]);
+// Stats computados desde datos reales
+const stats = ref({
+  promedioGeneral: 0,
+  asistencia: 0,
+  totalAsignaturas: 0,
+  proximasEvaluaciones: 0
+});
 
-// Mock data para notas recientes
-const notasRecientes = computed(() => studentStore.grades.length > 0 ?
-  studentStore.grades.slice(0, 3).flatMap(g => g.notas.slice(0, 1).map(n => ({
-    id: n.nota_id,
-    evaluacion: n.evaluacion_nombre,
-    asignatura: g.nombre_asignatura,
-    nota: n.nota,
-    fecha: new Date(n.fecha).toLocaleDateString('es-CL')
-  }))) : [
-  { id: 1, evaluacion: 'Prueba 1', asignatura: 'Matemáticas', nota: 6.5, fecha: '15/10/2025' },
-  { id: 2, evaluacion: 'Control Lectura', asignatura: 'Lenguaje', nota: 5.8, fecha: '14/10/2025' },
-  { id: 3, evaluacion: 'Laboratorio', asignatura: 'Ciencias', nota: 6.2, fecha: '12/10/2025' }
-]);
+// Horario del día actual
+const horarioHoy = ref<any[]>([]);
 
-// Mock data para asignaturas
-const asignaturas = computed(() => studentStore.grades.length > 0 ?
-  studentStore.grades.map(g => ({
-    id: g.asignatura_id,
-    nombre: g.nombre_asignatura,
-    profesor: g.profesor_nombre,
-    promedio: g.promedio
-  })) : [
-  { id: 1, nombre: 'Matemáticas', profesor: 'Prof. García', promedio: 6.2 },
-  { id: 2, nombre: 'Lenguaje', profesor: 'Prof. Rodríguez', promedio: 5.8 },
-  { id: 3, nombre: 'Ciencias', profesor: 'Prof. López', promedio: 6.0 },
-  { id: 4, nombre: 'Historia', profesor: 'Prof. Martínez', promedio: 5.5 },
-  { id: 5, nombre: 'Inglés', profesor: 'Prof. Smith', promedio: 6.3 },
-  { id: 6, nombre: 'Ed. Física', profesor: 'Prof. Torres', promedio: 6.8 },
-  { id: 7, nombre: 'Artes', profesor: 'Prof. Vargas', promedio: 6.5 },
-  { id: 8, nombre: 'Música', profesor: 'Prof. Silva', promedio: 6.4 }
-]);
+// Notas recientes
+const notasRecientes = ref<any[]>([]);
 
-const refreshDashboard = async () => {
+// Asignaturas con promedio
+const asignaturas = ref<any[]>([]);
+
+/**
+ * Carga todos los datos del dashboard
+ */
+const loadDashboardData = async () => {
+  if (!estudianteId.value) {
+    console.warn('No se encontró el ID del estudiante');
+    return;
+  }
+
   loading.value = true;
+
   try {
-    await Promise.all([
-      studentStore.fetchAcademicSummary(),
-      studentStore.fetchGrades(),
-      studentStore.fetchSchedule(),
-      studentStore.fetchUpcomingEvents()
+    // Cargar datos en paralelo
+    const [notasData, horarioData, asistenciaData, asignaturasData] = await Promise.all([
+      evaluacionService.getNotasEstudiante(estudianteId.value).catch(() => []),
+      horarioService.getHorarioEstudiante(estudianteId.value, '2025-1').catch(() => []),
+      asistenciaService.getAttendance().catch(() => []),
+      asignaturaService.getAll().catch(() => [])
     ]);
+
+    // Procesar notas y calcular promedio general
+    asignaturas.value = notasData.map(asig => ({
+      id: asig.asignatura_id,
+      nombre: asig.nombre_asignatura,
+      profesor: asig.profesor_nombre,
+      promedio: asig.promedio
+    }));
+
+    // Calcular promedio general
+    if (notasData.length > 0) {
+      const sumaPromedios = notasData.reduce((acc, asig) => acc + asig.promedio, 0);
+      stats.value.promedioGeneral = sumaPromedios / notasData.length;
+    }
+
+    stats.value.totalAsignaturas = asignaturasData.length;
+
+    // Procesar horario del día actual
+    const diaActual = new Date().getDay(); // 0 = Domingo, 1 = Lunes, etc.
+    const horarioDelDia = horarioData.filter((h: any) => h.dia_semana === diaActual);
+    horarioHoy.value = horarioDelDia.slice(0, 5).map((h: any) => ({
+      asignatura: h.asignatura,
+      profesor: h.profesor,
+      horario: `${h.hora_inicio} - ${h.hora_termino}`,
+      sala: h.sala
+    }));
+
+    // Procesar notas recientes (últimas 3)
+    const todasLasNotas = notasData.flatMap(asig =>
+      asig.notas.map(nota => ({
+        id: nota.nota_id,
+        evaluacion: nota.evaluacion_nombre,
+        asignatura: asig.nombre_asignatura,
+        nota: nota.nota,
+        fecha: new Date(nota.fecha).toLocaleDateString('es-CL')
+      }))
+    );
+
+    // Ordenar por fecha y tomar las 3 más recientes
+    todasLasNotas.sort((a, b) => {
+      const dateA = a.fecha.split('/').reverse().join('');
+      const dateB = b.fecha.split('/').reverse().join('');
+      return dateB.localeCompare(dateA);
+    });
+
+    notasRecientes.value = todasLasNotas.slice(0, 3);
+
+    // Calcular porcentaje de asistencia
+    if (asistenciaData.length > 0) {
+      const presentes = asistenciaData.filter((a: any) => a.presente).length;
+      stats.value.asistencia = Math.round((presentes / asistenciaData.length) * 100);
+    }
+
+    // Obtener evaluaciones próximas (simulado por ahora)
+    stats.value.proximasEvaluaciones = 0;
+
   } catch (error) {
-    console.error('Error refreshing dashboard:', error);
+    console.error('Error loading dashboard data:', error);
   } finally {
     loading.value = false;
   }
 };
 
+const refreshDashboard = async () => {
+  await loadDashboardData();
+};
+
 const checkPendingSurveys = async () => {
   try {
-    const estudianteId = authStore.user?.estudiante_profile?.estudiante_id;
-    if (estudianteId) {
-      await encuestaStore.fetchEncuestasPendientes(estudianteId);
+    if (estudianteId.value) {
+      await encuestaStore.fetchEncuestasPendientes(estudianteId.value);
       if (encuestaStore.tieneEncuestasPendientes) {
         showSurveyModal.value = true;
       }
@@ -311,7 +352,7 @@ const closeSurveyModal = () => {
 };
 
 onMounted(async () => {
-  await refreshDashboard();
+  await loadDashboardData();
   await checkPendingSurveys();
 });
 </script>

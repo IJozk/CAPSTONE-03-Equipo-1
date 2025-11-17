@@ -62,102 +62,16 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useStudentStore } from '@/store/student.store'
+import { useAuthStore } from '@/store/auth.store'
+import eventoService from '@/services/evento.service'
+import evaluacionService from '@/services/evaluacion.service'
 
-const studentStore = useStudentStore()
+const authStore = useAuthStore()
 const selectedType = ref('all')
 const loading = ref(false)
+const events = ref<any[]>([])
 
-// Mock events data
-const mockEvents = [
-  {
-    id: 1,
-    tipo: 'EVALUACION',
-    titulo: 'Prueba de Álgebra',
-    descripcion: 'Evaluación de ecuaciones y sistemas lineales',
-    fecha: '2025-10-25T10:00:00',
-    asignatura: 'Matemáticas'
-  },
-  {
-    id: 2,
-    tipo: 'REUNION',
-    titulo: 'Reunión de Apoderados',
-    descripcion: 'Reunión general para informar sobre el progreso del semestre',
-    fecha: '2025-10-28T18:00:00',
-    asignatura: null
-  },
-  {
-    id: 3,
-    tipo: 'ACTIVIDAD',
-    titulo: 'Feria Científica',
-    descripcion: 'Presentación de proyectos científicos de todos los cursos',
-    fecha: '2025-10-30T09:00:00',
-    asignatura: 'Ciencias'
-  },
-  {
-    id: 4,
-    tipo: 'EVALUACION',
-    titulo: 'Examen de Inglés',
-    descripcion: 'Evaluación oral y escrita de la unidad 4',
-    fecha: '2025-10-25T14:00:00',
-    asignatura: 'Inglés'
-  },
-  {
-    id: 5,
-    tipo: 'ACTIVIDAD',
-    titulo: 'Campeonato de Fútbol',
-    descripcion: 'Torneo inter-cursos de fútbol',
-    fecha: '2025-10-26T15:30:00',
-    asignatura: 'Ed. Física'
-  },
-  {
-    id: 6,
-    tipo: 'EVALUACION',
-    titulo: 'Disertación de Historia',
-    descripcion: 'Presentación grupal sobre la independencia de Chile',
-    fecha: '2025-10-29T11:00:00',
-    asignatura: 'Historia'
-  },
-  {
-    id: 7,
-    tipo: 'OTRO',
-    titulo: 'Día del Libro',
-    descripcion: 'Celebración con actividades literarias',
-    fecha: '2025-11-01T10:00:00',
-    asignatura: 'Lenguaje'
-  },
-  {
-    id: 8,
-    tipo: 'ACTIVIDAD',
-    titulo: 'Exposición de Arte',
-    descripcion: 'Muestra de trabajos artísticos del semestre',
-    fecha: '2025-11-03T12:00:00',
-    asignatura: 'Artes'
-  },
-  {
-    id: 9,
-    tipo: 'EVALUACION',
-    titulo: 'Prueba de Ciencias',
-    descripcion: 'Evaluación sobre el sistema solar y astronomía',
-    fecha: '2025-11-05T09:00:00',
-    asignatura: 'Ciencias'
-  },
-  {
-    id: 10,
-    tipo: 'REUNION',
-    titulo: 'Consejo de Curso',
-    descripcion: 'Reunión mensual del consejo de curso',
-    fecha: '2025-11-07T16:00:00',
-    asignatura: null
-  }
-]
-
-const events = computed(() => {
-  if (studentStore.events && studentStore.events.length > 0) {
-    return studentStore.events
-  }
-  return mockEvents
-})
+const estudianteId = computed(() => authStore.user?.estudiante_profile?.estudiante_id)
 
 const filteredEvents = computed(() => {
   if (selectedType.value === 'all') {
@@ -196,6 +110,8 @@ const getTypeBadgeClass = (tipo: string) => {
       return 'bg-purple-100 text-purple-800'
     case 'ACTIVIDAD':
       return 'bg-green-100 text-green-800'
+    case 'EVENTO':
+      return 'bg-yellow-100 text-yellow-800'
     case 'OTRO':
       return 'bg-gray-100 text-gray-800'
     default:
@@ -203,17 +119,63 @@ const getTypeBadgeClass = (tipo: string) => {
   }
 }
 
-onMounted(async () => {
+const loadEvents = async () => {
+  if (!estudianteId.value) {
+    console.warn('No se encontró el ID del estudiante')
+    return
+  }
+
   loading.value = true
+
   try {
-    // Fetch events from store
-    if (studentStore.fetchEvents) {
-      await studentStore.fetchEvents()
-    }
+    // Obtener eventos del colegio
+    const eventosData = await eventoService.getAll()
+
+    // Obtener evaluaciones próximas (próximos 60 días)
+    const evaluaciones = await evaluacionService.getAll({ estado_activo: true })
+    const ahora = new Date()
+    const sesentaDiasDespues = new Date()
+    sesentaDiasDespues.setDate(ahora.getDate() + 60)
+
+    const evaluacionesProximas = evaluaciones
+      .filter(ev => {
+        const fechaEv = new Date(ev.fecha_evaluacion)
+        return fechaEv >= ahora && fechaEv <= sesentaDiasDespues
+      })
+      .map(ev => ({
+        id: ev.evaluacion_id,
+        tipo: 'EVALUACION',
+        titulo: ev.nombre,
+        descripcion: ev.descripcion || 'Evaluación programada',
+        fecha: ev.fecha_evaluacion,
+        asignatura: ev.asignatura?.nombre || 'Sin asignatura'
+      }))
+
+    // Procesar eventos generales
+    const eventosGenerales = eventosData.map(ev => ({
+      id: ev.evento_id,
+      tipo: 'EVENTO',
+      titulo: ev.nombre || 'Sin título',
+      descripcion: `Evento en ${ev.lugar || 'ubicación por definir'}`,
+      fecha: ev.fecha_inicio || new Date().toISOString(),
+      asignatura: null
+    }))
+
+    // Combinar eventos y evaluaciones, filtrar futuros y ordenar
+    const todosLosEventos = [...evaluacionesProximas, ...eventosGenerales]
+      .filter(e => new Date(e.fecha) >= ahora)
+      .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
+
+    events.value = todosLosEventos
+
   } catch (error) {
-    console.error('Error fetching events:', error)
+    console.error('Error loading events:', error)
   } finally {
     loading.value = false
   }
+}
+
+onMounted(async () => {
+  await loadEvents()
 })
 </script>

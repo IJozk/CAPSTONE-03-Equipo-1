@@ -11,15 +11,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import StudentSidebar from '@/components/layout/student/StudentSidebar.vue';
 import StudentNavbar from '@/components/layout/student/StudentNavbar.vue';
-import { useStudentStore } from '@/store/student.store';
 
-const studentStore = useStudentStore();
 const isSidebarOpen = ref(true);
-
-onMounted(async () => {
-  await studentStore.fetchProfile();
-});
 </script>

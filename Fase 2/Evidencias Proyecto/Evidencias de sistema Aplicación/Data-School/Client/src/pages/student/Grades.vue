@@ -104,73 +104,30 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useStudentStore } from '@/store/student.store'
+import { useAuthStore } from '@/store/auth.store'
+import evaluacionService from '@/services/evaluacion.service'
 import StatCard from '@/components/student/StatCard.vue'
 
-const studentStore = useStudentStore()
+const authStore = useAuthStore()
 const loading = ref(false)
+const grades = ref<any[]>([])
 
-// Mock data con datos reales para mostrar
-const mockGrades = [
-  {
-    asignatura: 'Matemáticas',
-    profesor: 'Prof. María García',
-    promedio: 6.2,
-    evaluaciones: [
-      { id: 1, nombre: 'Prueba 1 - Álgebra', tipo: 'Prueba', fecha: '05/10/2025', nota: 6.5, ponderacion: 30 },
-      { id: 2, nombre: 'Control - Geometría', tipo: 'Control', fecha: '12/10/2025', nota: 5.8, ponderacion: 20 },
-      { id: 3, nombre: 'Trabajo Práctico', tipo: 'Trabajo', fecha: '18/10/2025', nota: 6.4, ponderacion: 25 }
-    ]
-  },
-  {
-    asignatura: 'Lenguaje y Comunicación',
-    profesor: 'Prof. Carlos Rodríguez',
-    promedio: 5.8,
-    evaluaciones: [
-      { id: 4, nombre: 'Control de Lectura', tipo: 'Control', fecha: '08/10/2025', nota: 5.5, ponderacion: 25 },
-      { id: 5, nombre: 'Ensayo Argumentativo', tipo: 'Trabajo', fecha: '15/10/2025', nota: 6.0, ponderacion: 35 },
-      { id: 6, nombre: 'Exposición Oral', tipo: 'Exposición', fecha: '20/10/2025', nota: 5.9, ponderacion: 20 }
-    ]
-  },
-  {
-    asignatura: 'Ciencias Naturales',
-    profesor: 'Prof. Ana López',
-    promedio: 6.0,
-    evaluaciones: [
-      { id: 7, nombre: 'Prueba - Células', tipo: 'Prueba', fecha: '10/10/2025', nota: 6.2, ponderacion: 40 },
-      { id: 8, nombre: 'Laboratorio Práctico', tipo: 'Laboratorio', fecha: '17/10/2025', nota: 5.8, ponderacion: 30 }
-    ]
-  },
-  {
-    asignatura: 'Historia y Geografía',
-    profesor: 'Prof. Roberto Martínez',
-    promedio: 5.5,
-    evaluaciones: [
-      { id: 9, nombre: 'Prueba - Civilizaciones', tipo: 'Prueba', fecha: '06/10/2025', nota: 5.3, ponderacion: 35 },
-      { id: 10, nombre: 'Trabajo Investigación', tipo: 'Trabajo', fecha: '14/10/2025', nota: 5.7, ponderacion: 30 }
-    ]
-  },
-  {
-    asignatura: 'Inglés',
-    profesor: 'Prof. Jennifer Smith',
-    promedio: 6.3,
-    evaluaciones: [
-      { id: 11, nombre: 'Reading Test', tipo: 'Prueba', fecha: '09/10/2025', nota: 6.4, ponderacion: 30 },
-      { id: 12, nombre: 'Oral Presentation', tipo: 'Exposición', fecha: '16/10/2025', nota: 6.2, ponderacion: 25 }
-    ]
+const estudianteId = computed(() => authStore.user?.estudiante_profile?.estudiante_id)
+
+const summary = computed(() => {
+  const promedioGeneral = grades.value.length > 0
+    ? grades.value.reduce((acc, g) => acc + g.promedio, 0) / grades.value.length
+    : 0
+
+  const totalEvaluaciones = grades.value.reduce((acc, g) => acc + g.evaluaciones.length, 0)
+
+  return {
+    promedio: promedioGeneral.toFixed(1),
+    asignaturas: grades.value.length,
+    evaluacionesPendientes: 0, // Por implementar
+    ultimaActualizacion: new Date().toLocaleDateString('es-CL')
   }
-]
-
-const summary = computed(() => ({
-  promedio: studentStore.academicSummary?.promedio_general?.toFixed(1) || '5.8',
-  asignaturas: studentStore.academicSummary?.total_asignaturas || 8,
-  evaluacionesPendientes: studentStore.academicSummary?.evaluaciones_pendientes || 3,
-  ultimaActualizacion: studentStore.academicSummary?.ultima_actualizacion
-    ? new Date(studentStore.academicSummary.ultima_actualizacion).toLocaleDateString('es-CL')
-    : '22/10/2025'
-}))
-
-const grades = computed(() => studentStore.grades.length > 0 ? studentStore.grades : mockGrades)
+})
 
 const getGradeColor = (nota: number) => {
   if (nota >= 6.0) return 'text-green-600'
@@ -179,17 +136,48 @@ const getGradeColor = (nota: number) => {
   return 'text-red-600'
 }
 
-onMounted(async () => {
+const loadGrades = async () => {
+  console.log('🔍 Cargando notas...')
+  console.log('👤 Estudiante ID:', estudianteId.value)
+  console.log('👤 Auth user completo:', authStore.user)
+
+  if (!estudianteId.value) {
+    console.warn('❌ No se encontró el ID del estudiante')
+    return
+  }
+
   loading.value = true
+
   try {
-    await Promise.all([
-      studentStore.fetchAcademicSummary(),
-      studentStore.fetchGrades()
-    ])
+    console.log('📞 Llamando a evaluacionService.getNotasEstudiante con ID:', estudianteId.value)
+    const notasData = await evaluacionService.getNotasEstudiante(estudianteId.value)
+    console.log('✅ Notas recibidas:', notasData)
+
+    // Transformar datos para el template
+    grades.value = notasData.map(asig => ({
+      asignatura: asig.nombre_asignatura,
+      profesor: asig.profesor_nombre,
+      promedio: asig.promedio,
+      evaluaciones: asig.notas.map(nota => ({
+        id: nota.nota_id,
+        nombre: nota.evaluacion_nombre,
+        tipo: nota.tipo_evaluacion,
+        fecha: new Date(nota.fecha).toLocaleDateString('es-CL'),
+        nota: nota.nota,
+        ponderacion: nota.ponderacion
+      }))
+    }))
+
+    console.log('✅ Grades procesadas:', grades.value)
+
   } catch (error) {
-    console.error('Error loading grades:', error)
+    console.error('❌ Error loading grades:', error)
   } finally {
     loading.value = false
   }
+}
+
+onMounted(async () => {
+  await loadGrades()
 })
 </script>
