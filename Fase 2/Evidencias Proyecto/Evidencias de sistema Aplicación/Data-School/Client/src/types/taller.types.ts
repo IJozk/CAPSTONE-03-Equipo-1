@@ -19,6 +19,8 @@ export interface Taller {
   costo_adicional: number | null
   estado_activo: boolean | null
   created_at: string | null
+  fecha_inicio: string | null     // "YYYY-MM-DD" o null
+  fecha_termino: string | null    // "YYYY-MM-DD" o null
 
   // Relaciones que tu backend ya trae en getAll / getById
   Profesor?: {
@@ -51,4 +53,6 @@ export interface TallerFormData {
   costo_adicional: number | null
   estado_activo: boolean
   horarios: TallerHorarioForm[]
+  fecha_inicio: string | null   // bound a <input type="date">
+  fecha_termino: string | null
 }

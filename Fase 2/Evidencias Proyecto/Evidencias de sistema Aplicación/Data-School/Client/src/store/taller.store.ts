@@ -68,7 +68,10 @@ export const useTallerStore = defineStore('taller', {
         )
         this.talleres = mapped
       } catch (error: any) {
-        this.error = error.response?.data?.message || error.message || 'Error al cargar talleres'
+        this.error =
+          error.response?.data?.message ||
+          error.message ||
+          'Error al cargar talleres'
       } finally {
         this.loading = false
       }
@@ -83,7 +86,9 @@ export const useTallerStore = defineStore('taller', {
         sala_id: form.sala_id || null,
         capacidad_maxima: form.capacidad_maxima,
         costo_adicional: form.costo_adicional ?? null,
-        horario: form.horarios.length ? JSON.stringify(form.horarios) : null
+        horario: form.horarios.length ? JSON.stringify(form.horarios) : null,
+        fecha_inicio: form.fecha_inicio || null,
+        fecha_termino: form.fecha_termino || null
       }
 
       const created = await tallerService.create(payload)
@@ -110,7 +115,9 @@ export const useTallerStore = defineStore('taller', {
         sala_id: form.sala_id || null,
         capacidad_maxima: form.capacidad_maxima,
         costo_adicional: form.costo_adicional ?? null,
-        horario: form.horarios.length ? JSON.stringify(form.horarios) : null
+        horario: form.horarios.length ? JSON.stringify(form.horarios) : null,
+        fecha_inicio: form.fecha_inicio || null,
+        fecha_termino: form.fecha_termino || null
       }
 
       const updated = await tallerService.update(id, payload)

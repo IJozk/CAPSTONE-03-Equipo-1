@@ -45,6 +45,8 @@ export interface CreateTallerDTO {
   horario?: string | null
   capacidad_maxima?: number | null
   costo_adicional?: number | null
+  fecha_inicio?: string | null
+  fecha_termino?: string | null
 }
 
 export interface UpdateTallerDTO {
@@ -56,9 +58,10 @@ export interface UpdateTallerDTO {
   capacidad_maxima?: number | null
   costo_adicional?: number | null
   estado_activo?: boolean | null
+  fecha_inicio?: string | null
+  fecha_termino?: string | null
 }
 
-// OJO AQUÍ 👇
 const endpoint = '/talleres' // antes estaba '/taller'
 
 const tallerService = {

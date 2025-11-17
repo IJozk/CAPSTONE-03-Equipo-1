@@ -1788,6 +1788,8 @@ export type Database = {
           profesor_encargado_id: string | null
           sala_id: string | null
           taller_id: string
+          fecha_inicio: string | null
+          fecha_termino: string | null
         }
         Insert: {
           capacidad_maxima?: number | null
@@ -1800,6 +1802,8 @@ export type Database = {
           profesor_encargado_id?: string | null
           sala_id?: string | null
           taller_id: string
+          fecha_inicio?: string | null
+          fecha_termino?: string | null
         }
         Update: {
           capacidad_maxima?: number | null
@@ -1812,6 +1816,8 @@ export type Database = {
           profesor_encargado_id?: string | null
           sala_id?: string | null
           taller_id?: string
+          fecha_inicio?: string | null
+          fecha_termino?: string | null
         }
         Relationships: [
           {

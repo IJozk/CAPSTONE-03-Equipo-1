@@ -66,10 +66,7 @@
       </div>
 
       <!-- Loading State -->
-      <div
-        v-if="tallerStore.loading"
-        class="bg-white rounded-lg shadow p-8 text-center"
-      >
+      <div v-if="tallerStore.loading" class="bg-white rounded-lg shadow p-8 text-center">
         <div
           class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"
         ></div>
@@ -162,6 +159,14 @@
                   >
                     {{ taller.descripcion }}
                   </div>
+                  <div class="text-xs text-gray-400 mt-1">
+                    <span v-if="taller.fecha_inicio">
+                      Desde: {{ taller.fecha_inicio }}
+                    </span>
+                    <span v-if="taller.fecha_termino">
+                      &nbsp;• Hasta: {{ taller.fecha_termino }}
+                    </span>
+                  </div>
                 </td>
 
                 <!-- Horarios -->
@@ -253,9 +258,7 @@
                 </td>
 
                 <!-- Acciones -->
-                <td
-                  class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2"
-                >
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                   <button
                     @click="openEditModal(taller)"
                     class="text-primary-600 hover:text-primary-900"
@@ -336,10 +339,7 @@
               <h2 class="text-2xl font-bold text-gray-900">
                 {{ isEditing ? 'Editar Taller' : 'Nuevo Taller' }}
               </h2>
-              <button
-                @click="closeModal"
-                class="text-gray-400 hover:text-gray-600"
-              >
+              <button @click="closeModal" class="text-gray-400 hover:text-gray-600">
                 <svg
                   class="w-6 h-6"
                   fill="none"
@@ -359,9 +359,7 @@
             <form @submit.prevent="handleSubmit" class="space-y-6">
               <!-- Información Básica -->
               <div class="space-y-4">
-                <h3 class="text-lg font-semibold text-gray-900">
-                  Información Básica
-                </h3>
+                <h3 class="text-lg font-semibold text-gray-900">Información Básica</h3>
 
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-1">
@@ -388,12 +386,40 @@
                   ></textarea>
                 </div>
 
+                <!-- Fechas -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                      Fecha de Inicio <span class="text-red-500">*</span>
+                    </label>
+                    <input
+                      v-model="formData.fecha_inicio"
+                      type="date"
+                      required
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                      Fecha de Término
+                    </label>
+                    <input
+                      v-model="formData.fecha_termino"
+                      type="date"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    />
+                    <p class="text-xs text-gray-500 mt-1">
+                      Puedes dejarlo vacío si el taller es indefinido.
+                    </p>
+                  </div>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">
                       Sala
                     </label>
-                    <!-- De momento solo opción "Sin asignar" -->
                     <select
                       v-model="formData.sala_id"
                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -437,9 +463,7 @@
               <!-- Horarios -->
               <div class="space-y-4 border-t pt-4">
                 <div class="flex justify-between items-center">
-                  <h3 class="text-lg font-semibold text-gray-900">
-                    Horarios
-                  </h3>
+                  <h3 class="text-lg font-semibold text-gray-900">Horarios</h3>
                   <button
                     type="button"
                     @click="addHorario"
@@ -691,7 +715,9 @@ const formData = ref<TallerFormData>({
   capacidad_maxima: 0,
   costo_adicional: null,
   estado_activo: true,
-  horarios: []
+  horarios: [],
+  fecha_inicio: null,
+  fecha_termino: null
 })
 
 // Filtros
@@ -759,7 +785,9 @@ const openCreateModal = () => {
     capacidad_maxima: 0,
     costo_adicional: null,
     estado_activo: true,
-    horarios: []
+    horarios: [],
+    fecha_inicio: null,
+    fecha_termino: null
   }
   showModal.value = true
 }
@@ -774,7 +802,9 @@ const openEditModal = (taller: Taller) => {
     capacidad_maxima: taller.capacidad_maxima ?? 0,
     costo_adicional: taller.costo_adicional ?? null,
     estado_activo: !!taller.estado_activo,
-    horarios: taller.horarios_parsed ? [...taller.horarios_parsed] : []
+    horarios: taller.horarios_parsed ? [...taller.horarios_parsed] : [],
+    fecha_inicio: taller.fecha_inicio,
+    fecha_termino: taller.fecha_termino
   }
   showModal.value = true
 }
@@ -816,13 +846,21 @@ const handleSubmit = async () => {
     return
   }
 
+  // fecha_inicio requerida, fecha_termino opcional
+  if (!formData.value.fecha_inicio) {
+    alert('Debes seleccionar una fecha de inicio')
+    return
+  }
+
   submitting.value = true
   try {
     const payload: TallerFormData = {
       ...formData.value,
       descripcion: formData.value.descripcion || null,
       sala_id: formData.value.sala_id || null,
-      costo_adicional: formData.value.costo_adicional ?? null
+      costo_adicional: formData.value.costo_adicional ?? null,
+      fecha_inicio: formData.value.fecha_inicio || null,
+      fecha_termino: formData.value.fecha_termino || null
     }
 
     if (isEditing.value && editingId.value) {
