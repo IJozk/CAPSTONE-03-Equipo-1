@@ -370,7 +370,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'schedule',
         name: 'TeacherSchedule',
-        component: () => import('@/pages/teacher/Schedule.vue'),
+        component: () => import('@/pages/teacher/WeeklySchedule.vue'),
         meta: {
           requiresAuth: true,
           requiresRole: ['PROFESOR', 'ADMINISTRADOR'],
