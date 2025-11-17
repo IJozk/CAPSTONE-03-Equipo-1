@@ -275,10 +275,23 @@ const getClassForSlot = (dayNumber: number, timeStart: string): Schedule[] => {
   return schedule.value.filter(item => {
     if (item.dia_semana !== dayNumber) return false;
 
-    // Check if the class time overlaps with this slot
-    const classStart = item.hora_inicio.substring(0, 5); // Get HH:MM format
-    return classStart === timeStart;
+    // Parse times to compare overlaps
+    const slotStartTime = timeStart + ':00'; // Convert to HH:MM:SS
+    const slotEndTime = getSlotEndTime(timeStart); // Get slot end time
+
+    const classStart = item.hora_inicio; // Already in HH:MM:SS format
+    const classEnd = item.hora_termino; // Already in HH:MM:SS format
+
+    // Check if class overlaps with this time slot
+    // A class overlaps if: classStart < slotEnd AND classEnd > slotStart
+    return classStart < slotEndTime && classEnd > slotStartTime;
   });
+};
+
+// Helper to get the end time of a slot
+const getSlotEndTime = (timeStart: string): string => {
+  const slot = timeSlots.find(s => s.start === timeStart);
+  return slot ? slot.end + ':00' : timeStart + ':00';
 };
 
 const getClassColor = (classItem: Schedule): string => {

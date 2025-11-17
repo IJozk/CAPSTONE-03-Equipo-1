@@ -453,9 +453,19 @@ export class HorarioController {
         const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
         const horarioPorDia: any = {}
 
-        for (let i = 1; i <= 7; i++) {
-            horarioPorDia[dias[i]] = horarios.filter(h => h.dia_semana === i)
-        }
+        // Inicializar todos los días con arrays vacíos
+        dias.forEach(dia => {
+            horarioPorDia[dia] = []
+        })
+
+        // Agrupar horarios por día
+        // dia_semana: 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
+        horarios.forEach(horario => {
+            const nombreDia = dias[horario.dia_semana]
+            if (nombreDia) {
+                horarioPorDia[nombreDia].push(horario)
+            }
+        })
 
         return horarioPorDia
     }

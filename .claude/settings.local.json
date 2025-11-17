@@ -6,7 +6,8 @@
       "Bash(findstr:*)",
       "Bash(echo:*)",
       "Bash(srccontrollersestudiante.controller.ts)",
-      "Bash(copy /b estudiante.controller.ts +,,)"
+      "Bash(copy /b estudiante.controller.ts +,,)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []
