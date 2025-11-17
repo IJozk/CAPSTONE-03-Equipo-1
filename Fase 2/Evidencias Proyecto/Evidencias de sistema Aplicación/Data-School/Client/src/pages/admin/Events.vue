@@ -25,34 +25,34 @@
         </button>
       </div>
 
-    <!-- Filtros -->
-    <div class="bg-white rounded-lg shadow p-4">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
-          <input
-            v-model="filters.search"
-            type="text"
-            placeholder="Nombre del evento..."
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          />
-        </div>
-        <div class="flex items-end gap-2">
-          <button
-            @click="applyFilters"
-            class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-          >
-            Filtrar
-          </button>
-          <button
-            @click="clearFilters"
-            class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-          >
-            Limpiar
-          </button>
+      <!-- Filtros -->
+      <div class="bg-white rounded-lg shadow p-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
+            <input
+              v-model="filters.search"
+              type="text"
+              placeholder="Nombre del evento..."
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
+          </div>
+          <div class="flex items-end gap-2">
+            <button
+              @click="applyFilters"
+              class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              Filtrar
+            </button>
+            <button
+              @click="clearFilters"
+              class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Limpiar
+            </button>
+          </div>
         </div>
       </div>
-    </div>
 
       <!-- Loading -->
       <div
@@ -126,19 +126,13 @@
                   <div class="text-sm font-medium text-gray-900">
                     {{ evento.nombre }}
                   </div>
-                  <div
-                    v-if="evento.descripcion"
-                    class="text-sm text-gray-500 max-w-xs truncate"
-                  >
-                    {{ evento.descripcion }}
-                  </div>
                 </td>
                 <td class="px-6 py-4 text-sm text-gray-900">
                   <div>
-                    {{ formatFecha(evento.fecha) }}
+                    {{ formatFecha(evento.fecha_inicio) }}
                   </div>
                   <div class="text-gray-600">
-                    {{ formatHora(evento.hora_inicio) }} - {{ formatHora(evento.hora_termino) }}
+                    {{ formatHora(evento.fecha_inicio) }} - {{ formatHora(evento.fecha_fin) }}
                   </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -338,37 +332,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
-// Aquí luego podrías usar tu store real:
-// import { useEventoStore } from '@/store/evento.store'
-// const eventoStore = useEventoStore()
+import { useEventoStore } from '@/store/evento.store'
+import { useAuthStore } from '@/store/auth.store'
+import eventoService, { type Evento } from '@/services/evento.service'
 
-// Simulación de store de eventos
-const eventoStore = ref({
-  loading: false,
-  error: null as string | null,
-  eventos: [
-    {
-      evento_id: '1',
-      nombre: 'Acto Fiestas Patrias',
-      descripcion: 'Presentaciones artísticas y bailes típicos',
-      fecha: '2025-09-17',
-      hora_inicio: '10:00',
-      hora_termino: '12:00',
-      lugar: 'Gimnasio'
-    },
-    {
-      evento_id: '2',
-      nombre: 'Reunión de Apoderados',
-      descripcion: 'Reunión general de apoderados de enseñanza básica',
-      fecha: '2025-05-30',
-      hora_inicio: '18:30',
-      hora_termino: '20:00',
-      lugar: 'Sala múltiple'
-    }
-  ]
-})
+const eventoStore = useEventoStore()
+const authStore = useAuthStore()
 
 // Estados del modal
 const showModal = ref(false)
@@ -376,7 +347,7 @@ const showDeleteModal = ref(false)
 const isEditing = ref(false)
 const submitting = ref(false)
 const editingId = ref<string | null>(null)
-const eventoToDelete = ref<any | null>(null)
+const eventoToDelete = ref<Evento | null>(null)
 
 // Filtros
 const filters = ref({
@@ -394,40 +365,60 @@ const formData = ref({
   lugar: ''
 })
 
-// Eventos filtrados (en memoria por ahora)
+// Cargar eventos al montar
+onMounted(async () => {
+  try {
+    await eventoStore.fetchEventos()
+  } catch (error) {
+    console.error('Error al cargar eventos:', error)
+  }
+})
+
+// Eventos filtrados
 const filteredEventos = computed(() => {
-  return eventoStore.value.eventos.filter((e) => {
+  return eventoStore.eventos.filter((e) => {
     const matchesSearch =
       !filters.value.search ||
       e.nombre.toLowerCase().includes(filters.value.search.toLowerCase())
-    const matchesFecha = !filters.value.fecha || e.fecha === filters.value.fecha
+    
+    // Extraer fecha de fecha_inicio para comparar
+    const eventoFecha = e.fecha_inicio?.split('T')[0]
+    const matchesFecha = !filters.value.fecha || eventoFecha === filters.value.fecha
+    
     return matchesSearch && matchesFecha
   })
 })
 
-// Helpers de formato
-const formatFecha = (fecha: string) => {
-  if (!fecha) return ''
-  // yyyy-mm-dd -> dd/mm/yyyy
-  const [y, m, d] = fecha.split('-')
-  if (!y || !m || !d) return fecha
-  return `${d}/${m}/${y}`
+// Helpers de formato usando el servicio
+const formatFecha = (fechaISO: string | undefined) => {
+  return eventoService.formatFecha(fechaISO)
 }
 
-const formatHora = (hora: string) => {
-  if (!hora) return ''
-  // hh:mm[:ss] -> hh:mm
-  return hora.substring(0, 5)
+const formatHora = (fechaISO: string | undefined) => {
+  return eventoService.formatHora(fechaISO)
 }
 
-const applyFilters = () => {
-  console.log('Aplicando filtros:', filters.value)
+const applyFilters = async () => {
+  const filterParams: any = {}
+  if (filters.value.fecha) {
+    filterParams.fecha_inicio = filters.value.fecha
+  }
+  try {
+    await eventoStore.fetchEventos(filterParams)
+  } catch (error) {
+    console.error('Error al aplicar filtros:', error)
+  }
 }
 
-const clearFilters = () => {
+const clearFilters = async () => {
   filters.value = {
     search: '',
     fecha: ''
+  }
+  try {
+    await eventoStore.fetchEventos()
+  } catch (error) {
+    console.error('Error al limpiar filtros:', error)
   }
 }
 
@@ -445,17 +436,14 @@ const openCreateModal = () => {
   showModal.value = true
 }
 
-const openEditModal = (evento: any) => {
+const openEditModal = (evento: Evento) => {
   isEditing.value = true
   editingId.value = evento.evento_id
-  formData.value = {
-    nombre: evento.nombre,
-    descripcion: evento.descripcion,
-    fecha: evento.fecha,
-    hora_inicio: formatHora(evento.hora_inicio),
-    hora_termino: formatHora(evento.hora_termino),
-    lugar: evento.lugar
-  }
+  
+  // Usar el helper del servicio para convertir evento a form
+  const formDataFromEvento = eventoService.eventoToForm(evento)
+  formData.value = formDataFromEvento
+  
   showModal.value = true
 }
 
@@ -465,48 +453,54 @@ const closeModal = () => {
   editingId.value = null
 }
 
-// Guardar (simulado en memoria)
 const handleSubmit = async () => {
-  if (!formData.value.nombre || !formData.value.fecha || !formData.value.hora_inicio || !formData.value.hora_termino || !formData.value.lugar) {
+  if (
+    !formData.value.nombre ||
+    !formData.value.fecha ||
+    !formData.value.hora_inicio ||
+    !formData.value.hora_termino ||
+    !formData.value.lugar
+  ) {
     alert('Por favor completa todos los campos obligatorios')
+    return
+  }
+
+  // Opcional: validar que haya usuario logueado
+  if (!authStore.user) {
+    alert('Debes iniciar sesión para crear o editar eventos')
     return
   }
 
   submitting.value = true
   try {
-    // Aquí iría tu llamada real al backend / store
-    await new Promise((resolve) => setTimeout(resolve, 500))
+    const currentUserId = authStore.user.id  // 👈 ESTE es el ID que sí existe
 
     if (isEditing.value && editingId.value) {
-      const index = eventoStore.value.eventos.findIndex(
-        (e) => e.evento_id === editingId.value
+      await eventoStore.updateEventoFromForm(
+        editingId.value,
+        formData.value,
+        currentUserId
       )
-      if (index !== -1) {
-        eventoStore.value.eventos[index] = {
-          ...eventoStore.value.eventos[index],
-          ...formData.value
-        }
-      }
       alert('Evento actualizado exitosamente')
     } else {
-      const newEvento = {
-        evento_id: Date.now().toString(),
-        ...formData.value
-      }
-      eventoStore.value.eventos.push(newEvento)
+      await eventoStore.createEventoFromForm(
+        formData.value,
+        currentUserId
+      )
       alert('Evento creado exitosamente')
     }
 
     closeModal()
   } catch (error: any) {
+    console.error('Error al guardar evento:', error)
     alert(`Error: ${error.message || 'Error al guardar el evento'}`)
   } finally {
     submitting.value = false
   }
 }
 
-// Eliminar (simulado en memoria)
-const confirmDelete = (evento: any) => {
+
+const confirmDelete = (evento: Evento) => {
   eventoToDelete.value = evento
   showDeleteModal.value = true
 }
@@ -515,16 +509,12 @@ const handleDelete = async () => {
   if (!eventoToDelete.value) return
   submitting.value = true
   try {
-    // Aquí iría tu llamada real al backend / store
-    await new Promise((resolve) => setTimeout(resolve, 500))
-
-    eventoStore.value.eventos = eventoStore.value.eventos.filter(
-      (e) => e.evento_id !== eventoToDelete.value.evento_id
-    )
+    await eventoStore.deleteEvento(eventoToDelete.value.evento_id)
     alert('Evento eliminado exitosamente')
     showDeleteModal.value = false
     eventoToDelete.value = null
   } catch (error: any) {
+    console.error('Error al eliminar evento:', error)
     alert(`Error: ${error.message || 'Error al eliminar el evento'}`)
   } finally {
     submitting.value = false
