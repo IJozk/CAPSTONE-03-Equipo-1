@@ -303,9 +303,13 @@
                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 >
                   <option value="">Seleccionar tipo...</option>
-                  <option value="1">Satisfacción</option>
-                  <option value="2">Evaluación</option>
-                  <option value="3">Diagnóstico</option>
+                  <option
+                    v-for="tipo in tiposEncuesta"
+                    :key="tipo.tipo_encuesta_id"
+                    :value="tipo.tipo_encuesta_id"
+                  >
+                    {{ tipo.nombre_tipo }}
+                  </option>
                 </select>
               </div>
 
@@ -382,6 +386,7 @@ import { useEncuestaStore } from '@/store/encuesta.store';
 import type { Encuesta } from '@/services/encuesta.service';
 import SurveyTemplateBuilder from '@/components/surveys/SurveyTemplateBuilder.vue';
 import type { SurveyTemplate } from '@/types/survey-template.types';
+import apiClient from '@/services/api.config';
 
 // Store
 const encuestaStore = useEncuestaStore();
@@ -394,6 +399,7 @@ const editingEncuesta = ref<Encuesta | null>(null);
 const submitting = ref(false);
 const currentStep = ref(1);
 const templateBuilderRef = ref<InstanceType<typeof SurveyTemplateBuilder> | null>(null);
+const tiposEncuesta = ref<Array<{ tipo_encuesta_id: number; nombre_tipo: string }>>([]);
 
 const formData = ref({
   titulo: '',
@@ -564,7 +570,28 @@ const viewStatistics = (encuesta: Encuesta) => {
 };
 
 // Lifecycle
+// Cargar tipos de encuesta desde la API
+const loadTiposEncuesta = async () => {
+  try {
+    const response = await apiClient.get('/tipos-encuesta/activos');
+    tiposEncuesta.value = response.data;
+    console.log('📋 Tipos de encuesta cargados:', tiposEncuesta.value);
+  } catch (error) {
+    console.error('Error cargando tipos de encuesta:', error);
+    // Si falla, intentar con el endpoint sin filtro
+    try {
+      const response = await apiClient.get('/tipos-encuesta');
+      tiposEncuesta.value = response.data.filter((t: any) => t.estado_activo);
+    } catch (err) {
+      console.error('Error cargando tipos de encuesta (fallback):', err);
+    }
+  }
+};
+
 onMounted(async () => {
-  await encuestaStore.fetchEncuestas();
+  await Promise.all([
+    encuestaStore.fetchEncuestas(),
+    loadTiposEncuesta()
+  ]);
 });
 </script>
