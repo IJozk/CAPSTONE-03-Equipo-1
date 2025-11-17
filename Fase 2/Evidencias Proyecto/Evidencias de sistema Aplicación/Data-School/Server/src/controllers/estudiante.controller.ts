@@ -105,24 +105,35 @@ export class EstudianteController {
                 .eq('estudiante_id', id)
                 .single()
 
-            const curso_actual = await supabaseAdmin!
-                .from('Estudiante_Curso')
-                .select('curso_id, Curso(nombre, nivel)')
-                .eq('estudiante_id', id)
-                .single()
-
-            const tutores = await supabaseAdmin!
-                .from('Tutor')
-                .select('Tutor(nombre_completo, telefono)')
-                .eq('estudiante_id', id)
-
             if (error) throw error
 
             if (!data) {
                 return res.status(404).json({ message: 'Estudiante no encontrado' })
             }
 
-            return res.status(200).json(data)
+            // Obtener curso actual del estudiante desde la tabla Matricula
+            // Solo buscamos matrículas activas (estado_matricula_id = 1)
+            const { data: cursoData, error: cursoError } = await supabaseAdmin!
+                .from('Matricula')
+                .select('curso_id, Curso(curso_id, nombre, nivel_id)')
+                .eq('estudiante_id', id)
+                .eq('estado_matricula_id', 1)
+                .maybeSingle()
+
+            // Log para debugging
+            console.log('📚 Query curso para estudiante:', id)
+            console.log('📚 Resultado curso_actual:', cursoData)
+            console.log('📚 Error curso_actual:', cursoError)
+
+            const tutores = await supabaseAdmin!
+                .from('Tutor')
+                .select('Tutor(nombre_completo, telefono)')
+                .eq('estudiante_id', id)
+
+            return res.status(200).json({
+                ...data,
+                curso_actual: cursoData
+            })
 
         } catch (error: any) {
             return res.status(500).json({ message: error.message })

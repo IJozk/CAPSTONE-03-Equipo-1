@@ -506,6 +506,16 @@ const routes: RouteRecordRaw[] = [
         }
       },
       {
+        path: 'calendar',
+        name: 'StudentCalendar',
+        component: () => import('@/pages/student/Calendar.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['ESTUDIANTE_APODERADO', 'ADMINISTRADOR'],
+          title: 'Calendario'
+        }
+      },
+      {
         path: 'profile',
         name: 'StudentProfile',
         component: () => import('@/pages/student/Profile.vue'),
