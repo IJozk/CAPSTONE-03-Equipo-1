@@ -149,14 +149,6 @@ const menuGroups = computed<MenuGroup[]>(() => [
     ]
   },
   {
-    title: 'Análisis y Reportes',
-    items: [
-      { name: 'Dashboards', icon: 'chart-bar', route: '/admin/analytics' },
-      { name: 'Reportes', icon: 'document-report', route: '/admin/reports' },
-      { name: 'KPIs', icon: 'trending-up', route: '/admin/kpis' }
-    ]
-  },
-  {
     title: 'Configuración',
     items: [
       { name: 'Configuración del Colegio', icon: 'cog', route: '/admin/config' },
