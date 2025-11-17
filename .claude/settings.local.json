@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(echo:*)",
+      "Bash(srccontrollersestudiante.controller.ts)",
+      "Bash(copy /b estudiante.controller.ts +,,)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

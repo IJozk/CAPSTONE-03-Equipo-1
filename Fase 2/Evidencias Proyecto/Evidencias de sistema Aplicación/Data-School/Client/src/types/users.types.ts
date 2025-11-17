@@ -55,6 +55,14 @@ export interface Estudiante {
     email_address: string;
     is_active: boolean;
   };
+  curso_actual?: {
+    curso_id: string;
+    Curso?: {
+      curso_id: string;
+      nombre: string;
+      nivel_id: number;
+    };
+  };
 }
 
 export interface CreateEstudianteDTO {
