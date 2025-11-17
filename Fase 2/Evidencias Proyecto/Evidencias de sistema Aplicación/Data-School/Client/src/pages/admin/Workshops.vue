@@ -422,10 +422,27 @@
                     </label>
                     <select
                       v-model="formData.sala_id"
+                      :disabled="salaStore.loading"
                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     >
                       <option :value="null">Sin asignar</option>
+                      <option
+                        v-for="sala in salaStore.salas"
+                        :key="sala.sala_id"
+                        :value="sala.sala_id"
+                      >
+                        {{ sala.nombre }}
+                      </option>
                     </select>
+                    <p v-if="salaStore.loading" class="text-xs text-gray-500 mt-1">
+                      Cargando salas...
+                    </p>
+                    <p
+                      v-else-if="salaStore.error"
+                      class="text-xs text-red-500 mt-1"
+                    >
+                      {{ salaStore.error }}
+                    </p>
                   </div>
 
                   <div>
@@ -693,9 +710,11 @@
 import { ref, computed, onMounted } from 'vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import { useTallerStore } from '@/store/taller.store'
+import { useSalaStore } from '../../store/sala.store'
 import type { Taller, TallerFormData } from '@/types/taller.types'
 
 const tallerStore = useTallerStore()
+const salaStore = useSalaStore()
 
 // Estados del modal
 const showModal = ref(false)
@@ -846,7 +865,6 @@ const handleSubmit = async () => {
     return
   }
 
-  // fecha_inicio requerida, fecha_termino opcional
   if (!formData.value.fecha_inicio) {
     alert('Debes seleccionar una fecha de inicio')
     return
@@ -921,7 +939,10 @@ const handleActivate = async () => {
 
 onMounted(async () => {
   try {
-    await tallerStore.fetchTalleres()
+    await Promise.all([
+      tallerStore.fetchTalleres(),
+      salaStore.fetchSalas() // carga las salas para el select
+    ])
   } catch (error) {
     console.error('Error al cargar datos iniciales:', error)
   }
