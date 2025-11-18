@@ -84,6 +84,7 @@ export const useTallerStore = defineStore('taller', {
         nombre: form.nombre,
         descripcion: form.descripcion || null,
         sala_id: form.sala_id || null,
+        profesor_encargado_id: form.profesor_encargado_id || null,
         capacidad_maxima: form.capacidad_maxima,
         costo_adicional: form.costo_adicional ?? null,
         horario: form.horarios.length ? JSON.stringify(form.horarios) : null,
@@ -107,37 +108,37 @@ export const useTallerStore = defineStore('taller', {
       this.talleres.push(mapped)
     },
 
-    async updateFromForm(id: string, form: TallerFormData) {
-      this.error = null
-      const payload = {
-        nombre: form.nombre,
-        descripcion: form.descripcion || null,
-        sala_id: form.sala_id || null,
-        capacidad_maxima: form.capacidad_maxima,
-        costo_adicional: form.costo_adicional ?? null,
-        horario: form.horarios.length ? JSON.stringify(form.horarios) : null,
-        fecha_inicio: form.fecha_inicio || null,
-        fecha_termino: form.fecha_termino || null
-      }
+async updateFromForm(id: string, form: TallerFormData) {
+  this.error = null
 
-      const updated = await tallerService.update(id, payload)
-      let mapped = this.mapBackendTaller(updated)
+  const payload = {
+    nombre: form.nombre,
+    descripcion: form.descripcion || null,
+    sala_id: form.sala_id || null,
+    profesor_encargado_id: form.profesor_encargado_id || null,
+    capacidad_maxima: form.capacidad_maxima,
+    costo_adicional: form.costo_adicional ?? null,
+    horario: form.horarios.length ? JSON.stringify(form.horarios) : null,
+    fecha_inicio: form.fecha_inicio || null,
+    fecha_termino: form.fecha_termino || null
+  }
 
-      try {
-        const stats = await tallerService.getEstadisticas(updated.taller_id)
-        mapped = {
-          ...mapped,
-          inscritos: stats.estadisticas.activos
-        }
-      } catch {
-        // ignoramos si falla
-      }
+  const updated = await tallerService.update(id, payload)
 
-      const idx = this.talleres.findIndex((t) => t.taller_id === id)
-      if (idx !== -1) {
-        this.talleres.splice(idx, 1, mapped)
-      }
-    },
+  let mapped = this.mapBackendTaller(updated)
+
+  try {
+    const stats = await tallerService.getEstadisticas(updated.taller_id)
+    mapped = {
+      ...mapped,
+      inscritos: stats.estadisticas.activos
+    }
+  } catch {}
+
+  const idx = this.talleres.findIndex(t => t.taller_id === id)
+  if (idx !== -1) this.talleres.splice(idx, 1, mapped)
+},
+
 
     async disableTaller(id: string) {
       this.error = null

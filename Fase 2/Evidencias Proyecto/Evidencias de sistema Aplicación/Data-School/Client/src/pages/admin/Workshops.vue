@@ -118,6 +118,11 @@
                 <th
                   class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
+                  Profesor
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
                   Capacidad
                 </th>
                 <th
@@ -139,7 +144,7 @@
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
               <tr v-if="filteredTalleres.length === 0">
-                <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                <td colspan="8" class="px-6 py-8 text-center text-gray-500">
                   No hay talleres registrados
                 </td>
               </tr>
@@ -196,6 +201,11 @@
                 <!-- Sala -->
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {{ taller.Sala?.nombre || 'Sin asignar' }}
+                </td>
+
+                <!-- Profesor -->
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {{ taller.Profesor?.nombre_completo || 'Sin asignar' }}
                 </td>
 
                 <!-- Capacidad -->
@@ -415,7 +425,9 @@
                   </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Sala / Profesor / Capacidad -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <!-- Sala -->
                   <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">
                       Sala
@@ -445,6 +457,38 @@
                     </p>
                   </div>
 
+                  <!-- Profesor encargado -->
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                      Profesor Encargado
+                    </label>
+                    <select
+                      v-model="formData.profesor_encargado_id"
+                      :disabled="teacherStore.loading"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    >
+                      <option :value="null">Sin asignar</option>
+                      <option
+                        v-for="prof in teacherStore.profesoresActivos"
+                        :key="prof.profesor_id"
+                        :value="prof.profesor_id"
+                      >
+                        {{ prof.nombre_completo }}
+                      </option>
+                    </select>
+
+                    <p v-if="teacherStore.loading" class="text-xs text-gray-500 mt-1">
+                      Cargando profesores...
+                    </p>
+                    <p
+                      v-else-if="teacherStore.error"
+                      class="text-xs text-red-500 mt-1"
+                    >
+                      {{ teacherStore.error }}
+                    </p>
+                  </div>
+
+                  <!-- Capacidad -->
                   <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">
                       Capacidad Máxima <span class="text-red-500">*</span>
@@ -639,7 +683,7 @@
         </div>
       </div>
 
-      <!-- Modal Confirmar Eliminación -->
+      <!-- Modal Confirmar Desactivación -->
       <div
         v-if="showDeleteModal"
         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
@@ -706,15 +750,18 @@
   </AdminLayout>
 </template>
 
+
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import { useTallerStore } from '@/store/taller.store'
 import { useSalaStore } from '../../store/sala.store'
+import { useTeacherStore } from '@/store/teacher.store'
 import type { Taller, TallerFormData } from '@/types/taller.types'
 
 const tallerStore = useTallerStore()
 const salaStore = useSalaStore()
+const teacherStore = useTeacherStore()
 
 // Estados del modal
 const showModal = ref(false)
@@ -731,6 +778,7 @@ const formData = ref<TallerFormData>({
   nombre: '',
   descripcion: null,
   sala_id: null,
+  profesor_encargado_id: null,
   capacidad_maxima: 0,
   costo_adicional: null,
   estado_activo: true,
@@ -801,6 +849,7 @@ const openCreateModal = () => {
     nombre: '',
     descripcion: null,
     sala_id: null,
+    profesor_encargado_id: null,
     capacidad_maxima: 0,
     costo_adicional: null,
     estado_activo: true,
@@ -818,6 +867,7 @@ const openEditModal = (taller: Taller) => {
     nombre: taller.nombre,
     descripcion: taller.descripcion ?? null,
     sala_id: taller.sala_id ?? null,
+    profesor_encargado_id: taller.profesor_encargado_id ?? null,
     capacidad_maxima: taller.capacidad_maxima ?? 0,
     costo_adicional: taller.costo_adicional ?? null,
     estado_activo: !!taller.estado_activo,
@@ -941,8 +991,12 @@ onMounted(async () => {
   try {
     await Promise.all([
       tallerStore.fetchTalleres(),
-      salaStore.fetchSalas() // carga las salas para el select
+      salaStore.fetchSalas(),                    // Salas para el select
+      teacherStore.fetchProfesores({             // 🔹 Profesores para el select
+      })
     ])
+
+    console.log('Profesores cargados:', teacherStore.profesores)
   } catch (error) {
     console.error('Error al cargar datos iniciales:', error)
   }

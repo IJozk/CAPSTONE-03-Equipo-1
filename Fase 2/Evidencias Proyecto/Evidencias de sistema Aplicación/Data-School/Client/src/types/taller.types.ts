@@ -49,6 +49,7 @@ export interface TallerFormData {
   nombre: string
   descripcion: string | null
   sala_id: string | null
+    profesor_encargado_id: string | null
   capacidad_maxima: number
   costo_adicional: number | null
   estado_activo: boolean
