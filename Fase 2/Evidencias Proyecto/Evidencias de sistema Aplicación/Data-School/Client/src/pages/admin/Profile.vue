@@ -94,16 +94,16 @@
 </template>
 
 <script setup lang="ts">
-import AdminLayout from '@/layouts/AdminLayout.vue';
-import { ref, onMounted } from 'vue';
-import { useAuthStore } from '@/store/auth.store';
+import AdminLayout from '@/layouts/AdminLayout.vue'
+import { ref, onMounted } from 'vue'
+import { useAuthStore } from '@/store/auth.store'
 
-const authStore = useAuthStore();
+const authStore = useAuthStore()
 
-const loading = ref(true);
-const error = ref('');
+const loading = ref(true)
+const error = ref('')
 
-// Datos del usuario
+// Datos del usuario que usa la vista
 const userProfile = ref({
   nombre_completo: '',
   email: '',
@@ -114,70 +114,66 @@ const userProfile = ref({
   cargo: '',
   role: '',
   created_at: ''
-});
+})
 
-// Cargar datos del usuario
 const loadUserProfile = async () => {
-  loading.value = true;
-  error.value = '';
-  
-  try {
-    const userData = authStore.user;
-    
-    console.log('Datos del usuario en authStore:', userData);
-    
-    if (!userData) {
-      throw new Error('No se encontró información del usuario');
-    }
+  loading.value = true
+  error.value = ''
 
-    // Obtener datos del perfil según el rol
-    const adminProfile = userData.admin_profile;
-    
+  try {
+    const userData = authStore.user
+    console.log('Datos del usuario en authStore:', userData)
+
+    if (!userData) throw new Error('No se encontró información del usuario')
+
+    const adminProfile = (userData as any).admin_profile
+
     userProfile.value = {
-      nombre_completo: adminProfile?.nombre_completo || userData.nombre_completo || '',
-      email: userData.email || '',
+      nombre_completo: adminProfile?.nombre_completo || '',
+      email: (userData as any).email || '',
       rut: adminProfile?.rut || '',
       telefono: adminProfile?.telefono || '',
-      genero: adminProfile?.genero || '',
-      direccion: adminProfile?.direccion || '',
+      genero: '', // si lo tienes en Administrativo, lo agregas aquí
+      direccion: '', // idem
       cargo: adminProfile?.cargo || '',
-      role: userData.role || '',
-      created_at: userData.created_at || ''
-    };
+      role: (userData as any).role || '',
+      created_at: adminProfile?.created_at || (userData as any).created_at || ''
+    }
 
-    console.log('Perfil cargado:', userProfile.value);
+    console.log('Perfil cargado:', userProfile.value)
   } catch (err: any) {
-    console.error('Error al cargar perfil:', err);
-    error.value = err.message || 'Error al cargar la información del perfil';
+    console.error('Error al cargar perfil:', err)
+    error.value = err.message || 'Error al cargar la información del perfil'
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-};
+}
+
 
 // Formatear fecha
 const formatDate = (dateString: string) => {
-  if (!dateString) return '-';
-  const date = new Date(dateString);
+  if (!dateString) return '-'
+  const date = new Date(dateString)
   return date.toLocaleDateString('es-CL', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
-  });
-};
+  })
+}
 
 // Obtener etiqueta de género
 const getGenderLabel = (gender: string) => {
   const labels: Record<string, string> = {
-    'M': 'Masculino',
-    'F': 'Femenino',
-    'O': 'Otro'
-  };
-  return labels[gender] || gender || '-';
-};
+    M: 'Masculino',
+    F: 'Femenino',
+    O: 'Otro'
+  }
+  return labels[gender] || gender || '-'
+}
 
 onMounted(() => {
-  loadUserProfile();
-});
+  loadUserProfile()
+})
 </script>
