@@ -420,6 +420,7 @@ export class ProfesorController {
 
                 clases_hoy = (horarios || []).map(h => ({
                     horario_id: h.horario_id,
+                    asignatura_id: h.Asignatura?.asignatura_id || '',
                     asignatura: h.Asignatura?.nombre || '',
                     curso: h.Asignatura?.Curso?.nombre || '',
                     hora_inicio: h.hora_inicio,
