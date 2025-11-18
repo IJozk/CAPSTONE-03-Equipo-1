@@ -9,7 +9,6 @@ export interface Profesor {
   nombre_completo: string;
   rut: string;
   especialidad?: string;
-  titulo_profesional?: string;
   telefono?: string;
   fecha_contratacion?: string;
   estado_activo: boolean;
@@ -26,7 +25,6 @@ export interface CreateProfesorDTO {
   nombre_completo: string;
   rut?: string;
   especialidad?: string;
-  titulo_profesional?: string;
   telefono?: string;
   fecha_contratacion?: string;
 }
@@ -35,7 +33,6 @@ export interface UpdateProfesorDTO {
   nombre_completo?: string;
   rut?: string;
   especialidad?: string;
-  titulo_profesional?: string;
   telefono?: string;
   fecha_contratacion?: string;
 }
@@ -58,6 +55,14 @@ export interface Estudiante {
     email_address: string;
     is_active: boolean;
   };
+  curso_actual?: {
+    curso_id: string;
+    Curso?: {
+      curso_id: string;
+      nombre: string;
+      nivel_id: number;
+    };
+  };
 }
 
 export interface CreateEstudianteDTO {
@@ -79,6 +84,7 @@ export interface UpdateEstudianteDTO {
   direccion?: string;
   telefono?: string;
   email?: string;
+  estado_activo?: boolean;
 }
 
 // ============= ADMINISTRATIVO =============

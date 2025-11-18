@@ -86,18 +86,19 @@
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Año Académico</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Generación</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capacidad</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Alumnos</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
               <tr v-if="cursoStore.cursos.length === 0">
-                <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                <td colspan="7" class="px-6 py-8 text-center text-gray-500">
                   No hay cursos registrados
                 </td>
               </tr>
               <tr v-for="curso in cursoStore.cursos" :key="curso.curso_id" class="hover:bg-gray-50">
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {{ getNivelDisplay(curso.nivel) }}
+                  {{ getNivelDisplay(curso.nivel_id) }}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {{ curso.nombre }}
@@ -111,7 +112,25 @@
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {{ curso.capacidad_maxima || 'Sin límite' }}
                 </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <button
+                    @click="openStudentsModal(curso)"
+                    class="text-blue-600 hover:text-blue-900 font-medium"
+                    title="Gestionar Alumnos"
+                  >
+                    Ver Alumnos
+                  </button>
+                </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                  <button
+                    @click="goToSchedules(curso)"
+                    class="text-blue-600 hover:text-blue-900"
+                    title="Gestionar Horarios"
+                  >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </button>
                   <button
                     @click="openEditModal(curso)"
                     class="text-primary-600 hover:text-primary-900"
@@ -164,7 +183,7 @@
                     Nivel <span class="text-red-500">*</span>
                   </label>
                   <select
-                    v-model.number="formData.nivel_id"
+                    v-model="formData.nivel_id"
                     required
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   >
@@ -183,7 +202,6 @@
                     required
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   >
-                    <option value="" disabled>Selecciona una letra</option>
                     <option v-for="letra in letras" :key="letra" :value="letra">
                       {{ letra }}
                     </option>
@@ -284,18 +302,261 @@
           </div>
         </div>
       </div>
+
+      <!-- Modal Gestionar Alumnos -->
+      <div
+        v-if="showStudentsModal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+        @click.self="closeStudentsModal"
+      >
+        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div class="p-6">
+            <div class="flex justify-between items-center mb-6">
+              <div>
+                <h2 class="text-2xl font-bold text-gray-900">
+                  Gestionar Alumnos - {{ selectedCurso?.nombre }}
+                </h2>
+                <p class="text-gray-600 mt-1">
+                  {{ getNivelDisplay(selectedCurso?.nivel_id || 1) }} - Año {{ selectedCurso?.anio_academico }}
+                </p>
+              </div>
+              <button @click="closeStudentsModal" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <!-- Botón para añadir alumno -->
+            <div class="mb-4">
+              <button
+                @click="showAddStudentSection = !showAddStudentSection"
+                class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Añadir Alumno
+              </button>
+            </div>
+
+            <!-- Sección para añadir alumno -->
+            <div v-if="showAddStudentSection" class="bg-gray-50 rounded-lg p-4 mb-6">
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Seleccionar Alumnos</h3>
+                <button
+                  @click="showAddStudentSection = false"
+                  class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Cerrar
+                </button>
+              </div>
+
+              <!-- Filtros -->
+              <div class="mb-4 space-y-3">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Buscar por RUT o Nombre</label>
+                    <input
+                      v-model="studentSearchFilter"
+                      type="text"
+                      placeholder="Buscar..."
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div class="flex items-end">
+                    <label class="flex items-center">
+                      <input
+                        v-model="showOnlyActiveStudents"
+                        type="checkbox"
+                        class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                      />
+                      <span class="ml-2 text-sm text-gray-700">Solo estudiantes activos</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Botones de acción masiva -->
+              <div v-if="selectedStudentsToAdd.length > 0" class="mb-4 flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <span class="text-sm font-medium text-blue-900">
+                  {{ selectedStudentsToAdd.length }} estudiante(s) seleccionado(s)
+                </span>
+                <button
+                  @click="addMultipleStudentsToCurso"
+                  :disabled="submitting"
+                  class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
+                >
+                  {{ submitting ? 'Añadiendo...' : 'Añadir Seleccionados' }}
+                </button>
+                <button
+                  @click="selectedStudentsToAdd = []"
+                  class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm"
+                >
+                  Limpiar Selección
+                </button>
+              </div>
+
+              <!-- Tabla de estudiantes -->
+              <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <div class="overflow-x-auto max-h-96">
+                  <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50 sticky top-0">
+                      <tr>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <input
+                            type="checkbox"
+                            :checked="selectedStudentsToAdd.length === filteredAvailableStudents.length && filteredAvailableStudents.length > 0"
+                            @change="toggleSelectAll"
+                            class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                          />
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">RUT</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre Completo</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teléfono</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                      <tr v-if="filteredAvailableStudents.length === 0">
+                        <td colspan="6" class="px-4 py-8 text-center text-sm text-gray-500">
+                          No hay estudiantes disponibles
+                        </td>
+                      </tr>
+                      <tr
+                        v-for="estudiante in filteredAvailableStudents"
+                        :key="estudiante.estudiante_id"
+                        class="hover:bg-gray-50"
+                        :class="{ 'bg-blue-50': selectedStudentsToAdd.includes(estudiante.estudiante_id) }"
+                      >
+                        <td class="px-4 py-3 whitespace-nowrap text-center">
+                          <input
+                            type="checkbox"
+                            :checked="selectedStudentsToAdd.includes(estudiante.estudiante_id)"
+                            @change="toggleStudentSelection(estudiante.estudiante_id)"
+                            class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                          />
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                          {{ estudiante.rut }}
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {{ estudiante.nombre_completo }}
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                          {{ estudiante.email || '-' }}
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                          {{ estudiante.telefono || '-' }}
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm">
+                          <span
+                            class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                            :class="estudiante.estado_activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                          >
+                            {{ estudiante.estado_activo ? 'Activo' : 'Inactivo' }}
+                          </span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Lista de alumnos del curso -->
+            <div class="bg-white rounded-lg border border-gray-200">
+              <div class="px-4 py-3 border-b border-gray-200 bg-gray-50">
+                <h3 class="text-sm font-semibold text-gray-900">Alumnos Matriculados</h3>
+              </div>
+              <div v-if="loadingStudents" class="p-8 text-center">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+                <p class="text-gray-600 mt-2">Cargando alumnos...</p>
+              </div>
+              <div v-else-if="cursoStudents.length === 0" class="p-8 text-center text-gray-500">
+                No hay alumnos matriculados en este curso
+              </div>
+              <ul v-else class="divide-y divide-gray-200">
+                <li
+                  v-for="estudiante in cursoStudents"
+                  :key="estudiante.estudiante_id"
+                  class="px-4 py-3 hover:bg-gray-50 flex justify-between items-center"
+                >
+                  <div>
+                    <p class="text-sm font-medium text-gray-900">{{ estudiante.nombre_completo }}</p>
+                    <p class="text-sm text-gray-500">RUT: {{ estudiante.rut }}</p>
+                  </div>
+                  <button
+                    @click="confirmRemoveStudent(estudiante)"
+                    class="text-red-600 hover:text-red-900"
+                    title="Quitar del curso"
+                  >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Confirmar Quitar Alumno -->
+      <div
+        v-if="showRemoveStudentModal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+        @click.self="showRemoveStudentModal = false"
+      >
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Confirmar Eliminación</h3>
+          <p class="text-gray-600 mb-6">
+            ¿Estás seguro de que deseas quitar a
+            <span class="font-semibold">{{ studentToRemove?.nombre_completo }}</span>
+            del curso?
+          </p>
+          <div class="flex justify-end gap-3">
+            <button
+              @click="showRemoveStudentModal = false"
+              class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              @click="removeStudentFromCurso"
+              :disabled="submitting"
+              class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:bg-gray-400"
+            >
+              {{ submitting ? 'Quitando...' : 'Quitar' }}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </AdminLayout>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import { useCursoStore } from '@/store/curso.store'
+import { useStudentStore } from '@/store/student.store'
+import { useTutorStore } from '@/store/tutor.store'
 import type { Curso, CreateCursoDTO, FilterCursoDTO } from '@/types/curso.types'
+import type { Estudiante } from '@/types/users.types'
 import { NIVELES, getNivelDisplay } from '@/constants/niveles.constants'
+import matriculaService from '@/services/matricula.service'
+import type { Matricula } from '@/services/matricula.service'
+
+const router = useRouter()
+import parentescoService from '@/services/parentesco.service'
+import { validateAgeForNivel } from '@/constants/validations.constants'
 
 const cursoStore = useCursoStore()
+const studentStore = useStudentStore()
+const tutorStore = useTutorStore()
 
 // Letras disponibles para los cursos
 const letras = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
@@ -306,6 +567,52 @@ const showDeleteModal = ref(false)
 const isEditing = ref(false)
 const submitting = ref(false)
 const cursoToDelete = ref<Curso | null>(null)
+
+// Estados del modal de alumnos
+const showStudentsModal = ref(false)
+const showAddStudentSection = ref(false)
+const showRemoveStudentModal = ref(false)
+const selectedCurso = ref<Curso | null>(null)
+const selectedStudentId = ref<string>('')
+const studentToRemove = ref<Estudiante | null>(null)
+const loadingStudents = ref(false)
+const cursoStudents = ref<Estudiante[]>([])
+
+// Filtros de estudiantes
+const studentSearchFilter = ref('')
+const showOnlyActiveStudents = ref(true)
+const selectedStudentsToAdd = ref<string[]>([])
+
+// Computed: estudiantes disponibles (sin curso asignado o no en el curso actual)
+const availableStudents = computed(() => {
+  if (!selectedCurso.value) return []
+
+  const cursoStudentIds = new Set(cursoStudents.value.map(s => s.estudiante_id))
+  return studentStore.estudiantes.filter(
+    estudiante => !cursoStudentIds.has(estudiante.estudiante_id)
+  )
+})
+
+// Computed: estudiantes filtrados por búsqueda y estado
+const filteredAvailableStudents = computed(() => {
+  let students = availableStudents.value
+
+  // Filtrar por estado activo
+  if (showOnlyActiveStudents.value) {
+    students = students.filter(s => s.estado_activo)
+  }
+
+  // Filtrar por búsqueda (RUT o nombre)
+  if (studentSearchFilter.value.trim()) {
+    const search = studentSearchFilter.value.toLowerCase().trim()
+    students = students.filter(s =>
+      s.nombre_completo.toLowerCase().includes(search) ||
+      s.rut?.toLowerCase().includes(search)
+    )
+  }
+
+  return students
+})
 
 // Datos del formulario
 const formData = ref<CreateCursoDTO>({
@@ -376,14 +683,25 @@ const openCreateModal = () => {
 const openEditModal = (curso: Curso) => {
   isEditing.value = true
   editingId.value = curso.curso_id
+
+  // Asegurar que nivel_id sea un número
+  const nivelId = typeof curso.nivel_id === 'object' ? curso.nivel_obj.id : curso.nivel_id
+
   formData.value = {
     nombre: curso.nombre,
-    nivel_id: curso.nivel_id,
+    nivel_id: nivelId,
     anio_academico: curso.anio_academico,
     generacion: curso.generacion,
     capacidad_maxima: curso.capacidad_maxima
   }
   showModal.value = true
+}
+
+const goToSchedules = (curso: Curso) => {
+  router.push({
+    path: '/admin/schedules',
+    query: { curso_id: curso.curso_id }
+  })
 }
 
 const closeModal = () => {
@@ -396,6 +714,7 @@ const handleSubmit = async () => {
   submitting.value = true
   try {
     if (isEditing.value && editingId.value) {
+      console.log(formData.value)
       await cursoStore.update(editingId.value, formData.value)
       alert('Curso actualizado exitosamente')
     } else {
@@ -404,6 +723,7 @@ const handleSubmit = async () => {
     }
     closeModal()
   } catch (error: any) {
+    console.log(formData.value)
     alert(`Error: ${error.message}`)
   } finally {
     submitting.value = false
@@ -426,6 +746,295 @@ const handleDelete = async () => {
     cursoToDelete.value = null
   } catch (error: any) {
     alert(`Error: ${error.message}`)
+  } finally {
+    submitting.value = false
+  }
+}
+
+// Funciones para gestionar alumnos
+const openStudentsModal = async (curso: Curso) => {
+  selectedCurso.value = curso
+  showStudentsModal.value = true
+  showAddStudentSection.value = false
+  selectedStudentId.value = ''
+
+  // Cargar estudiantes del curso
+  await loadCursoStudents()
+
+  // Cargar todos los estudiantes disponibles
+  if (studentStore.estudiantes.length === 0) {
+    await studentStore.fetchEstudiantes()
+  }
+}
+
+const closeStudentsModal = () => {
+  showStudentsModal.value = false
+  selectedCurso.value = null
+  cursoStudents.value = []
+  showAddStudentSection.value = false
+  selectedStudentId.value = ''
+}
+
+const loadCursoStudents = async () => {
+  if (!selectedCurso.value) return
+
+  loadingStudents.value = true
+  try {
+    // Obtener las matrículas del curso
+    const matriculas = await matriculaService.getAll({
+      curso_id: selectedCurso.value.curso_id,
+      estado_matricula_id: 1 // Solo matrículas activas
+    })
+
+    // Cargar todos los estudiantes si no están cargados
+    if (studentStore.estudiantes.length === 0) {
+      await studentStore.fetchEstudiantes()
+    }
+
+    // Filtrar los estudiantes que están matriculados en este curso
+    const estudianteIds = matriculas.map((m: Matricula) => m.estudiante_id)
+    cursoStudents.value = studentStore.estudiantes.filter(
+      estudiante => estudianteIds.includes(estudiante.estudiante_id)
+    )
+  } catch (error) {
+    console.error('Error cargando alumnos del curso:', error)
+    alert('Error al cargar los alumnos del curso')
+  } finally {
+    loadingStudents.value = false
+  }
+}
+
+const addStudentToCurso = async (estudianteId?: string) => {
+  // Usar el parámetro si se proporciona, sino usar selectedStudentId
+  const estudianteIdToUse = estudianteId || selectedStudentId.value
+
+  if (!estudianteIdToUse || !selectedCurso.value) return
+
+  submitting.value = true
+  try {
+    // Obtener el estudiante seleccionado
+    const estudiante = studentStore.estudiantes.find(
+      e => e.estudiante_id === estudianteIdToUse
+    )
+
+    if (!estudiante) {
+      alert('Estudiante no encontrado')
+      submitting.value = false
+      return
+    }
+
+    // Validación: estudiante activo
+    if (!estudiante.estado_activo) {
+      alert(`No se puede matricular a ${estudiante.nombre_completo} porque está inactivo`)
+      submitting.value = false
+      return
+    }
+
+    // Validación: edad apropiada para el nivel del curso
+    if (estudiante.fecha_nacimiento) {
+      const ageValidation = validateAgeForNivel(estudiante.fecha_nacimiento, selectedCurso.value.nivel_id)
+      if (!ageValidation.valid) {
+        alert(`${estudiante.nombre_completo}: ${ageValidation.message}`)
+        submitting.value = false
+        return
+      }
+    } else {
+      const confirmar = confirm(
+        `${estudiante.nombre_completo} no tiene fecha de nacimiento registrada. ¿Deseas continuar de todos modos?`
+      )
+      if (!confirmar) {
+        submitting.value = false
+        return
+      }
+    }
+
+    // Verificar si el estudiante ya tiene una matrícula activa en otro curso
+    const matriculasEstudiante = await matriculaService.getByEstudiante(estudianteIdToUse)
+    const matriculaActiva = matriculasEstudiante.find((m: Matricula) => m.estado_matricula_id === 1)
+
+    if (matriculaActiva && matriculaActiva.curso_id !== selectedCurso.value.curso_id) {
+      alert(`${estudiante.nombre_completo} ya tiene una matrícula activa en otro curso`)
+      submitting.value = false
+      return
+    }
+
+    // Obtener tutor titular
+    const tutor_titular = await parentescoService.getTutorTitular(estudianteIdToUse)
+    const periodo = `${selectedCurso.value.anio_academico}`
+
+    // Crear la matrícula
+    await matriculaService.create({
+      estudiante_id: estudianteIdToUse,
+      curso_id: selectedCurso.value.curso_id,
+      tutor_titular_id: tutor_titular?.tutor_id,
+      periodo,
+      estado_matricula_id: 1 // Activa
+    })
+
+    alert('Alumno matriculado en el curso exitosamente')
+    selectedStudentId.value = ''
+    await loadCursoStudents()
+  } catch (error: any) {
+    console.error('Error añadiendo alumno:', error)
+    alert(`Error: ${error.response?.data?.message || error.message}`)
+  } finally {
+    submitting.value = false
+  }
+}
+
+// Función para seleccionar/deseleccionar un estudiante
+const toggleStudentSelection = (estudianteId: string) => {
+  const index = selectedStudentsToAdd.value.indexOf(estudianteId)
+  if (index === -1) {
+    selectedStudentsToAdd.value.push(estudianteId)
+  } else {
+    selectedStudentsToAdd.value.splice(index, 1)
+  }
+}
+
+// Función para seleccionar/deseleccionar todos
+const toggleSelectAll = () => {
+  if (selectedStudentsToAdd.value.length === filteredAvailableStudents.value.length) {
+    selectedStudentsToAdd.value = []
+  } else {
+    selectedStudentsToAdd.value = filteredAvailableStudents.value.map(e => e.estudiante_id)
+  }
+}
+
+// Función para añadir múltiples estudiantes al curso
+const addMultipleStudentsToCurso = async () => {
+  if (selectedStudentsToAdd.value.length === 0 || !selectedCurso.value) return
+
+  submitting.value = true
+  let successCount = 0
+  let errorCount = 0
+  const errors: string[] = []
+  const warnings: string[] = []
+
+  try {
+    for (const estudianteId of selectedStudentsToAdd.value) {
+      try {
+        // Obtener el estudiante
+        const estudiante = studentStore.estudiantes.find(e => e.estudiante_id === estudianteId)
+        if (!estudiante) {
+          errorCount++
+          errors.push(`Estudiante no encontrado`)
+          continue
+        }
+
+        // Validación: estudiante activo
+        if (!estudiante.estado_activo) {
+          errorCount++
+          errors.push(`${estudiante.nombre_completo}: Estudiante inactivo`)
+          continue
+        }
+
+        // Validación: edad apropiada para el nivel del curso
+        if (estudiante.fecha_nacimiento) {
+          const ageValidation = validateAgeForNivel(estudiante.fecha_nacimiento, selectedCurso.value.nivel_id)
+          if (!ageValidation.valid) {
+            errorCount++
+            errors.push(`${estudiante.nombre_completo}: ${ageValidation.message}`)
+            continue
+          }
+        } else {
+          warnings.push(`${estudiante.nombre_completo}: No tiene fecha de nacimiento registrada`)
+        }
+
+        // Validación: no tiene matrícula activa en otro curso
+        const matriculasEstudiante = await matriculaService.getByEstudiante(estudianteId)
+        const matriculaActiva = matriculasEstudiante.find((m: Matricula) => m.estado_matricula_id === 1)
+
+        if (matriculaActiva && matriculaActiva.curso_id !== selectedCurso.value.curso_id) {
+          errorCount++
+          errors.push(`${estudiante.nombre_completo}: Ya tiene matrícula activa en otro curso`)
+          continue
+        }
+
+        // Obtener tutor titular
+        const tutor_titular = await parentescoService.getTutorTitular(estudianteId)
+        const periodo = `${selectedCurso.value.anio_academico}`
+
+        // Crear la matrícula
+        await matriculaService.create({
+          estudiante_id: estudianteId,
+          curso_id: selectedCurso.value.curso_id,
+          tutor_titular_id: tutor_titular?.tutor_id,
+          periodo,
+          estado_matricula_id: 1
+        })
+
+        successCount++
+      } catch (error: any) {
+        errorCount++
+        const errorMessage = error.response?.data?.message || error.message
+        errors.push(`${studentStore.estudiantes.find(e => e.estudiante_id === estudianteId)?.nombre_completo}: ${errorMessage}`)
+      }
+    }
+
+    // Limpiar selección y recargar
+    selectedStudentsToAdd.value = []
+    await loadCursoStudents()
+
+    // Mostrar resultado
+    let message = `Proceso completado:\n- ${successCount} estudiante(s) añadido(s) exitosamente\n`
+
+    if (errorCount > 0) {
+      message += `- ${errorCount} error(es)\n\nErrores:\n${errors.join('\n')}`
+    }
+
+    if (warnings.length > 0) {
+      message += `\n\nAdvertencias:\n${warnings.join('\n')}`
+    }
+
+    if (errorCount === 0 && warnings.length === 0) {
+      alert(`${successCount} estudiante(s) añadido(s) exitosamente`)
+    } else {
+      alert(message)
+    }
+  } catch (error: any) {
+    console.error('Error añadiendo estudiantes:', error)
+    alert(`Error: ${error.message}`)
+  } finally {
+    submitting.value = false
+  }
+}
+
+const confirmRemoveStudent = (estudiante: Estudiante) => {
+  studentToRemove.value = estudiante
+  showRemoveStudentModal.value = true
+}
+
+const removeStudentFromCurso = async () => {
+  if (!studentToRemove.value || !selectedCurso.value) return
+
+  submitting.value = true
+  try {
+    // Buscar la matrícula activa del estudiante en este curso
+    const matriculas = await matriculaService.getAll({
+      curso_id: selectedCurso.value.curso_id,
+      estado_matricula_id: 1
+    })
+
+    const matricula = matriculas.find(
+      (m: Matricula) => m.estudiante_id === studentToRemove.value?.estudiante_id
+    )
+
+    if (matricula) {
+      // Cambiar el estado de la matrícula a inactiva (estado_matricula_id = 2)
+      // O eliminarla si prefieres
+      await matriculaService.changeStatus(matricula.matricula_id, 2) // 2 = INACTIVA
+
+      alert('Alumno quitado del curso exitosamente')
+      showRemoveStudentModal.value = false
+      studentToRemove.value = null
+      await loadCursoStudents()
+    } else {
+      alert('No se encontró la matrícula del estudiante en este curso')
+    }
+  } catch (error: any) {
+    console.error('Error quitando alumno:', error)
+    alert(`Error: ${error.response?.data?.message || error.message}`)
   } finally {
     submitting.value = false
   }

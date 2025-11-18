@@ -6,7 +6,7 @@ export class ProfesorController {
     // Crear nuevo profesor
     public async create(req: Request, res: Response): Promise<Response> {
         try {
-            const { user_id, nombre_completo, rut, especialidad, titulo_profesional, telefono, fecha_contratacion } = req.body
+            const { user_id, nombre_completo, rut, telefono} = req.body
 
             // Validar campos requeridos
             if (!user_id || !nombre_completo) {
@@ -35,10 +35,7 @@ export class ProfesorController {
                     user_id,
                     nombre_completo,
                     rut,
-                    especialidad,
-                    titulo_profesional,
                     telefono,
-                    fecha_contratacion,
                     estado_activo: true
                 })
                 .select()
@@ -60,17 +57,53 @@ export class ProfesorController {
 
             let query = supabaseAdmin!
                 .from('Profesor')
-                .select('*, User(email_address, is_active)')
+                .select(`
+                    *,
+                    User(email_address, is_active)
+                `)
 
             if (incluir_inactivos !== 'true') {
                 query = query.eq('estado_activo', true)
             }
 
-            const { data, error } = await query
+            const { data: profesores, error } = await query
 
             if (error) throw error
 
-            return res.status(200).json(data || [])
+            // Para cada profesor, obtener contrato activo y especialidades
+            const profesoresConDetalles = await Promise.all(
+                (profesores || []).map(async (profesor) => {
+                    // Obtener contrato activo (sin fecha de término o fecha de término futura)
+                    const { data: contrato } = await supabaseAdmin!
+                        .from('Contrato')
+                        .select(`
+                            *,
+                            Profesion(id_profesion, nombre, descripcion)
+                        `)
+                        .eq('id_empleado', profesor.profesor_id)
+                        .or('termino_contrato.is.null,termino_contrato.gte.' + new Date().toISOString())
+                        .order('inicio_contrato', { ascending: false })
+                        .limit(1)
+                        .single()
+
+                    // Obtener especialidades
+                    const { data: especialidades } = await supabaseAdmin!
+                        .from('Profesor_especialidad')
+                        .select(`
+                            *,
+                            Especialidad(id, nombre_especialidad, tipo_especialidad)
+                        `)
+                        .eq('profesor_id', profesor.profesor_id)
+
+                    return {
+                        ...profesor,
+                        contrato: contrato || null,
+                        especialidades: especialidades || []
+                    }
+                })
+            )
+
+            return res.status(200).json(profesoresConDetalles)
 
         } catch (error: any) {
             return res.status(500).json({ message: error.message })
@@ -82,7 +115,7 @@ export class ProfesorController {
         try {
             const { id } = req.params
 
-            const { data, error } = await supabaseAdmin!
+            const { data: profesor, error } = await supabaseAdmin!
                 .from('Profesor')
                 .select('*, User(email_address, is_active)')
                 .eq('profesor_id', id)
@@ -90,11 +123,37 @@ export class ProfesorController {
 
             if (error) throw error
 
-            if (!data) {
+            if (!profesor) {
                 return res.status(404).json({ message: 'Profesor no encontrado' })
             }
 
-            return res.status(200).json(data)
+            // Obtener contrato activo
+            const { data: contrato } = await supabaseAdmin!
+                .from('Contrato')
+                .select(`
+                    *,
+                    Profesion(id_profesion, nombre, descripcion)
+                `)
+                .eq('id_empleado', profesor.profesor_id)
+                .or('termino_contrato.is.null,termino_contrato.gte.' + new Date().toISOString())
+                .order('inicio_contrato', { ascending: false })
+                .limit(1)
+                .single()
+
+            // Obtener especialidades
+            const { data: especialidades } = await supabaseAdmin!
+                .from('Profesor_especialidad')
+                .select(`
+                    *,
+                    Especialidad(id, nombre_especialidad, tipo_especialidad)
+                `)
+                .eq('profesor_id', profesor.profesor_id)
+
+            return res.status(200).json({
+                ...profesor,
+                contrato: contrato || null,
+                especialidades: especialidades || []
+            })
 
         } catch (error: any) {
             return res.status(500).json({ message: error.message })
@@ -105,16 +164,13 @@ export class ProfesorController {
     public async update(req: Request, res: Response): Promise<Response> {
         try {
             const { id } = req.params
-            const { nombre_completo, rut, especialidad, titulo_profesional, telefono, fecha_contratacion } = req.body
+            const { nombre_completo, rut, telefono } = req.body
 
             // Solo actualizar campos de la tabla Profesor
             const updateData: any = {}
             if (nombre_completo !== undefined) updateData.nombre_completo = nombre_completo
             if (rut !== undefined) updateData.rut = rut
-            if (especialidad !== undefined) updateData.especialidad = especialidad
-            if (titulo_profesional !== undefined) updateData.titulo_profesional = titulo_profesional
             if (telefono !== undefined) updateData.telefono = telefono
-            if (fecha_contratacion !== undefined) updateData.fecha_contratacion = fecha_contratacion
             updateData.updated_at = new Date().toISOString()
 
             const { data, error } = await supabaseAdmin!

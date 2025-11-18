@@ -30,7 +30,7 @@ export class AsignaturaController {
           Curso:curso_id (
             curso_id,
             nombre,
-            nivel
+            nivel_id
           ),
           Profesor:profesor_id (
             profesor_id,
@@ -44,6 +44,11 @@ export class AsignaturaController {
           TipoAsignatura:tipo_asignatura_id (
             tipo_asignatura_id,
             nombre
+          ),
+          Materia:materia_id (
+            id,
+            nombre,
+            descripcion
           )
         `)
         .order('nombre', { ascending: true })
@@ -103,23 +108,25 @@ export class AsignaturaController {
           Curso:curso_id (
             curso_id,
             nombre,
-            nivel,
-            anio
+            nivel_id,
+            anio_academico
           ),
           Profesor:profesor_id (
             profesor_id,
-            nombre_completo,
-            especialidad,
-            titulo_profesional
+            nombre_completo
           ),
           Sala:sala_id (
             sala_id,
             nombre,
-            capacidad,
-            tipo
+            capacidad
           ),
           TipoAsignatura:tipo_asignatura_id (
             tipo_asignatura_id,
+            nombre,
+            descripcion
+          ),
+          Materia:materia_id (
+            id,
             nombre,
             descripcion
           )
@@ -204,12 +211,11 @@ export class AsignaturaController {
           Curso:curso_id (
             curso_id,
             nombre,
-            nivel
+            nivel_id
           ),
           Profesor:profesor_id (
             profesor_id,
-            nombre_completo,
-            especialidad
+            nombre_completo
           )
         `)
         .single()
@@ -284,12 +290,11 @@ export class AsignaturaController {
           Curso:curso_id (
             curso_id,
             nombre,
-            nivel
+            nivel_id
           ),
           Profesor:profesor_id (
             profesor_id,
-            nombre_completo,
-            especialidad
+            nombre_completo
           ),
           Sala:sala_id (
             sala_id,
@@ -502,7 +507,7 @@ export class AsignaturaController {
           Curso:curso_id (
             curso_id,
             nombre,
-            nivel,
+            nivel_id,
             paralelo
           )
         `)

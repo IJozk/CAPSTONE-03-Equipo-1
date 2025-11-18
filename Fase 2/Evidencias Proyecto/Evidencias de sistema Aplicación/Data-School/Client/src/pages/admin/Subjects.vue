@@ -237,7 +237,7 @@
                     required
                     >
                     <option v-for="curso in cursoStore.cursosByAnio(2025) " :key="curso.curso_id" :value="curso.curso_id">
-                      {{ NIVELES[curso.nivel].display  +  " " + curso.nombre }}
+                      {{ NIVELES[curso.nivel_id - 1].display  +  " " + curso.nombre }}
                     </option>
                   </select>
                 </div>  
@@ -246,13 +246,15 @@
                   <label class="block text-sm font-medium text-gray-700 mb-1">
                     Profesor ID <span class="text-red-500">*</span>
                   </label>
-                  <input
-                    v-model="formData.profesor_id"
-                    type="text"
+                  <select 
+                    v-model="formData.profesor_id" 
+                    placeholder="No existen cursos"
                     required
-                    placeholder="ID del profesor"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
+                    >
+                    <option v-for="profesor in  profesorStore.profesores" :key="profesor.profesor_id" :value="profesor.profesor_id">
+                      {{ profesor.nombre_completo  }}
+                    </option>
+                  </select>
                 </div>
               </div>
 
@@ -385,11 +387,13 @@ import { ref, onMounted } from 'vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import { useAsignaturaStore } from '@/store/asignatura.store'
 import { useCursoStore } from '@/store/curso.store'
+import { useTeacherStore } from '@/store/teacher.store'
 import type { Asignatura, CreateAsignaturaDTO, FilterAsignaturaDTO } from '@/types/asignatura.types'
 import { NIVELES } from '@/constants/niveles.constants'
 
 const asignaturaStore = useAsignaturaStore()
 const cursoStore = useCursoStore()
+const profesorStore = useTeacherStore()
 
 // Estados del modal
 const showModal = ref(false)

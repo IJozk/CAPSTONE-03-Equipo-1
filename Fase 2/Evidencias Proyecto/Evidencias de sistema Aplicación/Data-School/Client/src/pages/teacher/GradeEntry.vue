@@ -63,6 +63,22 @@
             </div>
           </div>
         </div>
+
+        <!-- Warning: Evaluation date not passed -->
+        <div v-if="currentEvaluation && !canEnterGrades" class="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+          <div class="flex items-start">
+            <svg class="w-5 h-5 text-orange-600 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+            </svg>
+            <div>
+              <h4 class="text-sm font-semibold text-orange-900">Evaluación no realizada aún</h4>
+              <p class="mt-1 text-sm text-orange-800">
+                No puedes ingresar notas hasta que la fecha de la evaluación haya pasado.
+                La evaluación está programada para el <strong>{{ formatDate(currentEvaluation.fecha_evaluacion) }}</strong>.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Grades Table -->
@@ -101,7 +117,8 @@
                     :min="0"
                     :max="currentEvaluation?.puntaje_maximo"
                     step="0.5"
-                    class="w-20 px-2 py-1 text-center border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    :disabled="!canEnterGrades"
+                    class="w-20 px-2 py-1 text-center border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder="0"
                   />
                 </td>
@@ -131,7 +148,8 @@
                   <input
                     v-model="gradeData[student.estudiante_id].observaciones"
                     type="text"
-                    class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    :disabled="!canEnterGrades"
+                    class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder="Observaciones..."
                   />
                 </td>
@@ -140,7 +158,7 @@
                 <td class="px-4 py-3 text-center">
                   <button
                     @click="saveIndividualGrade(student.estudiante_id)"
-                    :disabled="gradeData[student.estudiante_id].puntaje === null || saving"
+                    :disabled="!canEnterGrades || gradeData[student.estudiante_id].puntaje === null || saving"
                     class="px-3 py-1 bg-primary-600 text-white text-xs font-medium rounded hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                   >
                     {{ gradeData[student.estudiante_id].resultado_id ? 'Actualizar' : 'Guardar' }}
@@ -158,7 +176,7 @@
           </div>
           <button
             @click="saveAllGrades"
-            :disabled="saving || gradesEntered === 0"
+            :disabled="!canEnterGrades || saving || gradesEntered === 0"
             class="px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
           >
             {{ saving ? 'Guardando...' : 'Guardar Todas' }}
@@ -190,6 +208,16 @@
             <p class="text-sm text-gray-600">Reprobados</p>
             <p class="text-2xl font-bold text-rose-600">{{ statistics.failed }}</p>
           </div>
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      <div v-if="error" class="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
+        <div class="flex items-center">
+          <svg class="w-5 h-5 text-red-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          </svg>
+          <p class="text-sm text-red-800 font-medium">{{ error }}</p>
         </div>
       </div>
 
@@ -238,6 +266,19 @@ const currentEvaluation = computed(() => {
   return evaluations.value.find(e => e.evaluacion_id === Number(selectedEvaluationId.value));
 });
 
+// Verificar si se puede ingresar notas (fecha de evaluación ya pasó)
+const canEnterGrades = computed(() => {
+  if (!currentEvaluation.value) return false;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Resetear horas para comparar solo fechas
+
+  const evaluationDate = new Date(currentEvaluation.value.fecha_evaluacion);
+  evaluationDate.setHours(0, 0, 0, 0);
+
+  return evaluationDate <= today;
+});
+
 // Etiqueta del tipo de evaluación
 const evaluationTypeLabel = (type: string): string => {
   const labels: Record<string, string> = {
@@ -260,11 +301,25 @@ const formatDate = (date: string): string => {
   });
 };
 
-// Calcular nota automáticamente
+// Validar y calcular nota automáticamente
 const calculateGrade = (studentId: string) => {
   const data = gradeData.value[studentId];
+
   if (data.puntaje !== null && currentEvaluation.value) {
     const maxScore = currentEvaluation.value.puntaje_maximo;
+
+    // VALIDACIÓN CRÍTICA 1: Puntaje no puede ser negativo
+    if (data.puntaje < 0) {
+      data.puntaje = 0;
+      console.warn('Puntaje negativo no permitido. Ajustado a 0.');
+    }
+
+    // VALIDACIÓN CRÍTICA 2: Puntaje no puede exceder el máximo
+    if (data.puntaje > maxScore) {
+      data.puntaje = maxScore;
+      console.warn(`Puntaje excede el máximo (${maxScore}). Ajustado al máximo.`);
+    }
+
     data.nota = teacherService.calculateGrade(data.puntaje, maxScore);
     data.porcentaje = teacherService.calculatePercentage(data.puntaje, maxScore);
   } else {
@@ -370,6 +425,7 @@ const saveIndividualGrade = async (studentId: string) => {
 
   saving.value = true;
   successMessage.value = '';
+  error.value = '';
 
   try {
     const payload = {
@@ -386,8 +442,12 @@ const saveIndividualGrade = async (studentId: string) => {
 
     successMessage.value = 'Nota guardada exitosamente';
     setTimeout(() => successMessage.value = '', 3000);
-  } catch (error) {
-    console.error('Error saving grade:', error);
+  } catch (err: any) {
+    console.error('Error saving grade:', err);
+    // Mostrar mensaje de error específico del backend
+    const errorMsg = err.response?.data?.message || 'Error al guardar la nota';
+    error.value = errorMsg;
+    setTimeout(() => error.value = '', 5000);
   } finally {
     saving.value = false;
   }
@@ -397,6 +457,7 @@ const saveIndividualGrade = async (studentId: string) => {
 const saveAllGrades = async () => {
   saving.value = true;
   successMessage.value = '';
+  error.value = '';
 
   try {
     const promises = Object.entries(gradeData.value)
@@ -418,8 +479,12 @@ const saveAllGrades = async () => {
     await onEvaluationChange();
 
     setTimeout(() => successMessage.value = '', 3000);
-  } catch (error) {
-    console.error('Error saving all grades:', error);
+  } catch (err: any) {
+    console.error('Error saving all grades:', err);
+    // Mostrar mensaje de error específico del backend
+    const errorMsg = err.response?.data?.message || 'Error al guardar las notas';
+    error.value = errorMsg;
+    setTimeout(() => error.value = '', 5000);
   } finally {
     saving.value = false;
   }

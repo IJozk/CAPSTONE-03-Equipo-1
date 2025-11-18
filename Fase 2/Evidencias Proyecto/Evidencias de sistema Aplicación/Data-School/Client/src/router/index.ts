@@ -112,6 +112,16 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/admin/schedules',
+    name: 'AdminSchedules',
+    component: () => import('@/pages/admin/Schedules.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresRole: ['ADMINISTRADOR'],
+      title: 'Gestión de Horarios'
+    }
+  },
+  {
     path: '/admin/calendar',
     name: 'AdminCalendar',
     component: () => import('@/pages/admin/Calendar.vue'),
@@ -142,6 +152,16 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/admin/surveys',
+    name: 'AdminSurveys',
+    component: () => import('@/pages/admin/Surveys.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresRole: ['ADMINISTRADOR'],
+      title: 'Gestión de Encuestas'
+    }
+  },
+  {
     path: '/admin/teachers',
     name: 'AdminTeachers',
     component: () => import('@/pages/admin/Teachers.vue'),
@@ -159,6 +179,16 @@ const routes: RouteRecordRaw[] = [
       requiresAuth: true,
       requiresRole: ['ADMINISTRADOR'],
       title: 'Gestión de Estudiantes'
+    }
+  },
+    {
+    path: '/admin/administrativos',
+    name: 'AdminAdministrativos',
+    component: () => import('@/pages/admin/Adminis.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresRole: ['ADMINISTRADOR'],
+      title: 'Gestión de Administradores'
     }
   },
   {
@@ -179,6 +209,16 @@ const routes: RouteRecordRaw[] = [
       requiresAuth: true,
       requiresRole: ['ADMINISTRADOR'],
       title: 'Reportes'
+    }
+  },
+  {
+    path: '/admin/config',
+    name: 'AdminSchoolConfig',
+    component: () => import('@/pages/admin/SchoolConfig.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresRole: ['ADMINISTRADOR'],
+      title: 'Configuración del Colegio'
     }
   },
   {
@@ -308,9 +348,9 @@ const routes: RouteRecordRaw[] = [
         }
       },
       {
-        path: 'observations',
-        name: 'TeacherObservations',
-        component: () => import('@/pages/teacher/Observations.vue'),
+        path: 'anotaciones',
+        name: 'TeacherAnotaciones',
+        component: () => import('@/pages/teacher/Anotaciones.vue'),
         meta: {
           requiresAuth: true,
           requiresRole: ['PROFESOR', 'ADMINISTRADOR'],
@@ -330,7 +370,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'schedule',
         name: 'TeacherSchedule',
-        component: () => import('@/pages/teacher/Schedule.vue'),
+        component: () => import('@/pages/teacher/WeeklySchedule.vue'),
         meta: {
           requiresAuth: true,
           requiresRole: ['PROFESOR', 'ADMINISTRADOR'],
@@ -384,6 +424,114 @@ const routes: RouteRecordRaw[] = [
         meta: {
           requiresAuth: true,
           requiresRole: ['PROFESOR', 'ADMINISTRADOR'],
+          title: 'Configuración'
+        }
+      }
+    ]
+  },
+
+  // ==========================================
+  // RUTAS DEL ESTUDIANTE/APODERADO
+  // ==========================================
+  {
+    path: '/student',
+    component: () => import('@/layouts/StudentLayout.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresRole: ['ESTUDIANTE_APODERADO', 'ADMINISTRADOR']
+    },
+    children: [
+      {
+        path: '',
+        redirect: '/student/dashboard'
+      },
+      {
+        path: 'dashboard',
+        name: 'StudentDashboard',
+        component: () => import('@/pages/student/Dashboard.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['ESTUDIANTE_APODERADO', 'ADMINISTRADOR'],
+          title: 'Mi Panel'
+        }
+      },
+      {
+        path: 'grades',
+        name: 'StudentGrades',
+        component: () => import('@/pages/student/Grades.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['ESTUDIANTE_APODERADO', 'ADMINISTRADOR'],
+          title: 'Mis Notas'
+        }
+      },
+      {
+        path: 'attendance',
+        name: 'StudentAttendance',
+        component: () => import('@/pages/student/Attendance.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['ESTUDIANTE_APODERADO', 'ADMINISTRADOR'],
+          title: 'Mi Asistencia'
+        }
+      },
+      {
+        path: 'schedule',
+        name: 'StudentSchedule',
+        component: () => import('@/pages/student/Schedule.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['ESTUDIANTE_APODERADO', 'ADMINISTRADOR'],
+          title: 'Mi Horario'
+        }
+      },
+      {
+        path: 'notifications',
+        name: 'StudentNotifications',
+        component: () => import('@/pages/student/Notifications.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['ESTUDIANTE_APODERADO', 'ADMINISTRADOR'],
+          title: 'Notificaciones'
+        }
+      },
+      {
+        path: 'events',
+        name: 'StudentEvents',
+        component: () => import('@/pages/student/Events.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['ESTUDIANTE_APODERADO', 'ADMINISTRADOR'],
+          title: 'Eventos'
+        }
+      },
+      {
+        path: 'calendar',
+        name: 'StudentCalendar',
+        component: () => import('@/pages/student/Calendar.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['ESTUDIANTE_APODERADO', 'ADMINISTRADOR'],
+          title: 'Calendario'
+        }
+      },
+      {
+        path: 'profile',
+        name: 'StudentProfile',
+        component: () => import('@/pages/student/Profile.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['ESTUDIANTE_APODERADO', 'ADMINISTRADOR'],
+          title: 'Mi Perfil'
+        }
+      },
+      {
+        path: 'settings',
+        name: 'StudentSettings',
+        component: () => import('@/pages/student/Settings.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['ESTUDIANTE_APODERADO', 'ADMINISTRADOR'],
           title: 'Configuración'
         }
       }

@@ -178,56 +178,6 @@
         <p v-if="errors.telefono" class="mt-1 text-sm text-red-600">{{ errors.telefono }}</p>
       </div>
 
-      <!-- Título Profesional (REQUERIDO) -->
-      <div>
-        <label for="titulo_profesional" class="block text-sm font-medium text-gray-700 mb-2">
-          Título Profesional *
-        </label>
-        <input
-          id="titulo_profesional"
-          v-model="formData.titulo_profesional"
-          type="text"
-          :class="inputClass('titulo_profesional')"
-          placeholder="Ej: Profesor de Educación Básica"
-          @blur="validateField('titulo_profesional')"
-          @input="clearFieldError('titulo_profesional')"
-        />
-        <p v-if="errors.titulo_profesional" class="mt-1 text-sm text-red-600">{{ errors.titulo_profesional }}</p>
-      </div>
-
-      <!-- Especialidad (REQUERIDO) -->
-      <div>
-        <label for="especialidad" class="block text-sm font-medium text-gray-700 mb-2">
-          Especialidad *
-        </label>
-        <input
-          id="especialidad"
-          v-model="formData.especialidad"
-          type="text"
-          :class="inputClass('especialidad')"
-          placeholder="Ej: Matemáticas, Lenguaje, Ciencias"
-          @blur="validateField('especialidad')"
-          @input="clearFieldError('especialidad')"
-        />
-        <p v-if="errors.especialidad" class="mt-1 text-sm text-red-600">{{ errors.especialidad }}</p>
-      </div>
-
-      <!-- Fecha de Contratación (REQUERIDO) -->
-      <div>
-        <label for="fecha_contratacion" class="block text-sm font-medium text-gray-700 mb-2">
-          Fecha de Contratación *
-        </label>
-        <input
-          id="fecha_contratacion"
-          v-model="formData.fecha_contratacion"
-          type="date"
-          :class="inputClass('fecha_contratacion')"
-          @blur="validateField('fecha_contratacion')"
-          @input="clearFieldError('fecha_contratacion')"
-        />
-        <p v-if="errors.fecha_contratacion" class="mt-1 text-sm text-red-600">{{ errors.fecha_contratacion }}</p>
-      </div>
-
       <!-- Separador visual -->
       <div class="border-t border-gray-200 pt-4">
         <p class="text-sm font-medium text-gray-600 mb-3">Información Adicional (Opcional)</p>
@@ -248,19 +198,40 @@
         />
       </div>
 
+      <!-- Region -->
+      <div>
+        <label for="region_profesor" class="block text-sm font-medium text-gray-700 mb-2">
+          Región
+        </label>
+        <select id="region_profesor"
+          v-model="regionSelected"
+          type="text"
+          placeholder="Ej: Región Metropolitana, Biobío, La Araucanía">
+          <option value="" disabled>Seleccionar región</option>
+          <option v-for="region in regiones" :key="region.id" :value="region.name">
+            {{ region.name }}
+          </option>
+        
+        </select>
+      </div>
+
       <!-- Comuna (OPCIONAL) -->
       <div>
         <label for="comuna_profesor" class="block text-sm font-medium text-gray-700 mb-2">
           Comuna
         </label>
-        <input
-          id="comuna_profesor"
+        <select id="comuna_profesor"
           v-model="formData.comuna"
           type="text"
           :class="inputClass('comuna')"
           placeholder="Ej: Santiago, Concepción, Coronel"
-          @input="clearFieldError('comuna')"
-        />
+          @input="clearFieldError('comuna')">
+          <option value="" disabled>Seleccionar comuna</option>
+          <option v-for="comuna in comunaByRegion(regionSelected)" :key="comuna.id" :value="comuna.name">
+            {{ comuna.name }}
+          </option>
+        
+        </select>
       </div>
     </div>
 
@@ -298,18 +269,40 @@
       </div>
 
       <!-- Comuna (OPCIONAL) -->
+            <!-- Region -->
       <div>
-        <label for="comuna_estudiante" class="block text-sm font-medium text-gray-700 mb-2">
+        <label for="region_profesor" class="block text-sm font-medium text-gray-700 mb-2">
+          Región
+        </label>
+        <select id="region_profesor"
+          v-model="regionSelected"
+          type="text"
+          placeholder="Ej: Región Metropolitana, Biobío, La Araucanía">
+          <option value="" disabled>Seleccionar región</option>
+          <option v-for="region in regiones" :key="region.id" :value="region.name">
+            {{ region.name }}
+          </option>
+        
+        </select>
+      </div>
+
+      <!-- Comuna (OPCIONAL) -->
+      <div>
+        <label for="comuna_profesor" class="block text-sm font-medium text-gray-700 mb-2">
           Comuna
         </label>
-        <input
-          id="comuna_estudiante"
+        <select id="comuna_profesor"
           v-model="formData.comuna"
           type="text"
           :class="inputClass('comuna')"
           placeholder="Ej: Santiago, Concepción, Coronel"
-          @input="clearFieldError('comuna')"
-        />
+          @input="clearFieldError('comuna')">
+          <option value="" disabled>Seleccionar comuna</option>
+          <option v-for="comuna in comunaByRegion(regionSelected)" :key="comuna.id" :value="comuna.name">
+            {{ comuna.name }}
+          </option>
+        
+        </select>
       </div>
 
       <div>
@@ -333,7 +326,7 @@
     </div>
 
     <!-- Admin / Administrativo (comparten campos) -->
-    <div v-if="formData.role === UserRole.ADMINISTRADOR || formData.role === UserRole.ADMINISTRATIVO" class="space-y-4">
+    <div v-if="isAdminOrAdministrativo" class="space-y-4">
       <div>
         <label for="cargo" class="block text-sm font-medium text-gray-700 mb-2">Cargo *</label>
         <input id="cargo" v-model="formData.cargo" type="text" :class="inputClass('cargo')" @blur="validateField('cargo')" />
@@ -439,10 +432,11 @@ import {
 import type { RegisterDTO, RegisterValidationErrors, RoleOption } from '@/types/auth.types';
 import { UserRole } from '@/types/auth.types';
 import { useSchoolStore } from '@/store/school.store';
-import { before } from 'node:test';
+import { comunaByRegion, comunasList, regiones } from '@/types/utils.types';
 
 const authStore = useAuthStore();
 const schoolStore = useSchoolStore();
+const regionSelected = ref('');
 
 // Opciones de roles con descripciones
 const roleOptions: RoleOption[] = [
@@ -480,8 +474,6 @@ const formData = ref<RegisterDTO>({
   telefono: '',
   
   // campos opcionales
-  titulo_profesional: undefined,
-  especialidad: undefined,
   fecha_contratacion: undefined,
   fecha_nacimiento: undefined,
   direccion: '',
@@ -502,6 +494,10 @@ const isLoading = computed(() => authStore.registerState.loading);
 const registerError = computed(() => authStore.registerState.error);
 const registerSuccess = computed(() => authStore.registerState.success);
 
+const isAdminOrAdministrativo = computed(() => {
+  return formData.value.role === UserRole.ADMINISTRADOR || formData.value.role === UserRole.ADMINISTRATIVO;
+});
+
 const isFormValid = computed(() => {
   const hasAllRequired =
     formData.value.email &&
@@ -514,16 +510,13 @@ const isFormValid = computed(() => {
     // campos específicos según rol
     (formData.value.role === UserRole.PROFESOR
       ? !!(
-          formData.value.telefono &&
-          formData.value.titulo_profesional &&
-          formData.value.especialidad &&
-          formData.value.fecha_contratacion
+          formData.value.telefono
         )
       : true) &&
     (formData.value.role === UserRole.ESTUDIANTE_APODERADO
       ? !!(formData.value.fecha_nacimiento && formData.value.direccion && formData.value.genero)
       : true) &&
-    (formData.value.role === UserRole.ADMINISTRADOR || formData.value.role === UserRole.ADMINISTRATIVO
+    (isAdminOrAdministrativo.value
       ? !!(formData.value.cargo && formData.value.area_id && formData.value.fecha_contratacion)
       : true);
 
@@ -647,22 +640,8 @@ const validateField = (field: keyof RegisterDTO) => {
       }
       break;
     }
-    case 'titulo_profesional': {
-      if (formData.value.role === UserRole.PROFESOR) {
-        if (!formData.value.titulo_profesional) errors.value.titulo_profesional = 'El título profesional es requerido';
-        else delete errors.value.titulo_profesional;
-      }
-      break;
-    }
-    case 'especialidad': {
-      if (formData.value.role === UserRole.PROFESOR) {
-        if (!formData.value.especialidad) errors.value.especialidad = 'La especialidad es requerida';
-        else delete errors.value.especialidad;
-      }
-      break;
-    }
     case 'fecha_contratacion': {
-      if (formData.value.role === UserRole.PROFESOR || formData.value.role === UserRole.ADMINISTRADOR || formData.value.role === UserRole.ADMINISTRATIVO) {
+      if ( formData.value.role === UserRole.ADMINISTRADOR || formData.value.role === UserRole.ADMINISTRATIVO) {
         if (!formData.value.fecha_contratacion) errors.value.fecha_contratacion = 'Fecha de contratación requerida';
         else delete errors.value.fecha_contratacion;
       }
@@ -732,8 +711,6 @@ const handleRutInput = (event: Event) => {
 // Cuando cambia el rol, limpiar errores y algunos campos no relevantes
 const onRoleChange = () => {
   // limpiar errores de campos específicos
-  delete errors.value.titulo_profesional;
-  delete errors.value.especialidad;
   delete errors.value.fecha_contratacion;
   delete errors.value.fecha_nacimiento;
   delete errors.value.direccion;
@@ -745,9 +722,6 @@ const onRoleChange = () => {
 
   // resetear campos que no aplican
   if (formData.value.role !== UserRole.PROFESOR) {
-    formData.value.titulo_profesional = undefined;
-    formData.value.especialidad = undefined;
-    formData.value.fecha_contratacion = undefined;
     formData.value.telefono = '';
     formData.value.direccion = undefined;
     formData.value.comuna = undefined;
@@ -819,9 +793,6 @@ const handleSubmit = async () => {
   // Validaciones específicas según rol
   if (formData.value.role === UserRole.PROFESOR) {
     validateField('telefono');
-    validateField('titulo_profesional');
-    validateField('especialidad');
-    validateField('fecha_contratacion');
     // direccion y comuna son opcionales, no es necesario validarlos
   }
   if (formData.value.role === UserRole.ESTUDIANTE_APODERADO) {
@@ -856,9 +827,8 @@ const resetForm = () => {
     nombre_completo: '',
     rut: '',
     colegio_id: '',
-    telefono: '',
-    titulo_profesional: undefined,
-    especialidad: undefined,
+    telefono: ''
+  ,
     fecha_contratacion: undefined,
     fecha_nacimiento: undefined,
     direccion: undefined,

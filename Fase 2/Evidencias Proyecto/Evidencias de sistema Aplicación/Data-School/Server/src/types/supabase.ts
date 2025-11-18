@@ -241,6 +241,58 @@ export type Database = {
           },
         ]
       }
+      Anotaciones: {
+        Row: {
+          created_at: string
+          descripcion: string | null
+          estudiante_id: string
+          fecha: string
+          id: number
+          profesor_id: string | null
+          tipo_anotacion: string
+        }
+        Insert: {
+          created_at?: string
+          descripcion?: string | null
+          estudiante_id?: string
+          fecha: string
+          id?: number
+          profesor_id?: string | null
+          tipo_anotacion: string
+        }
+        Update: {
+          created_at?: string
+          descripcion?: string | null
+          estudiante_id?: string
+          fecha?: string
+          id?: number
+          profesor_id?: string | null
+          tipo_anotacion?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "Anotaciones_estudiante_id_fkey"
+            columns: ["estudiante_id"]
+            isOneToOne: false
+            referencedRelation: "Estudiante"
+            referencedColumns: ["estudiante_id"]
+          },
+          {
+            foreignKeyName: "Anotaciones_estudiante_id_fkey"
+            columns: ["estudiante_id"]
+            isOneToOne: false
+            referencedRelation: "vista_resumen_estudiantes"
+            referencedColumns: ["estudiante_id"]
+          },
+          {
+            foreignKeyName: "Anotaciones_profesor_id_fkey"
+            columns: ["profesor_id"]
+            isOneToOne: false
+            referencedRelation: "Profesor"
+            referencedColumns: ["profesor_id"]
+          },
+        ]
+      }
       Area: {
         Row: {
           area_id: number
@@ -349,6 +401,7 @@ export type Database = {
           descripcion: string | null
           estado_activo: boolean | null
           horas_semanales: number | null
+          materia_id: number | null
           nombre: string
           periodo: string
           profesor_id: string
@@ -365,6 +418,7 @@ export type Database = {
           descripcion?: string | null
           estado_activo?: boolean | null
           horas_semanales?: number | null
+          materia_id?: number | null
           nombre: string
           periodo: string
           profesor_id: string
@@ -381,6 +435,7 @@ export type Database = {
           descripcion?: string | null
           estado_activo?: boolean | null
           horas_semanales?: number | null
+          materia_id?: number | null
           nombre?: string
           periodo?: string
           profesor_id?: string
@@ -395,6 +450,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "Curso"
             referencedColumns: ["curso_id"]
+          },
+          {
+            foreignKeyName: "Asignatura_materia_id_fkey"
+            columns: ["materia_id"]
+            isOneToOne: false
+            referencedRelation: "Materia"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "Asignatura_profesor_id_fkey"
@@ -496,7 +558,7 @@ export type Database = {
           auditoria_id: number
           datos_anteriores: Json | null
           datos_nuevos: Json | null
-          ip_address: unknown | null
+          ip_address: unknown
           registro_id: string | null
           tabla_afectada: string
           timestamp_accion: string | null
@@ -508,7 +570,7 @@ export type Database = {
           auditoria_id?: number
           datos_anteriores?: Json | null
           datos_nuevos?: Json | null
-          ip_address?: unknown | null
+          ip_address?: unknown
           registro_id?: string | null
           tabla_afectada: string
           timestamp_accion?: string | null
@@ -520,7 +582,7 @@ export type Database = {
           auditoria_id?: number
           datos_anteriores?: Json | null
           datos_nuevos?: Json | null
-          ip_address?: unknown | null
+          ip_address?: unknown
           registro_id?: string | null
           tabla_afectada?: string
           timestamp_accion?: string | null
@@ -726,7 +788,7 @@ export type Database = {
           created_at: string | null
           curso_id: string
           generacion: number
-          nivel: number
+          nivel_id: number
           nombre: string
           updated_at: string | null
         }
@@ -736,7 +798,7 @@ export type Database = {
           created_at?: string | null
           curso_id?: string
           generacion: number
-          nivel: number
+          nivel_id: number
           nombre: string
           updated_at?: string | null
         }
@@ -746,14 +808,14 @@ export type Database = {
           created_at?: string | null
           curso_id?: string
           generacion?: number
-          nivel?: number
+          nivel_id?: number
           nombre?: string
           updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "Curso_nivel_fkey"
-            columns: ["nivel"]
+            foreignKeyName: "Curso_nivel_id_fkey"
+            columns: ["nivel_id"]
             isOneToOne: false
             referencedRelation: "NivelCurso"
             referencedColumns: ["id"]
@@ -863,6 +925,52 @@ export type Database = {
           },
         ]
       }
+      Encuesta_Estudiante: {
+        Row: {
+          created_at: string
+          estudiante_id: string
+          fecha_respuesta: string | null
+          id_encuesta: string
+          respuesta_encuesta: Json
+        }
+        Insert: {
+          created_at?: string
+          estudiante_id?: string
+          fecha_respuesta?: string | null
+          id_encuesta: string
+          respuesta_encuesta: Json
+        }
+        Update: {
+          created_at?: string
+          estudiante_id?: string
+          fecha_respuesta?: string | null
+          id_encuesta?: string
+          respuesta_encuesta?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "Encuesta_Estudiante_estudiante_id_fkey"
+            columns: ["estudiante_id"]
+            isOneToOne: false
+            referencedRelation: "Estudiante"
+            referencedColumns: ["estudiante_id"]
+          },
+          {
+            foreignKeyName: "Encuesta_Estudiante_estudiante_id_fkey"
+            columns: ["estudiante_id"]
+            isOneToOne: false
+            referencedRelation: "vista_resumen_estudiantes"
+            referencedColumns: ["estudiante_id"]
+          },
+          {
+            foreignKeyName: "Encuesta_Estudiante_id_encuesta_fkey"
+            columns: ["id_encuesta"]
+            isOneToOne: false
+            referencedRelation: "Encuesta"
+            referencedColumns: ["encuesta_id"]
+          },
+        ]
+      }
       Encuesta_Evaluacion: {
         Row: {
           contenido: Json | null
@@ -891,6 +999,27 @@ export type Database = {
             referencedColumns: ["encuesta_id"]
           },
         ]
+      }
+      Especialidad: {
+        Row: {
+          created_at: string
+          id: number
+          nombre_especialidad: string
+          tipo_especialidad: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          nombre_especialidad: string
+          tipo_especialidad: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          nombre_especialidad?: string
+          tipo_especialidad?: string
+        }
+        Relationships: []
       }
       EstadoMatricula: {
         Row: {
@@ -1256,6 +1385,27 @@ export type Database = {
           },
         ]
       }
+      Materia: {
+        Row: {
+          created_at: string
+          descripcion: string | null
+          id: number
+          nombre: string
+        }
+        Insert: {
+          created_at?: string
+          descripcion?: string | null
+          id?: number
+          nombre: string
+        }
+        Update: {
+          created_at?: string
+          descripcion?: string | null
+          id?: number
+          nombre?: string
+        }
+        Relationships: []
+      }
       Matricula: {
         Row: {
           created_at: string | null
@@ -1485,6 +1635,45 @@ export type Database = {
           },
         ]
       }
+      Profesor_especialidad: {
+        Row: {
+          certificado_url: string | null
+          created_at: string
+          especialidad_id: number
+          fecha_certificacion: string | null
+          profesor_id: string
+        }
+        Insert: {
+          certificado_url?: string | null
+          created_at?: string
+          especialidad_id: number
+          fecha_certificacion?: string | null
+          profesor_id?: string
+        }
+        Update: {
+          certificado_url?: string | null
+          created_at?: string
+          especialidad_id?: number
+          fecha_certificacion?: string | null
+          profesor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "Profesor_especialidad_especialidad_id_fkey"
+            columns: ["especialidad_id"]
+            isOneToOne: false
+            referencedRelation: "Especialidad"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "Profesor_especialidad_profesor_id_fkey"
+            columns: ["profesor_id"]
+            isOneToOne: false
+            referencedRelation: "Profesor"
+            referencedColumns: ["profesor_id"]
+          },
+        ]
+      }
       ResultadoEvaluacion: {
         Row: {
           created_at: string | null
@@ -1599,6 +1788,8 @@ export type Database = {
           profesor_encargado_id: string | null
           sala_id: string | null
           taller_id: string
+          fecha_inicio: string | null
+          fecha_termino: string | null
         }
         Insert: {
           capacidad_maxima?: number | null
@@ -1611,6 +1802,8 @@ export type Database = {
           profesor_encargado_id?: string | null
           sala_id?: string | null
           taller_id: string
+          fecha_inicio?: string | null
+          fecha_termino?: string | null
         }
         Update: {
           capacidad_maxima?: number | null
@@ -1623,6 +1816,8 @@ export type Database = {
           profesor_encargado_id?: string | null
           sala_id?: string | null
           taller_id?: string
+          fecha_inicio?: string | null
+          fecha_termino?: string | null
         }
         Relationships: [
           {
@@ -1922,18 +2117,31 @@ export type Database = {
         }
         Returns: number
       }
-      format_rut: {
-        Args: { rut_input: string }
-        Returns: string
-      }
+      format_rut: { Args: { rut_input: string }; Returns: string }
       get_current_user_info: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           colegio_id: string
           email: string
           profile_completed: boolean
           role: Database["public"]["Enums"]["user_role_enum"]
           user_id: string
+        }[]
+      }
+      get_especialidades: {
+        Args: never
+        Returns: {
+          id: number
+          nombre_especialidad: string
+          tipo_especialidad: string
+        }[]
+      }
+      get_profesiones: {
+        Args: never
+        Returns: {
+          descripcion: string
+          id_profesion: number
+          nombre: string
         }[]
       }
       obtener_horario_estudiante: {
@@ -1958,14 +2166,8 @@ export type Database = {
           promedio: number
         }[]
       }
-      user_has_role: {
-        Args: { required_role: string }
-        Returns: boolean
-      }
-      validate_rut: {
-        Args: { rut_input: string }
-        Returns: boolean
-      }
+      user_has_role: { Args: { required_role: string }; Returns: boolean }
+      validate_rut: { Args: { rut_input: string }; Returns: boolean }
     }
     Enums: {
       dirigida_a_encuesta_enum:

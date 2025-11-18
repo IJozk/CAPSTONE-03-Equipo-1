@@ -1,5 +1,4 @@
 <template>
-  <DashboardLayout role="ESTUDIANTE_APODERADO">
     <div class="space-y-6">
       <!-- Page Header -->
       <div class="flex justify-between items-center">
@@ -52,7 +51,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm text-gray-600">Asistencia</p>
-              <p class="text-3xl font-bold text-gray-900 mt-1">{{ stats.asistencia || 0 }}%</p>
+              <p class="text-3xl font-bold text-gray-900 mt-1">{{ stats.asistencia }}%</p>
             </div>
             <div class="bg-green-100 rounded-full p-3">
               <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -67,7 +66,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm text-gray-600">Asignaturas</p>
-              <p class="text-3xl font-bold text-gray-900 mt-1">{{ stats.totalAsignaturas || 0 }}</p>
+              <p class="text-3xl font-bold text-gray-900 mt-1">{{ stats.totalAsignaturas }}</p>
             </div>
             <div class="bg-purple-100 rounded-full p-3">
               <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -82,7 +81,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm text-gray-600">Próximas Eval.</p>
-              <p class="text-3xl font-bold text-gray-900 mt-1">{{ stats.proximasEvaluaciones || 0 }}</p>
+              <p class="text-3xl font-bold text-gray-900 mt-1">{{ stats.proximasEvaluaciones }}</p>
             </div>
             <div class="bg-yellow-100 rounded-full p-3">
               <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -98,19 +97,19 @@
         <!-- Horario Semanal -->
         <div class="bg-white rounded-lg shadow">
           <div class="p-6 border-b border-gray-200">
-            <h2 class="text-xl font-bold text-gray-900">Mi Horario</h2>
+            <h2 class="text-xl font-bold text-gray-900">Mi Horario de Hoy</h2>
           </div>
           <div class="p-6">
             <div v-if="loading" class="text-center py-8">
               <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
             </div>
-            <div v-else-if="horario.length === 0" class="text-center py-8 text-gray-500">
-              No hay horario disponible
+            <div v-else-if="horarioHoy.length === 0" class="text-center py-8 text-gray-500">
+              No hay clases programadas para hoy
             </div>
             <div v-else class="space-y-3">
               <div
-                v-for="clase in horario"
-                :key="clase.id"
+                v-for="(clase, index) in horarioHoy"
+                :key="index"
                 class="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <div class="flex justify-between items-start">
@@ -197,19 +196,42 @@
         </div>
       </div>
     </div>
-  </DashboardLayout>
+
+    <!-- Modal de Encuesta -->
+    <SurveyModal
+      v-if="showSurveyModal"
+      :encuesta="encuestaStore.primeraEncuestaPendiente"
+      @close="closeSurveyModal"
+      @submitted="closeSurveyModal"
+    />
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/store/auth.store';
-import DashboardLayout from '@/layouts/DashboardLayout.vue';
+import { useStudentStore } from '@/store/student.store';
+import { useEncuestaEstudianteStore } from '@/store/encuestaEstudiante.store';
+import horarioService from '@/services/horario.service';
+import evaluacionService from '@/services/evaluacion.service';
+import asistenciaService from '@/services/attendance.service';
+import asignaturaService from '@/services/asignatura.service';
+import SurveyModal from '@/components/surveys/SurveyModal.vue';
 
 const authStore = useAuthStore();
+const studentStore = useStudentStore();
+const encuestaStore = useEncuestaEstudianteStore();
 const loading = ref(false);
+const showSurveyModal = ref(false);
 
-const studentName = computed(() => authStore.user?.nombre_completo || 'Estudiante');
+const studentName = computed(() =>
+  authStore.user?.estudiante_profile?.nombre_completo ||
+  authStore.user?.nombre_completo ||
+  'Estudiante'
+);
 
+const estudianteId = computed(() => authStore.user?.estudiante_profile?.estudiante_id);
+
+// Stats computados desde datos reales
 const stats = ref({
   promedioGeneral: 0,
   asistencia: 0,
@@ -217,23 +239,120 @@ const stats = ref({
   proximasEvaluaciones: 0
 });
 
-const horario = ref<any[]>([]);
+// Horario del día actual
+const horarioHoy = ref<any[]>([]);
+
+// Notas recientes
 const notasRecientes = ref<any[]>([]);
+
+// Asignaturas con promedio
 const asignaturas = ref<any[]>([]);
 
-const refreshDashboard = async () => {
+/**
+ * Carga todos los datos del dashboard
+ */
+const loadDashboardData = async () => {
+  if (!estudianteId.value) {
+    console.warn('No se encontró el ID del estudiante');
+    return;
+  }
+
   loading.value = true;
+
   try {
-    // TODO: Implementar llamadas a API
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Cargar datos en paralelo
+    const [notasData, horarioData, asistenciaData, asignaturasData] = await Promise.all([
+      evaluacionService.getNotasEstudiante(estudianteId.value).catch(() => []),
+      horarioService.getHorarioEstudiante(estudianteId.value, '2025-1').catch(() => []),
+      asistenciaService.getAttendance().catch(() => []),
+      asignaturaService.getAll().catch(() => [])
+    ]);
+
+    // Procesar notas y calcular promedio general
+    asignaturas.value = notasData.map(asig => ({
+      id: asig.asignatura_id,
+      nombre: asig.nombre_asignatura,
+      profesor: asig.profesor_nombre,
+      promedio: asig.promedio
+    }));
+
+    // Calcular promedio general
+    if (notasData.length > 0) {
+      const sumaPromedios = notasData.reduce((acc, asig) => acc + asig.promedio, 0);
+      stats.value.promedioGeneral = sumaPromedios / notasData.length;
+    }
+
+    stats.value.totalAsignaturas = asignaturasData.length;
+
+    // Procesar horario del día actual
+    const diaActual = new Date().getDay(); // 0 = Domingo, 1 = Lunes, etc.
+    const horarioDelDia = horarioData.filter((h: any) => h.dia_semana === diaActual);
+    horarioHoy.value = horarioDelDia.slice(0, 5).map((h: any) => ({
+      asignatura: h.asignatura,
+      profesor: h.profesor,
+      horario: `${h.hora_inicio} - ${h.hora_termino}`,
+      sala: h.sala
+    }));
+
+    // Procesar notas recientes (últimas 3)
+    const todasLasNotas = notasData.flatMap(asig =>
+      asig.notas.map(nota => ({
+        id: nota.nota_id,
+        evaluacion: nota.evaluacion_nombre,
+        asignatura: asig.nombre_asignatura,
+        nota: nota.nota,
+        fecha: new Date(nota.fecha).toLocaleDateString('es-CL')
+      }))
+    );
+
+    // Ordenar por fecha y tomar las 3 más recientes
+    todasLasNotas.sort((a, b) => {
+      const dateA = a.fecha.split('/').reverse().join('');
+      const dateB = b.fecha.split('/').reverse().join('');
+      return dateB.localeCompare(dateA);
+    });
+
+    notasRecientes.value = todasLasNotas.slice(0, 3);
+
+    // Calcular porcentaje de asistencia
+    if (asistenciaData.length > 0) {
+      const presentes = asistenciaData.filter((a: any) => a.presente).length;
+      stats.value.asistencia = Math.round((presentes / asistenciaData.length) * 100);
+    }
+
+    // Obtener evaluaciones próximas (simulado por ahora)
+    stats.value.proximasEvaluaciones = 0;
+
   } catch (error) {
-    console.error('Error refreshing dashboard:', error);
+    console.error('Error loading dashboard data:', error);
   } finally {
     loading.value = false;
   }
 };
 
-onMounted(() => {
-  refreshDashboard();
+const refreshDashboard = async () => {
+  await loadDashboardData();
+};
+
+const checkPendingSurveys = async () => {
+  try {
+    if (estudianteId.value) {
+      await encuestaStore.fetchEncuestasPendientes(estudianteId.value);
+      if (encuestaStore.tieneEncuestasPendientes) {
+        showSurveyModal.value = true;
+      }
+    }
+  } catch (error) {
+    console.error('Error checking surveys:', error);
+  }
+};
+
+const closeSurveyModal = () => {
+  showSurveyModal.value = false;
+};
+
+onMounted(async () => {
+  await loadDashboardData();
+  await checkPendingSurveys();
 });
 </script>

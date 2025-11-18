@@ -94,6 +94,13 @@ export interface Attendance {
   };
 }
 
+export interface Profesion{
+  id_profesion: number;
+  created_at: string;
+  nombre: string;
+  descripcion: string;
+}
+
 export type ObservationType = 'positiva' | 'negativa';
 export type ObservationCategory = 'conducta' | 'academico' | 'participacion' | 'asistencia' | 'otro';
 
@@ -170,9 +177,6 @@ export interface Profesor {
   profesor_id: string;
   nombre_completo: string;
   rut: string;
-  titulo_profesional: string;
-  especialidad: string;
-  fecha_contratacion: string; // ISO date
   estado_activo: boolean;
   telefono?: string;
   direccion?: string;
@@ -236,9 +240,6 @@ export interface Teacher {
   profesor_id: string;
   nombre_completo: string;
   rut: string;
-  titulo_profesional: string;
-  especialidad: string;
-  fecha_contratacion: string; // ISO date
   estado_activo: boolean;
   telefono?: string;
   direccion?: string;

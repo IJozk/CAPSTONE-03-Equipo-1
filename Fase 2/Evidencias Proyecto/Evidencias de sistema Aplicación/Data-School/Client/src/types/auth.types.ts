@@ -18,23 +18,27 @@ export interface User {
   admin_profile?: {
     nombre_completo: string;
     rut: string;
+    cargo: string;
+    colegio_id: string;
     telefono?: string;
     direccion?: string;
     genero?: string;
     fecha_nacimiento?: string; // ISO date
   };
   profesor_profile?: {
+    profesor_id: string;
     nombre_completo: string;
     rut: string;
-    titulo_profesional: string;
+    titulo_profesional?: string;
     especialidad?: string;
-    fecha_contratacion: string; // ISO date
+    fecha_contratacion?: string; // ISO date
     telefono?: string;
     direccion?: string;
     genero?: string;
     fecha_nacimiento?: string; // ISO date
   };
   estudiante_profile?: {
+    estudiante_id: string;
     nombre_completo: string;
     rut: string;
     fecha_nacimiento: string; // ISO date
