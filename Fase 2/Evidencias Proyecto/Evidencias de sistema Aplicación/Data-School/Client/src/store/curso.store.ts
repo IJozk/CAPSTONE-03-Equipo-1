@@ -6,7 +6,8 @@ import type {
   UpdateCursoDTO,
   FilterCursoDTO,
   CursoState,
-  CursoStats
+  CursoStats,
+  AsignarProfesorJefeDTO
 } from '@/types/curso.types'
 
 export const useCursoStore = defineStore('curso', {
@@ -220,6 +221,54 @@ export const useCursoStore = defineStore('curso', {
      */
     clearCurrent() {
       this.currentCurso = null
+    },
+
+    /**
+     * Asignar o remover profesor jefe a un curso
+     */
+    async asignarProfesorJefe(id: string, data: AsignarProfesorJefeDTO) {
+      this.loading = true
+      this.error = null
+
+      try {
+        const updatedCurso = await cursoService.asignarProfesorJefe(id, data)
+
+        // Actualizar en el estado
+        const index = this.cursos.findIndex(c => c.curso_id === id)
+        if (index !== -1) {
+          this.cursos[index] = updatedCurso
+        }
+
+        if (this.currentCurso?.curso_id === id) {
+          this.currentCurso = updatedCurso
+        }
+
+        return updatedCurso
+      } catch (error: any) {
+        this.error = error.message
+        throw error
+      } finally {
+        this.loading = false
+      }
+    },
+
+    /**
+     * Obtener cursos donde el profesor autenticado es profesor jefe
+     */
+    async fetchMisCursosComoProfesorJefe() {
+      this.loading = true
+      this.error = null
+
+      try {
+        const cursos = await cursoService.getMisCursosComoProfesorJefe()
+        this.cursos = cursos
+        return cursos
+      } catch (error: any) {
+        this.error = error.message
+        throw error
+      } finally {
+        this.loading = false
+      }
     }
   }
 })

@@ -1,6 +1,13 @@
 // Tipos para Cursos
 import { Nivel } from './utils.types'
 
+export interface ProfesorJefe {
+  profesor_id: string
+  nombre_completo: string
+  rut: string
+  telefono: string
+}
+
 export interface Curso {
   curso_id: string
   nombre: string
@@ -8,9 +15,11 @@ export interface Curso {
   anio_academico: number
   generacion: number
   capacidad_maxima?: number | null
+  profesor_jefe_id?: string | null
   created_at?: string | null
   updated_at?: string | null
   nivel_obj: Nivel
+  profesor_jefe?: ProfesorJefe
 }
 
 /**
@@ -27,6 +36,7 @@ export interface CreateCursoDTO {
   anio_academico: number
   generacion: number
   capacidad_maxima?: number | null
+  profesor_jefe_id?: string | null
 }
 
 export interface UpdateCursoDTO {
@@ -35,6 +45,11 @@ export interface UpdateCursoDTO {
   anio_academico?: number
   generacion?: number
   capacidad_maxima?: number | null
+  profesor_jefe_id?: string | null
+}
+
+export interface AsignarProfesorJefeDTO {
+  profesor_jefe_id: string | null
 }
 
 export interface FilterCursoDTO {
