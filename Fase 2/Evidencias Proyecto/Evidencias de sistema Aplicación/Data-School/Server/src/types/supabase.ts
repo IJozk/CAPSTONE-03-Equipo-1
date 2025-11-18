@@ -790,6 +790,7 @@ export type Database = {
           generacion: number
           nivel_id: number
           nombre: string
+          profesor_jefe_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -800,6 +801,7 @@ export type Database = {
           generacion: number
           nivel_id: number
           nombre: string
+          profesor_jefe_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -810,6 +812,7 @@ export type Database = {
           generacion?: number
           nivel_id?: number
           nombre?: string
+          profesor_jefe_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -819,6 +822,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "NivelCurso"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "Curso_profesor_jefe_id_fkey"
+            columns: ["profesor_jefe_id"]
+            isOneToOne: false
+            referencedRelation: "Profesor"
+            referencedColumns: ["profesor_id"]
           },
         ]
       }
@@ -997,6 +1007,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "Encuesta"
             referencedColumns: ["encuesta_id"]
+          },
+          {
+            foreignKeyName: "Encuesta_Evaluacion_resultado_id_fkey"
+            columns: ["resultado_id"]
+            isOneToOne: true
+            referencedRelation: "ResultadoEvaluacion"
+            referencedColumns: ["resultado_id"]
           },
         ]
       }
@@ -1783,6 +1800,8 @@ export type Database = {
           created_at: string | null
           descripcion: string | null
           estado_activo: boolean | null
+          fecha_inicio: string | null
+          fecha_termino: string | null
           horario: string | null
           nombre: string
           profesor_encargado_id: string | null
@@ -1795,6 +1814,8 @@ export type Database = {
           created_at?: string | null
           descripcion?: string | null
           estado_activo?: boolean | null
+          fecha_inicio?: string | null
+          fecha_termino?: string | null
           horario?: string | null
           nombre: string
           profesor_encargado_id?: string | null
@@ -1807,6 +1828,8 @@ export type Database = {
           created_at?: string | null
           descripcion?: string | null
           estado_activo?: boolean | null
+          fecha_inicio?: string | null
+          fecha_termino?: string | null
           horario?: string | null
           nombre?: string
           profesor_encargado_id?: string | null
