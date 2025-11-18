@@ -111,7 +111,7 @@ export class TallerController {
             }
 
             if (profesor_encargado_id) {
-                query = query.eq('profesor_encargado_id', profesor_encargado_id)
+                query = query.eq('profesor_encargado_id', String(profesor_encargado_id))
             }
 
             query = query.order('nombre', { ascending: true })
@@ -198,7 +198,7 @@ export class TallerController {
                 .eq('taller_id', id)
 
             if (estado) {
-                query = query.eq('estado', estado)
+                query = query.eq('estado', estado as any)
             }
 
             query = query.order('fecha_inscripcion', { ascending: false })
