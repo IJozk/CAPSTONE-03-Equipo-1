@@ -405,6 +405,7 @@ import { useTeacherStore } from '@/store/teacher.store';
 import { useAuthStore } from '@/store/auth.store';
 import anotacionesService, { type Anotacion, type CreateAnotacionDTO } from '@/services/anotaciones.service';
 import teacherService from '@/services/teachertools.service';
+import apiClient from '@/services/api.config';
 import type { Student } from '@/types/teacher.types';
 
 const teacherStore = useTeacherStore();
@@ -518,9 +519,11 @@ const closeAnotacionModal = () => {
 const handleCreateAnotacion = async () => {
   submitting.value = true;
   try {
-    const profesorId = authStore.user?.profesor_profile?.profesor_id;
+    // Obtener profesor_id usando el mismo método que otros servicios
+    const profesorId = await getProfesorId();
 
     if (!profesorId) {
+      console.error('No se pudo obtener profesor_id');
       alert('Error: No se pudo obtener el ID del profesor');
       return;
     }
@@ -545,10 +548,27 @@ const handleCreateAnotacion = async () => {
   }
 };
 
-const viewStudentAnotaciones = (student: Student) => {
+const viewStudentAnotaciones = async (student: Student) => {
   selectedStudent.value = student;
-  studentAnotaciones.value = anotaciones.value.filter(a => a.estudiante_id === student.estudiante_id);
-  showHistorialModal.value = true;
+  loading.value = true;
+
+  try {
+    console.log('🔍 Cargando anotaciones para estudiante:', student.estudiante_id, student.nombre_completo);
+
+    // Cargar todas las anotaciones del estudiante desde el API
+    const anotacionesCargadas = await anotacionesService.getByEstudiante(student.estudiante_id);
+
+    console.log('✅ Anotaciones cargadas:', anotacionesCargadas.length);
+    console.log('📋 Datos:', anotacionesCargadas);
+
+    studentAnotaciones.value = anotacionesCargadas;
+    showHistorialModal.value = true;
+  } catch (error) {
+    console.error('❌ Error cargando anotaciones del estudiante:', error);
+    alert('Error al cargar el historial de anotaciones');
+  } finally {
+    loading.value = false;
+  }
 };
 
 const closeHistorialModal = () => {
@@ -636,7 +656,56 @@ const formatDate = (dateString: string) => {
   });
 };
 
+// Helper: Obtener profesor_id del usuario actual
+const getProfesorId = async (): Promise<string | null> => {
+  try {
+    // Primero intentar desde authStore
+    if (authStore.user?.profesor_profile?.profesor_id) {
+      return authStore.user.profesor_profile.profesor_id;
+    }
+
+    // Si no está en authStore, intentar desde teacherStore.dashboard
+    if (teacherStore.dashboard?.profesor?.profesor_id) {
+      return teacherStore.dashboard.profesor.profesor_id;
+    }
+
+    // Si tampoco está en dashboard, obtenerlo desde el API usando apiClient
+    const userStr = localStorage.getItem('auth_user');
+    if (!userStr) {
+      console.error('No hay usuario autenticado');
+      return null;
+    }
+
+    const user = JSON.parse(userStr);
+    console.log('Buscando profesor para user_id:', user.id);
+
+    // Hacer petición al endpoint de profesores usando apiClient
+    const response = await apiClient.get('/profesores');
+    const profesores = response.data;
+
+    console.log('Profesores obtenidos:', profesores.length);
+
+    const profesor = profesores.find((p: any) => p.user_id === user.id);
+
+    if (profesor) {
+      console.log('Profesor encontrado:', profesor.profesor_id);
+      return profesor.profesor_id;
+    } else {
+      console.error('No se encontró profesor para user_id:', user.id);
+      return null;
+    }
+  } catch (error) {
+    console.error('Error obteniendo profesor_id:', error);
+    return null;
+  }
+};
+
 onMounted(async () => {
+  // Cargar dashboard si no está cargado (necesario para obtener profesor_id)
+  if (!teacherStore.dashboard) {
+    await teacherStore.fetchDashboard();
+  }
+
   if (teacherStore.subjects.length === 0) {
     await teacherStore.fetchMySubjects();
   }

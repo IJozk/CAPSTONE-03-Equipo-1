@@ -8,7 +8,13 @@ export const getAnotacionesByEstudiante = async (req: Request, res: Response) =>
   try {
     const { estudiante_id } = req.params;
 
-    const { data, error } = await supabase
+    console.log('🔍 Buscando anotaciones para estudiante:', estudiante_id);
+
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin client not configured');
+    }
+
+    const { data, error } = await supabaseAdmin
       .from('Anotaciones')
       .select(`
         *,
@@ -18,11 +24,16 @@ export const getAnotacionesByEstudiante = async (req: Request, res: Response) =>
       .eq('estudiante_id', estudiante_id)
       .order('fecha', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Error en query:', error);
+      throw error;
+    }
 
-    res.json(data);
+    console.log('✅ Anotaciones encontradas:', data?.length || 0);
+
+    res.json(data || []);
   } catch (error: any) {
-    console.error('Error fetching anotaciones by estudiante:', error);
+    console.error('❌ Error fetching anotaciones by estudiante:', error);
     res.status(500).json({ error: error.message });
   }
 };

@@ -211,6 +211,16 @@
         </div>
       </div>
 
+      <!-- Error Message -->
+      <div v-if="error" class="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
+        <div class="flex items-center">
+          <svg class="w-5 h-5 text-red-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          </svg>
+          <p class="text-sm text-red-800 font-medium">{{ error }}</p>
+        </div>
+      </div>
+
       <!-- Success Message -->
       <div v-if="successMessage" class="mt-6 bg-green-50 border border-green-200 rounded-lg p-4">
         <div class="flex items-center">
@@ -291,11 +301,25 @@ const formatDate = (date: string): string => {
   });
 };
 
-// Calcular nota automáticamente
+// Validar y calcular nota automáticamente
 const calculateGrade = (studentId: string) => {
   const data = gradeData.value[studentId];
+
   if (data.puntaje !== null && currentEvaluation.value) {
     const maxScore = currentEvaluation.value.puntaje_maximo;
+
+    // VALIDACIÓN CRÍTICA 1: Puntaje no puede ser negativo
+    if (data.puntaje < 0) {
+      data.puntaje = 0;
+      console.warn('Puntaje negativo no permitido. Ajustado a 0.');
+    }
+
+    // VALIDACIÓN CRÍTICA 2: Puntaje no puede exceder el máximo
+    if (data.puntaje > maxScore) {
+      data.puntaje = maxScore;
+      console.warn(`Puntaje excede el máximo (${maxScore}). Ajustado al máximo.`);
+    }
+
     data.nota = teacherService.calculateGrade(data.puntaje, maxScore);
     data.porcentaje = teacherService.calculatePercentage(data.puntaje, maxScore);
   } else {
@@ -401,6 +425,7 @@ const saveIndividualGrade = async (studentId: string) => {
 
   saving.value = true;
   successMessage.value = '';
+  error.value = '';
 
   try {
     const payload = {
@@ -417,8 +442,12 @@ const saveIndividualGrade = async (studentId: string) => {
 
     successMessage.value = 'Nota guardada exitosamente';
     setTimeout(() => successMessage.value = '', 3000);
-  } catch (error) {
-    console.error('Error saving grade:', error);
+  } catch (err: any) {
+    console.error('Error saving grade:', err);
+    // Mostrar mensaje de error específico del backend
+    const errorMsg = err.response?.data?.message || 'Error al guardar la nota';
+    error.value = errorMsg;
+    setTimeout(() => error.value = '', 5000);
   } finally {
     saving.value = false;
   }
@@ -428,6 +457,7 @@ const saveIndividualGrade = async (studentId: string) => {
 const saveAllGrades = async () => {
   saving.value = true;
   successMessage.value = '';
+  error.value = '';
 
   try {
     const promises = Object.entries(gradeData.value)
@@ -449,8 +479,12 @@ const saveAllGrades = async () => {
     await onEvaluationChange();
 
     setTimeout(() => successMessage.value = '', 3000);
-  } catch (error) {
-    console.error('Error saving all grades:', error);
+  } catch (err: any) {
+    console.error('Error saving all grades:', err);
+    // Mostrar mensaje de error específico del backend
+    const errorMsg = err.response?.data?.message || 'Error al guardar las notas';
+    error.value = errorMsg;
+    setTimeout(() => error.value = '', 5000);
   } finally {
     saving.value = false;
   }
