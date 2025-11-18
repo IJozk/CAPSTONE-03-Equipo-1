@@ -275,7 +275,7 @@ const loadCursoStudents = async () => {
 
 const viewStudentProfile = (estudiante: Estudiante) => {
   router.push({
-    name: 'teacher-student-profile',
+    name: 'TeacherStudentProfile',
     params: { id: estudiante.estudiante_id }
   })
 }
