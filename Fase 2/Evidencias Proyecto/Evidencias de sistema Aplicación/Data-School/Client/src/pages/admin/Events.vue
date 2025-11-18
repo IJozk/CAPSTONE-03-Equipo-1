@@ -212,17 +212,7 @@
                 />
               </div>
 
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
-                  Descripción
-                </label>
-                <textarea
-                  v-model="formData.descripcion"
-                  rows="3"
-                  placeholder="Descripción del evento"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                ></textarea>
-              </div>
+              <!-- 🔥 Se eliminó el campo Descripción -->
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -330,6 +320,7 @@
     </div>
   </AdminLayout>
 </template>
+
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
