@@ -475,7 +475,7 @@ export class CursoController {
         .eq('curso_id', id)
         .select(`
           *,
-          profesor_jefe:Profesor(profesor_id, nombre_completo, rut, email)
+          profesor_jefe:Profesor(profesor_id, nombre_completo, rut, telefono)
         `)
         .single()
 
@@ -506,22 +506,37 @@ export class CursoController {
    */
   async getMisCursosComoProfesorJefe(req: Request, res: Response) {
     try {
-      const profesorId = (req as any).user?.profesor_profile?.profesor_id
+      const userId = (req as any).userId
 
-      if (!profesorId) {
-        return res.status(403).json({
-          error: 'No autorizado - perfil de profesor no encontrado'
+      if (!userId) {
+        return res.status(401).json({
+          error: 'No autenticado'
         })
       }
 
       const client = supabaseAdmin || supabase
+
+      // Primero obtener el profesor_id basado en el user_id
+      const { data: profesor, error: profesorError } = await client
+        .from('Profesor')
+        .select('profesor_id')
+        .eq('user_id', userId)
+        .single()
+
+      if (profesorError || !profesor) {
+        return res.status(404).json({
+          error: 'Perfil de profesor no encontrado'
+        })
+      }
+
+      // Ahora obtener los cursos donde es profesor jefe
       const { data, error } = await client
         .from('Curso')
         .select(`
           *,
-          nivel:NivelCurso(id, nombre, nivel, numero)
+          nivel_obj:NivelCurso!Curso_nivel_id_fkey(id, nombre, nivel, numero)
         `)
-        .eq('profesor_jefe_id', profesorId)
+        .eq('profesor_jefe_id', profesor.profesor_id)
         .order('nivel_id', { ascending: true })
 
       if (error) {

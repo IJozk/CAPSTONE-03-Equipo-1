@@ -5,7 +5,8 @@ import type {
   UpdateCursoDTO,
   FilterCursoDTO,
   CursoResponse,
-  CursoStats
+  CursoStats,
+  AsignarProfesorJefeDTO
 } from '@/types/curso.types'
 
 class CursoService {
@@ -99,6 +100,30 @@ class CursoService {
       await apiClient.delete(`/cursos/${id}`)
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Error al eliminar curso')
+    }
+  }
+
+  /**
+   * Asignar o remover profesor jefe a un curso
+   */
+  async asignarProfesorJefe(id: string, data: AsignarProfesorJefeDTO): Promise<Curso> {
+    try {
+      const response = await apiClient.put<CursoResponse>(`/cursos/${id}/profesor-jefe`, data)
+      return response.data.data as Curso
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Error al asignar profesor jefe')
+    }
+  }
+
+  /**
+   * Obtener cursos donde el profesor autenticado es profesor jefe
+   */
+  async getMisCursosComoProfesorJefe(): Promise<Curso[]> {
+    try {
+      const response = await apiClient.get<CursoResponse>('/cursos/mis-cursos-jefe')
+      return Array.isArray(response.data.data) ? response.data.data : [response.data.data]
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Error al obtener mis cursos como profesor jefe')
     }
   }
 }
