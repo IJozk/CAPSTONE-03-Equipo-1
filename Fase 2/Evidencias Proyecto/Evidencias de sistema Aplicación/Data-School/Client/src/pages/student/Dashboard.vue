@@ -240,7 +240,12 @@
                         'bg-gray-100 text-gray-800': !evento.tipo
                       }"
                     >
-                      {{ evento.tipo === 'evaluacion' ? 'Evaluación' : evento.tipo }}
+                      {{
+                        evento.tipo === 'evaluacion' ? 'Evaluación' :
+                        evento.tipo === 'evento' ? 'Evento' :
+                        evento.tipo === 'taller' ? 'Taller' :
+                        evento.tipo
+                      }}
                     </span>
                     <h3 class="font-semibold text-gray-900">{{ evento.titulo }}</h3>
                   </div>

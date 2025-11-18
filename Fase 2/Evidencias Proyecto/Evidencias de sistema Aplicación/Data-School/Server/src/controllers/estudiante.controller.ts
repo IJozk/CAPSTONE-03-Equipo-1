@@ -537,6 +537,32 @@ export class EstudianteController {
                 });
             }
 
+            // Agregar eventos generales (próximos 7 días)
+            const { data: eventosGenerales, error: eventosError } = await supabaseAdmin!
+                .from('Evento')
+                .select(`
+                    evento_id,
+                    nombre,
+                    lugar,
+                    fecha_inicio,
+                    fecha_fin
+                `)
+                .gte('fecha_inicio', hoy.toISOString().split('T')[0])
+                .lte('fecha_inicio', en7Dias.toISOString().split('T')[0])
+                .order('fecha_inicio', { ascending: true });
+
+            if (!eventosError && eventosGenerales && eventosGenerales.length > 0) {
+                eventosGenerales.forEach((ev: any) => {
+                    eventos.push({
+                        tipo: 'evento',
+                        titulo: ev.nombre,
+                        descripcion: ev.lugar ? `Lugar: ${ev.lugar}` : 'Evento escolar',
+                        fecha: ev.fecha_inicio,
+                        color: 'green' // Color distintivo para eventos
+                    });
+                });
+            }
+
             // Ordenar eventos por fecha
             eventos.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
 
