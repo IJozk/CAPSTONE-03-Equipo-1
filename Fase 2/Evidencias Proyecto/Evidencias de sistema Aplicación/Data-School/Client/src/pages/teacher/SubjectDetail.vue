@@ -291,7 +291,7 @@
 
           <!-- Tab: Asistencia -->
           <div v-if="activeTab === 'attendance'">
-            <div class="flex justify-between items-center mb-4">
+            <div class="flex justify-between items-center mb-6">
               <h2 class="text-xl font-bold text-gray-900">Resumen de Asistencia</h2>
               <button
                 @click="goToAttendance"
@@ -304,8 +304,17 @@
               </button>
             </div>
 
-            <!-- Students attendance table -->
+            <!-- Attendance Detail Table - Day by Day View -->
+            <div v-if="students.length > 0" class="mb-6">
+              <AttendanceDetailTable :asignaturaId="subjectId" />
+            </div>
+
+            <!-- Summary Stats Table -->
             <div v-if="students.length > 0" class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+              <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <h3 class="text-lg font-semibold text-gray-900">Resumen por Estudiante</h3>
+                <p class="text-sm text-gray-600 mt-1">Estadísticas generales de asistencia</p>
+              </div>
               <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                   <thead class="bg-gray-50">
@@ -558,6 +567,7 @@ import { ref, computed, onMounted, h } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useTeacherStore } from '@/store/teacher.store';
 import type { Subject } from '@/types/teacher.types';
+import AttendanceDetailTable from '@/components/teacher/AttendanceDetailTable.vue';
 
 const router = useRouter();
 const route = useRoute();
