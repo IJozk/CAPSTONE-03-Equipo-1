@@ -131,12 +131,15 @@ export interface Schedule {
 export type ClassStatus = 'en_progreso' | 'proxima' | 'completada';
 
 export interface TodayClass {
+  horario_id?: number;
+  asignatura_id?: string;
   hora_inicio: string;
   hora_termino: string;
   asignatura: string;
   curso: string;
   sala: string;
   estado?: ClassStatus;
+  asistencia_registrada?: boolean;
 }
 
 export type EvaluationStatus = 'por_aplicar' | 'por_revisar' | 'completada';

@@ -107,11 +107,46 @@
           </div>
         </div>
 
-        <!-- Lista de Estudiantes -->
+        <!-- Tabs para Lista/Mapa de Asientos -->
         <div class="bg-white rounded-lg shadow">
-          <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900">Estudiantes del Curso</h3>
+          <div class="border-b border-gray-200">
+            <nav class="flex -mb-px">
+              <button
+                @click="activeTab = 'list'"
+                :class="[
+                  'px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2',
+                  activeTab === 'list'
+                    ? 'border-primary-600 text-primary-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ]"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+                Lista de Estudiantes
+              </button>
+              <button
+                @click="activeTab = 'seating'"
+                :class="[
+                  'px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2',
+                  activeTab === 'seating'
+                    ? 'border-primary-600 text-primary-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ]"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z" />
+                </svg>
+                Mapa de Asientos
+              </button>
+            </nav>
           </div>
+
+          <!-- Lista de Estudiantes Tab -->
+          <div v-if="activeTab === 'list'">
+            <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+              <h3 class="text-lg font-semibold text-gray-900">Estudiantes del Curso</h3>
+            </div>
 
           <div v-if="loadingStudents" class="p-8 text-center">
             <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
@@ -172,6 +207,23 @@
               </tbody>
             </table>
           </div>
+          </div>
+
+          <!-- Mapa de Asientos Tab -->
+          <div v-if="activeTab === 'seating'">
+            <SeatingMap
+              v-if="cursoJefe && estudiantesConMetricas.length > 0"
+              :curso-id="cursoJefe.curso_id"
+              :students="estudiantesConMetricas"
+              :curso="cursoJefe"
+            />
+            <div v-else class="p-8 text-center text-gray-500">
+              <svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+              <p>No hay estudiantes para mostrar en el mapa de asientos</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -179,7 +231,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCursoStore } from '@/store/curso.store'
 import { useStudentStore } from '@/store/student.store'
@@ -188,6 +240,8 @@ import type { Estudiante } from '@/types/users.types'
 import { NIVELES, getNivelDisplay } from '@/constants/niveles.constants'
 import matriculaService from '@/services/matricula.service'
 import type { Matricula } from '@/services/matricula.service'
+import SeatingMap from '@/components/teacher/SeatingMap.vue'
+import type { Student } from '@/types/teacher.types'
 
 const router = useRouter()
 const cursoStore = useCursoStore()
@@ -197,6 +251,7 @@ const loading = ref(false)
 const loadingStudents = ref(false)
 const error = ref<string | null>(null)
 const cursos = ref<Curso[]>([])
+const activeTab = ref<'list' | 'seating'>('list')
 const cursoJefe = ref<Curso | null>(null)
 const estudiantes = ref<Estudiante[]>([])
 const stats = ref<CursoStats>({
@@ -275,8 +330,22 @@ const loadCursoStudents = async () => {
 
 const viewStudentProfile = (estudiante: Estudiante) => {
   router.push({
-    name: 'teacher-student-profile',
+    name: 'TeacherStudentProfile',
     params: { id: estudiante.estudiante_id }
   })
 }
+
+// Transformar estudiantes al formato que espera SeatingMap
+const estudiantesConMetricas = computed<Student[]>(() => {
+  return estudiantes.value.map((estudiante, index) => ({
+    estudiante_id: estudiante.estudiante_id,
+    nombre_completo: estudiante.nombre_completo,
+    rut: estudiante.rut,
+    numero_lista: index + 1, // Asignar número de lista secuencial
+    promedio_asignatura: 0, // TODO: Obtener promedio real
+    asistencia_porcentaje: 0, // TODO: Obtener asistencia real
+    total_anotaciones_positivas: 0, // TODO: Obtener anotaciones reales
+    total_anotaciones_negativas: 0 // TODO: Obtener anotaciones reales
+  }))
+})
 </script>
