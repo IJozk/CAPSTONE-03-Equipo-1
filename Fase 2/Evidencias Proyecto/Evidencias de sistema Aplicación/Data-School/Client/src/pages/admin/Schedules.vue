@@ -444,6 +444,7 @@ interface Horario {
   horario_id: number
   asignatura_id: string
   asignatura_nombre: string
+  profesor_id: string
   profesor_nombre: string
   curso_nombre: string
   dia_semana: number
@@ -617,7 +618,8 @@ const getAsignaturaColor = (asignatura: any) => {
   return colors[hash % colors.length]
 }
 
-// Calcula las horas asignadas a una asignatura sumando la duración de todos sus bloques
+// Calcula las horas académicas asignadas a una asignatura sumando la duración de todos sus bloques
+// 1 hora académica = 40 minutos
 const getHorasAsignadas = (asignaturaId: string): number => {
   const horariosAsignatura = horarios.value.filter(h => h.asignatura_id === asignaturaId)
 
@@ -632,11 +634,12 @@ const getHorasAsignadas = (asignaturaId: string): number => {
     totalMinutos += minutosFin - minutosInicio
   })
 
-  // Convertir minutos a horas con decimales
-  return totalMinutos / 60
+  // Convertir minutos a horas académicas (1 hora académica = 40 minutos)
+  return totalMinutos / 40
 }
 
-// Verifica si agregar un nuevo bloque excedería las horas semanales
+// Verifica si agregar un nuevo bloque excedería las horas académicas semanales
+// 1 hora académica = 40 minutos
 const validarHorasDisponibles = (asignaturaId: string, horaInicio: string, horaTermino: string): { valido: boolean, mensaje: string } => {
   const asignatura = asignaturas.value.find(a => a.asignatura_id === asignaturaId)
   if (!asignatura || !asignatura.horas_semanales) {
@@ -645,18 +648,126 @@ const validarHorasDisponibles = (asignaturaId: string, horaInicio: string, horaT
 
   const horasActuales = getHorasAsignadas(asignaturaId)
 
-  // Calcular duración del nuevo bloque
+  // Calcular duración del nuevo bloque en horas académicas (40 minutos = 1 hora académica)
   const [horaIni, minIni] = horaInicio.split(':').map(Number)
   const [horaFin, minFin] = horaTermino.split(':').map(Number)
   const minutosBloque = (horaFin * 60 + minFin) - (horaIni * 60 + minIni)
-  const horasBloque = minutosBloque / 60
+  const horasBloque = minutosBloque / 40
 
   const totalHoras = horasActuales + horasBloque
 
   if (totalHoras > asignatura.horas_semanales) {
     return {
       valido: false,
-      mensaje: `Esta asignatura tiene ${asignatura.horas_semanales}h semanales. Ya tiene ${horasActuales.toFixed(1)}h asignadas. Este bloque suma ${horasBloque.toFixed(1)}h más, excediendo el límite.`
+      mensaje: `Esta asignatura tiene ${asignatura.horas_semanales}h académicas semanales. Ya tiene ${horasActuales.toFixed(1)}h asignadas. Este bloque suma ${horasBloque.toFixed(1)}h más, excediendo el límite.`
+    }
+  }
+
+  return { valido: true, mensaje: '' }
+}
+
+// Función auxiliar para verificar si dos rangos horarios se solapan
+const horariosSeSuperponen = (
+  hora1_inicio: string,
+  hora1_termino: string,
+  hora2_inicio: string,
+  hora2_termino: string
+): boolean => {
+  // Convertir a minutos desde medianoche
+  const toMinutes = (time: string): number => {
+    const [hours, mins] = time.split(':').map(Number)
+    return hours * 60 + mins
+  }
+
+  const inicio1 = toMinutes(hora1_inicio)
+  const fin1 = toMinutes(hora1_termino)
+  const inicio2 = toMinutes(hora2_inicio)
+  const fin2 = toMinutes(hora2_termino)
+
+  // Los horarios se superponen si:
+  // - El inicio de uno está entre el inicio y fin del otro
+  // - O si uno contiene completamente al otro
+  return (inicio1 < fin2 && fin1 > inicio2)
+}
+
+// Validar que el profesor no tenga solapamiento de horarios
+const validarSolapamientoProfesor = async (
+  asignaturaId: string,
+  diaSemana: number,
+  horaInicio: string,
+  horaTermino: string,
+  horarioIdExcluir?: number | null
+): Promise<{ valido: boolean; mensaje: string }> => {
+  try {
+    // Obtener el profesor de la asignatura seleccionada
+    const asignatura = asignaturas.value.find(a => a.asignatura_id === asignaturaId)
+    if (!asignatura) {
+      return { valido: true, mensaje: '' }
+    }
+
+    const profesorId = asignatura.profesor_id
+
+    // Obtener todos los horarios del profesor para ese día
+    const response = await apiClient.get(`/horarios/profesor/${profesorId}`, {
+      params: { periodo: formData.value.periodo }
+    })
+
+    // El backend agrupa por día, obtener los horarios del día específico
+    const horariosPorDia = response.data
+    const horariosDelDia = horariosPorDia[diaSemana] || []
+
+    // Verificar solapamientos
+    for (const horario of horariosDelDia) {
+      // Excluir el horario que estamos editando
+      if (horarioIdExcluir && horario.horario_id === horarioIdExcluir) {
+        continue
+      }
+
+      if (horariosSeSuperponen(horaInicio, horaTermino, horario.hora_inicio, horario.hora_termino)) {
+        const asignaturaConflicto = horario.Asignatura?.nombre || 'Asignatura'
+        const cursoConflicto = horario.Asignatura?.Curso?.nombre || 'Curso'
+        return {
+          valido: false,
+          mensaje: `El profesor ${asignatura.profesor_nombre} ya tiene clase en este horario:\n${asignaturaConflicto} - ${cursoConflicto}\n(${horario.hora_inicio} - ${horario.hora_termino})`
+        }
+      }
+    }
+
+    return { valido: true, mensaje: '' }
+  } catch (error) {
+    console.error('Error validando solapamiento de profesor:', error)
+    return { valido: true, mensaje: '' } // En caso de error, permitir continuar
+  }
+}
+
+// Validar que la sala no tenga solapamiento de horarios
+const validarSolapamientoSala = (
+  salaId: string | null,
+  diaSemana: number,
+  horaInicio: string,
+  horaTermino: string,
+  horarioIdExcluir?: number | null
+): { valido: boolean; mensaje: string } => {
+  // Si no hay sala asignada, no validar
+  if (!salaId) {
+    return { valido: true, mensaje: '' }
+  }
+
+  // Buscar todos los horarios de esa sala en ese día
+  const horariosDelDiaEnSala = horarios.value.filter(h =>
+    h.sala_id === salaId &&
+    h.dia_semana === diaSemana &&
+    h.horario_id !== horarioIdExcluir
+  )
+
+  // Verificar solapamientos
+  for (const horario of horariosDelDiaEnSala) {
+    if (horariosSeSuperponen(horaInicio, horaTermino, horario.hora_inicio, horario.hora_termino)) {
+      const sala = salas.value.find(s => s.sala_id === salaId)
+      return {
+        valido: false,
+        mensaje: `La sala ${sala?.nombre || salaId} ya está ocupada en este horario:\n${horario.asignatura_nombre} - ${horario.curso_nombre}\n(${horario.hora_inicio} - ${horario.hora_termino})`
+      }
     }
   }
 
@@ -723,21 +834,14 @@ const loadHorarios = async () => {
 
     const response = await apiClient.get(url)
 
-    // El backend devuelve un objeto agrupado por día, necesitamos aplanarlo
-    const horariosAgrupados = response.data
-    const todosLosHorarios: any[] = []
+    // El backend devuelve un array directamente
+    const horariosData = Array.isArray(response.data) ? response.data : []
 
-    // Extraer todos los horarios de cada día
-    Object.keys(horariosAgrupados).forEach(dia => {
-      if (Array.isArray(horariosAgrupados[dia])) {
-        todosLosHorarios.push(...horariosAgrupados[dia])
-      }
-    })
-
-    horarios.value = todosLosHorarios.map((h: any) => ({
+    horarios.value = horariosData.map((h: any) => ({
       horario_id: h.horario_id,
       asignatura_id: h.asignatura_id,
       asignatura_nombre: h.Asignatura?.nombre || h.asignatura?.nombre || '',
+      profesor_id: h.Asignatura?.Profesor?.profesor_id || h.asignatura?.profesor_id || '',
       profesor_nombre: h.Asignatura?.Profesor?.nombre_completo || h.asignatura?.profesor?.nombre_completo || '',
       curso_nombre: h.Asignatura?.Curso?.nombre || h.asignatura?.curso?.nombre || '',
       dia_semana: h.dia_semana,
@@ -832,6 +936,13 @@ const handleSubmit = async () => {
   try {
     submitting.value = true
 
+    // Validar que se hayan seleccionado todos los campos requeridos
+    if (!formData.value.asignatura_id || !formData.value.dia_semana || !formData.value.hora_inicio || !formData.value.hora_termino) {
+      alert('Por favor complete todos los campos requeridos')
+      submitting.value = false
+      return
+    }
+
     // Validar horas disponibles solo al crear o si cambió la asignatura/horas al editar
     if (!isEditing.value || formData.value.asignatura_id) {
       const validacion = validarHorasDisponibles(
@@ -847,6 +958,36 @@ const handleSubmit = async () => {
       }
     }
 
+    // Validar solapamiento de profesor
+    const validacionProfesor = await validarSolapamientoProfesor(
+      formData.value.asignatura_id,
+      formData.value.dia_semana,
+      formData.value.hora_inicio,
+      formData.value.hora_termino,
+      isEditing.value ? editingHorarioId.value : null
+    )
+
+    if (!validacionProfesor.valido) {
+      alert('Conflicto de horario del profesor:\n\n' + validacionProfesor.mensaje)
+      submitting.value = false
+      return
+    }
+
+    // Validar solapamiento de sala
+    const validacionSala = validarSolapamientoSala(
+      formData.value.sala_id,
+      formData.value.dia_semana,
+      formData.value.hora_inicio,
+      formData.value.hora_termino,
+      isEditing.value ? editingHorarioId.value : null
+    )
+
+    if (!validacionSala.valido) {
+      alert('Conflicto de sala:\n\n' + validacionSala.mensaje)
+      submitting.value = false
+      return
+    }
+
     const data = {
       ...formData.value,
       sala_id: formData.value.sala_id || null
@@ -854,15 +995,18 @@ const handleSubmit = async () => {
 
     if (isEditing.value && editingHorarioId.value) {
       await apiClient.put(`/horarios/${editingHorarioId.value}`, data)
+      alert('Horario actualizado exitosamente')
     } else {
       await apiClient.post('/horarios', data)
+      alert('Horario creado exitosamente')
     }
 
     await loadHorarios()
     closeModal()
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error saving horario:', error)
-    alert('Error al guardar el horario')
+    const errorMessage = error.response?.data?.message || error.message || 'Error al guardar el horario'
+    alert('Error al guardar el horario:\n' + errorMessage)
   } finally {
     submitting.value = false
   }

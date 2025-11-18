@@ -85,6 +85,7 @@
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Letra</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Año Académico</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Generación</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profesor Jefe</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capacidad</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Alumnos</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
@@ -92,7 +93,7 @@
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
               <tr v-if="cursoStore.cursos.length === 0">
-                <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                <td colspan="8" class="px-6 py-8 text-center text-gray-500">
                   No hay cursos registrados
                 </td>
               </tr>
@@ -108,6 +109,19 @@
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {{ curso.generacion }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <button
+                    @click="openProfesorJefeModal(curso)"
+                    class="text-primary-600 hover:text-primary-900 font-medium flex items-center gap-1"
+                    title="Asignar Profesor Jefe"
+                  >
+                    <span v-if="curso.profesor_jefe">{{ curso.profesor_jefe.nombre_completo }}</span>
+                    <span v-else class="text-gray-400 italic">Sin asignar</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {{ curso.capacidad_maxima || 'Sin límite' }}
@@ -533,6 +547,63 @@
           </div>
         </div>
       </div>
+
+      <!-- Modal Asignar Profesor Jefe -->
+      <div
+        v-if="showProfesorJefeModal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+        @click.self="closeProfesorJefeModal"
+      >
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-900">Asignar Profesor Jefe</h2>
+            <button @click="closeProfesorJefeModal" class="text-gray-400 hover:text-gray-600">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="mb-4">
+            <p class="text-sm text-gray-600 mb-2">
+              Curso: <span class="font-semibold">{{ selectedCursoForProfesor?.nombre }}</span> - {{ getNivelDisplay(selectedCursoForProfesor?.nivel_id || 1) }}
+            </p>
+            <p class="text-sm text-gray-600">
+              Profesor Jefe Actual:
+              <span class="font-semibold">{{ selectedCursoForProfesor?.profesor_jefe?.nombre_completo || 'Sin asignar' }}</span>
+            </p>
+          </div>
+
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Seleccionar Profesor Jefe</label>
+            <select
+              v-model="selectedProfesorJefeId"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            >
+              <option :value="null">Sin profesor jefe</option>
+              <option v-for="profesor in profesores" :key="profesor.profesor_id" :value="profesor.profesor_id">
+                {{ profesor.nombre_completo }} - {{ profesor.rut }}
+              </option>
+            </select>
+          </div>
+
+          <div class="flex justify-end gap-3">
+            <button
+              @click="closeProfesorJefeModal"
+              class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              @click="handleAsignarProfesorJefe"
+              :disabled="submitting"
+              class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              {{ submitting ? 'Guardando...' : 'Asignar' }}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </AdminLayout>
 </template>
@@ -545,10 +616,11 @@ import { useCursoStore } from '@/store/curso.store'
 import { useStudentStore } from '@/store/student.store'
 import { useTutorStore } from '@/store/tutor.store'
 import type { Curso, CreateCursoDTO, FilterCursoDTO } from '@/types/curso.types'
-import type { Estudiante } from '@/types/users.types'
+import type { Estudiante, Profesor } from '@/types/users.types'
 import { NIVELES, getNivelDisplay } from '@/constants/niveles.constants'
 import matriculaService from '@/services/matricula.service'
 import type { Matricula } from '@/services/matricula.service'
+import profesorService from '@/services/profesor.service'
 
 const router = useRouter()
 import parentescoService from '@/services/parentesco.service'
@@ -582,6 +654,12 @@ const cursoStudents = ref<Estudiante[]>([])
 const studentSearchFilter = ref('')
 const showOnlyActiveStudents = ref(true)
 const selectedStudentsToAdd = ref<string[]>([])
+
+// Estados del modal de profesor jefe
+const showProfesorJefeModal = ref(false)
+const selectedCursoForProfesor = ref<Curso | null>(null)
+const selectedProfesorJefeId = ref<string | null>(null)
+const profesores = ref<Profesor[]>([])
 
 // Computed: estudiantes disponibles (sin curso asignado o no en el curso actual)
 const availableStudents = computed(() => {
@@ -1035,6 +1113,53 @@ const removeStudentFromCurso = async () => {
   } catch (error: any) {
     console.error('Error quitando alumno:', error)
     alert(`Error: ${error.response?.data?.message || error.message}`)
+  } finally {
+    submitting.value = false
+  }
+}
+
+// Funciones para gestionar profesor jefe
+const loadProfesores = async () => {
+  try {
+    profesores.value = await profesorService.getAll({ estado_activo: true })
+  } catch (error) {
+    console.error('Error cargando profesores:', error)
+    alert('Error al cargar la lista de profesores')
+  }
+}
+
+const openProfesorJefeModal = async (curso: Curso) => {
+  selectedCursoForProfesor.value = curso
+  selectedProfesorJefeId.value = curso.profesor_jefe_id || null
+  showProfesorJefeModal.value = true
+
+  // Cargar profesores si no están cargados
+  if (profesores.value.length === 0) {
+    await loadProfesores()
+  }
+}
+
+const closeProfesorJefeModal = () => {
+  showProfesorJefeModal.value = false
+  selectedCursoForProfesor.value = null
+  selectedProfesorJefeId.value = null
+}
+
+const handleAsignarProfesorJefe = async () => {
+  if (!selectedCursoForProfesor.value) return
+
+  submitting.value = true
+  try {
+    await cursoStore.asignarProfesorJefe(selectedCursoForProfesor.value.curso_id, {
+      profesor_jefe_id: selectedProfesorJefeId.value
+    })
+
+    alert(selectedProfesorJefeId.value ? 'Profesor jefe asignado exitosamente' : 'Profesor jefe removido exitosamente')
+    closeProfesorJefeModal()
+    await loadCursos() // Recargar cursos para actualizar la vista
+  } catch (error: any) {
+    console.error('Error asignando profesor jefe:', error)
+    alert(`Error: ${error.message}`)
   } finally {
     submitting.value = false
   }

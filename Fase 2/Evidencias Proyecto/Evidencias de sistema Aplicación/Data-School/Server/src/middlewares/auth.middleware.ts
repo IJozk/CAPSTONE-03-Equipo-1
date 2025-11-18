@@ -70,6 +70,9 @@ export const authenticate = async (
       colegio_id: userData.colegio_id || undefined
     }
 
+    // También agregar userId directamente para facilitar el acceso
+    ;(req as any).userId = userData.user_id
+
     next()
   } catch (error) {
     console.error('Error en autenticación:', error)
@@ -80,22 +83,32 @@ export const authenticate = async (
 }
 
 // Middleware para verificar roles específicos
+// Este middleware ejecuta primero authenticate y luego verifica roles
 export const authorize = (...allowedRoles: UserRole[]) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.user) {
-      return res.status(401).json({
-        error: 'Usuario no autenticado'
-      })
-    }
+  return async (req: Request, res: Response, next: NextFunction) => {
+    // Primero ejecutar autenticación
+    await authenticate(req, res, () => {
+      // Si la autenticación falla, authenticate ya envió la respuesta
+      if (res.headersSent) return
 
-    if (!hasAnyRole(req.user.role, allowedRoles)) {
-      return res.status(403).json({
-        error: 'No tienes permisos para acceder a este recurso',
-        required_roles: allowedRoles,
-        your_role: req.user.role
-      })
-    }
+      // Verificar que el usuario esté en el request
+      if (!req.user) {
+        return res.status(401).json({
+          error: 'Usuario no autenticado'
+        })
+      }
 
-    next()
+      // Verificar roles
+      if (!hasAnyRole(req.user.role, allowedRoles)) {
+        return res.status(403).json({
+          error: 'No tienes permisos para acceder a este recurso',
+          required_roles: allowedRoles,
+          your_role: req.user.role
+        })
+      }
+
+      // Todo OK, continuar
+      next()
+    })
   }
 }

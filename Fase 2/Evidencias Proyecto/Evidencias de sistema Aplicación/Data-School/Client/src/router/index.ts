@@ -298,6 +298,16 @@ const routes: RouteRecordRaw[] = [
         }
       },
       {
+        path: 'mi-curso-jefe',
+        name: 'TeacherMyCursoJefe',
+        component: () => import('@/pages/teacher/MyCursoJefe.vue'),
+        meta: {
+          requiresAuth: true,
+          requiresRole: ['PROFESOR', 'ADMINISTRADOR'],
+          title: 'Mi Curso como Profesor Jefe'
+        }
+      },
+      {
         path: 'evaluations',
         name: 'TeacherEvaluations',
         component: () => import('@/pages/teacher/Evaluations.vue'),
