@@ -58,6 +58,7 @@ router.use('/users', userRoutes)
 
 // Rutas CRUD por tipo de usuario
 router.use('/profesores', profesorRoutes)
+router.use('/teachers', profesorRoutes) // Alias para compatibilidad con frontend
 router.use('/estudiantes', estudianteRoutes)
 router.use('/administrativos', administrativoRoutes)
 router.use('/tutores', tutorRoutes)
