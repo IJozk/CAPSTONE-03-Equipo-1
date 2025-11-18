@@ -85,7 +85,8 @@ export class EvaluacionController {
                         asignatura_id,
                         nombre,
                         codigo,
-                        Curso(curso_id, nombre, nivel),
+                        curso_id,
+                        Curso(curso_id, nombre, nivel_id),
                         Profesor(profesor_id, nombre_completo)
                     ),
                     Encuesta(encuesta_id, titulo)

@@ -215,6 +215,32 @@ export class HorarioController {
             const { curso_id } = req.params
             const { periodo } = req.query
 
+            console.log('📅 Buscando horario para curso:', curso_id)
+            console.log('📅 Periodo:', periodo)
+
+            // Primero, verificar asignaturas del curso
+            const { data: asignaturas } = await supabaseAdmin!
+                .from('Asignatura')
+                .select('asignatura_id, nombre, curso_id')
+                .eq('curso_id', curso_id)
+
+            console.log('📚 Asignaturas del curso:', asignaturas?.length || 0)
+            if (asignaturas && asignaturas.length > 0) {
+                console.log('📚 Primera asignatura:', asignaturas[0])
+            }
+
+            // Luego, verificar horarios sin filtro de curso
+            const { data: todosHorarios } = await supabaseAdmin!
+                .from('Horario')
+                .select('horario_id, asignatura_id, periodo, estado_activo, Asignatura(curso_id)')
+                .eq('estado_activo', true)
+                .limit(5)
+
+            console.log('⏰ Algunos horarios en la tabla (activos):', todosHorarios?.length || 0)
+            if (todosHorarios && todosHorarios.length > 0) {
+                console.log('⏰ Primer horario:', todosHorarios[0])
+            }
+
             let query = supabaseAdmin!
                 .from('Horario')
                 .select(`
@@ -241,12 +267,16 @@ export class HorarioController {
 
             const { data, error } = await query
 
+            console.log('📅 Horarios encontrados con filtros:', data?.length || 0)
+            console.log('📅 Error:', error)
+            if (data && data.length > 0) {
+                console.log('📅 Primer horario:', data[0])
+            }
+
             if (error) throw error
 
-            // Agrupar por día de semana
-            const horarioPorDia = this.agruparPorDia(data || [])
-
-            return res.status(200).json(horarioPorDia)
+            // Retornar array de horarios sin agrupar
+            return res.status(200).json(data || [])
 
         } catch (error: any) {
             return res.status(500).json({ message: error.message })
@@ -423,9 +453,19 @@ export class HorarioController {
         const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
         const horarioPorDia: any = {}
 
-        for (let i = 1; i <= 7; i++) {
-            horarioPorDia[dias[i]] = horarios.filter(h => h.dia_semana === i)
-        }
+        // Inicializar todos los días con arrays vacíos
+        dias.forEach(dia => {
+            horarioPorDia[dia] = []
+        })
+
+        // Agrupar horarios por día
+        // dia_semana: 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
+        horarios.forEach(horario => {
+            const nombreDia = dias[horario.dia_semana]
+            if (nombreDia) {
+                horarioPorDia[nombreDia].push(horario)
+            }
+        })
 
         return horarioPorDia
     }
