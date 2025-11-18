@@ -81,26 +81,28 @@
 
             <!-- Actions -->
             <div class="flex gap-2 mt-3">
+              <!-- Solo mostrar botón si la clase está en progreso o ya pasó -->
               <button
-                v-if="clase.estado !== 'completada'"
-                class="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                v-if="clase.estado === 'en_progreso' || clase.estado === 'completada'"
+                class="flex items-center gap-1 px-3 py-1.5 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                :class="clase.estado === 'en_progreso' ? 'bg-green-600 hover:bg-green-700' : 'bg-indigo-600 hover:bg-indigo-700'"
                 @click="handleRegisterAttendance(clase)"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                 </svg>
-                Registrar Asistencia
+                <span v-if="clase.estado === 'en_progreso'">Registrar Asistencia (En Curso)</span>
+                <span v-else>Registrar Asistencia</span>
               </button>
-              <button
+              <span
                 v-else
-                class="flex items-center gap-1 px-3 py-1.5 bg-gray-200 text-gray-700 text-sm font-medium rounded-lg"
-                disabled
+                class="flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-500 text-sm font-medium rounded-lg"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                Asistencia Registrada
-              </button>
+                Disponible a las {{ formatTime(clase.hora_inicio) }}
+              </span>
             </div>
           </div>
         </div>
@@ -118,7 +120,33 @@ import type { TodayClass, ClassStatus } from '@/types/teacher.types';
 const teacherStore = useTeacherStore();
 const router = useRouter();
 
-const todayClasses = computed(() => teacherStore.todayClasses);
+// Computed que calcula el estado de cada clase basándose en la hora actual
+const todayClasses = computed(() => {
+  const now = new Date();
+  const currentTime = now.getHours() * 60 + now.getMinutes(); // Minutos desde medianoche
+
+  return teacherStore.todayClasses.map(clase => {
+    const [startHour, startMin] = clase.hora_inicio.split(':').map(Number);
+    const [endHour, endMin] = clase.hora_termino.split(':').map(Number);
+
+    const startTime = startHour * 60 + startMin;
+    const endTime = endHour * 60 + endMin;
+
+    let estado: ClassStatus;
+    if (currentTime < startTime) {
+      estado = 'proxima';
+    } else if (currentTime >= startTime && currentTime <= endTime) {
+      estado = 'en_progreso';
+    } else {
+      estado = 'completada';
+    }
+
+    return {
+      ...clase,
+      estado
+    };
+  });
+});
 
 onMounted(async () => {
   if (!teacherStore.upcoming) {
@@ -161,13 +189,18 @@ const getStatusColor = (status?: ClassStatus) => {
 };
 
 const handleRegisterAttendance = (clase: TodayClass) => {
-  // Navigate to attendance registration page
-  // This would need to be implemented based on your routing structure
+  if (!clase.asignatura_id) {
+    alert('No se puede registrar asistencia: falta información de la asignatura');
+    return;
+  }
+
+  // Navegar a la página de registro de asistencia con la fecha de hoy
+  const today = new Date().toISOString().split('T')[0];
   router.push({
-    name: 'teacher-attendance',
+    name: 'TeacherAttendance',
     query: {
-      subject: clase.asignatura,
-      course: clase.curso
+      asignatura_id: clase.asignatura_id,
+      fecha: today
     }
   });
 };

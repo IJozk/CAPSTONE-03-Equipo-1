@@ -41,6 +41,7 @@ import configuracionColegioRoutes from './configuracionColegio.router'
 import datosEstudianteRoutes from './datosEstudiante.router'
 import anotacionesRoutes from './anotaciones.router'
 import zonaRoutes from './zona.router'
+import asignacionAsientoRoutes from './asignacionAsiento.router'
 
 const router = Router()
 
@@ -58,6 +59,7 @@ router.use('/users', userRoutes)
 
 // Rutas CRUD por tipo de usuario
 router.use('/profesores', profesorRoutes)
+router.use('/teachers', profesorRoutes) // Alias para compatibilidad con frontend
 router.use('/estudiantes', estudianteRoutes)
 router.use('/administrativos', administrativoRoutes)
 router.use('/tutores', tutorRoutes)
@@ -97,6 +99,9 @@ router.use('/configuracion-colegio', configuracionColegioRoutes)
 router.use('/datos-estudiante', datosEstudianteRoutes)
 router.use('/anotaciones', anotacionesRoutes)
 router.use('/zonas', zonaRoutes)
+
+// Rutas de asignación de asientos
+router.use('/', asignacionAsientoRoutes)
 
 // Rutas protegidas
 router.use('/protected', protectedRoutes)

@@ -1,8 +1,13 @@
 import { Router } from 'express'
 import { ProfesorController } from '@/controllers/profesor.controller'
+import { authenticate } from '@/middlewares/auth.middleware'
 
 const router = Router()
 const profesorController = new ProfesorController()
+
+// Rutas del profesor autenticado (deben ir ANTES de las rutas con :id)
+router.get('/me/dashboard', authenticate, profesorController.getDashboard.bind(profesorController))
+router.get('/me/upcoming', authenticate, profesorController.getUpcoming.bind(profesorController))
 
 // CRUD Profesores
 router.post('/', profesorController.create.bind(profesorController))

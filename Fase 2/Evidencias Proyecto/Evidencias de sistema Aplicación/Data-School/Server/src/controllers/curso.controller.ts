@@ -475,7 +475,7 @@ export class CursoController {
         .eq('curso_id', id)
         .select(`
           *,
-          profesor_jefe:Profesor(profesor_id, nombre_completo, rut, email)
+          profesor_jefe:Profesor(profesor_id, nombre_completo, rut, telefono)
         `)
         .single()
 
@@ -506,36 +506,64 @@ export class CursoController {
    */
   async getMisCursosComoProfesorJefe(req: Request, res: Response) {
     try {
-      const profesorId = (req as any).user?.profesor_profile?.profesor_id
+      const userId = (req as any).userId
 
-      if (!profesorId) {
-        return res.status(403).json({
-          error: 'No autorizado - perfil de profesor no encontrado'
+      if (!userId) {
+        return res.status(401).json({
+          error: 'No autenticado'
         })
       }
 
       const client = supabaseAdmin || supabase
-      const { data, error } = await client
-        .from('Curso')
-        .select(`
-          *,
-          nivel:NivelCurso(id, nombre, nivel, numero)
-        `)
-        .eq('profesor_jefe_id', profesorId)
-        .order('nivel_id', { ascending: true })
 
-      if (error) {
-        console.error('Error obteniendo cursos como profesor jefe:', error)
-        return res.status(500).json({
-          error: 'Error al obtener cursos',
-          details: error.message
+      // Primero obtener el profesor_id basado en el user_id
+      const { data: profesor, error: profesorError } = await client
+        .from('Profesor')
+        .select('profesor_id')
+        .eq('user_id', userId)
+        .single()
+
+      if (profesorError || !profesor) {
+        return res.status(404).json({
+          error: 'Perfil de profesor no encontrado'
         })
       }
 
+      // Ahora obtener los cursos donde es profesor jefe
+      const { data: cursos, error: cursosError } = await client
+        .from('Curso')
+        .select('*')
+        .eq('profesor_jefe_id', profesor.profesor_id)
+        .order('nivel_id', { ascending: true })
+
+      if (cursosError) {
+        console.error('Error obteniendo cursos como profesor jefe:', cursosError)
+        return res.status(500).json({
+          error: 'Error al obtener cursos',
+          details: cursosError.message
+        })
+      }
+
+      // Para cada curso, obtener la información del nivel
+      const cursosConNivel = await Promise.all(
+        (cursos || []).map(async (curso) => {
+          const { data: nivel } = await client
+            .from('NivelCurso')
+            .select('id, nombre, nivel, numero')
+            .eq('id', curso.nivel_id)
+            .single()
+
+          return {
+            ...curso,
+            nivel_obj: nivel || null
+          }
+        })
+      )
+
       return res.status(200).json({
         message: 'Cursos como profesor jefe obtenidos exitosamente',
-        data: data || [],
-        count: data?.length || 0
+        data: cursosConNivel || [],
+        count: cursosConNivel?.length || 0
       })
     } catch (error) {
       console.error('Error en getMisCursosComoProfesorJefe:', error)
