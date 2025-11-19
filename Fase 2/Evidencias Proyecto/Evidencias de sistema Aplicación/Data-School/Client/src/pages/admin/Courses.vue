@@ -264,6 +264,25 @@
                 />
               </div>
 
+              <!-- Sala Asignada -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Sala Asignada <span class="text-gray-500 text-xs">(opcional)</span>
+                </label>
+                <select
+                  v-model="formData.sala_id"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                >
+                  <option :value="null">Sin sala asignada</option>
+                  <option v-for="sala in salasDisponibles" :key="sala.sala_id" :value="sala.sala_id">
+                    {{ sala.nombre }} - {{ sala.Zona?.nombre_zona || 'Sin zona' }} (Capacidad: {{ sala.capacidad }})
+                  </option>
+                </select>
+                <p class="text-xs text-gray-500 mt-1">
+                  La sala se utiliza para la distribución de asientos. Puede asignarse o cambiarse después.
+                </p>
+              </div>
+
               <!-- Botones -->
               <div class="flex justify-end gap-3 pt-4">
                 <button
@@ -621,6 +640,7 @@ import { NIVELES, getNivelDisplay } from '@/constants/niveles.constants'
 import matriculaService from '@/services/matricula.service'
 import type { Matricula } from '@/services/matricula.service'
 import profesorService from '@/services/profesor.service'
+import salaService, { type Sala } from '@/services/sala.service'
 
 const router = useRouter()
 import parentescoService from '@/services/parentesco.service'
@@ -661,6 +681,9 @@ const selectedCursoForProfesor = ref<Curso | null>(null)
 const selectedProfesorJefeId = ref<string | null>(null)
 const profesores = ref<Profesor[]>([])
 
+// Salas disponibles
+const salasDisponibles = ref<Sala[]>([])
+
 // Computed: estudiantes disponibles (sin curso asignado o no en el curso actual)
 const availableStudents = computed(() => {
   if (!selectedCurso.value) return []
@@ -693,12 +716,13 @@ const filteredAvailableStudents = computed(() => {
 })
 
 // Datos del formulario
-const formData = ref<CreateCursoDTO>({
+const formData = ref<any>({
   nombre: '',
   nivel_id: 1, // Por defecto Pre-Kinder
   anio_academico: new Date().getFullYear(),
   generacion: new Date().getFullYear(),
-  capacidad_maxima: null
+  capacidad_maxima: null,
+  sala_id: null
 })
 
 const editingId = ref<string | null>(null)
@@ -713,6 +737,7 @@ const filters = ref<FilterCursoDTO>({
 // Cargar cursos al montar
 onMounted(() => {
   loadCursos()
+  loadSalas()
 })
 
 const loadCursos = async () => {
@@ -720,6 +745,14 @@ const loadCursos = async () => {
     await cursoStore.fetchAll()
   } catch (error) {
     console.error('Error cargando cursos:', error)
+  }
+}
+
+const loadSalas = async () => {
+  try {
+    salasDisponibles.value = await salaService.getAll()
+  } catch (error) {
+    console.error('Error cargando salas:', error)
   }
 }
 
@@ -753,7 +786,8 @@ const openCreateModal = () => {
     nivel_id: 1, // Por defecto Pre-Kinder
     anio_academico: new Date().getFullYear(),
     generacion: new Date().getFullYear(),
-    capacidad_maxima: null
+    capacidad_maxima: null,
+    sala_id: null
   }
   showModal.value = true
 }
@@ -770,7 +804,8 @@ const openEditModal = (curso: Curso) => {
     nivel_id: nivelId,
     anio_academico: curso.anio_academico,
     generacion: curso.generacion,
-    capacidad_maxima: curso.capacidad_maxima
+    capacidad_maxima: curso.capacidad_maxima,
+    sala_id: (curso as any).sala_id || null
   }
   showModal.value = true
 }

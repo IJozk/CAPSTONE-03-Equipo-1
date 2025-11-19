@@ -216,6 +216,7 @@
               :curso-id="cursoJefe.curso_id"
               :students="estudiantesConMetricas"
               :curso="cursoJefe"
+              :sala="salaDelCurso"
             />
             <div v-else class="p-8 text-center text-gray-500">
               <svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -242,6 +243,7 @@ import matriculaService from '@/services/matricula.service'
 import type { Matricula } from '@/services/matricula.service'
 import SeatingMap from '@/components/teacher/SeatingMap.vue'
 import type { Student } from '@/types/teacher.types'
+import salaService, { type Sala } from '@/services/sala.service'
 
 const router = useRouter()
 const cursoStore = useCursoStore()
@@ -254,6 +256,7 @@ const cursos = ref<Curso[]>([])
 const activeTab = ref<'list' | 'seating'>('list')
 const cursoJefe = ref<Curso | null>(null)
 const estudiantes = ref<Estudiante[]>([])
+const salaDelCurso = ref<Sala | undefined>(undefined)
 const stats = ref<CursoStats>({
   curso: {} as Curso,
   total_asignaturas: 0,
@@ -276,10 +279,11 @@ const loadMisCursosJefe = async () => {
       // Tomar el primer curso (un profesor solo debería tener un curso como jefe)
       cursoJefe.value = cursos.value[0]
 
-      // Cargar estadísticas y estudiantes
+      // Cargar estadísticas, estudiantes y sala
       await Promise.all([
         loadCursoStats(),
-        loadCursoStudents()
+        loadCursoStudents(),
+        loadSalaDelCurso()
       ])
     }
   } catch (err: any) {
@@ -325,6 +329,20 @@ const loadCursoStudents = async () => {
     console.error('Error cargando estudiantes del curso:', err)
   } finally {
     loadingStudents.value = false
+  }
+}
+
+const loadSalaDelCurso = async () => {
+  if (!cursoJefe.value || !cursoJefe.value.sala_id) {
+    salaDelCurso.value = undefined
+    return
+  }
+
+  try {
+    salaDelCurso.value = await salaService.getById(cursoJefe.value.sala_id)
+  } catch (err) {
+    console.error('Error cargando sala del curso:', err)
+    salaDelCurso.value = undefined
   }
 }
 

@@ -145,7 +145,8 @@ export class CursoController {
           nivel_id: cursoData.nivel_id,
           anio_academico: cursoData.anio_academico,
           generacion: cursoData.generacion,
-          capacidad_maxima: cursoData.capacidad_maxima || null
+          capacidad_maxima: cursoData.capacidad_maxima || null,
+          sala_id: cursoData.sala_id || null
         })
         .select()
         .single()
@@ -199,18 +200,19 @@ export class CursoController {
         })
       }
 
-      // Si se está actualizando el nombre, verificar que no exista duplicado
-      if (updateData.nombre) {
+      // Si se está actualizando el nombre y/o año académico, verificar que no exista duplicado
+      if (updateData.nombre && updateData.anio_academico) {
         const { data: duplicate } = await client
           .from('Curso')
           .select('curso_id')
           .eq('nombre', updateData.nombre)
+          .eq('anio_academico', updateData.anio_academico)
           .neq('curso_id', id)
-          .single()
+          .maybeSingle()
 
         if (duplicate) {
           return res.status(400).json({
-            error: 'Ya existe otro curso con este nombre'
+            error: 'Ya existe otro curso con este nombre en el año académico especificado'
           })
         }
       }

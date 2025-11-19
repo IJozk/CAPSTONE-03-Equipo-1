@@ -72,6 +72,13 @@ export class AsignacionAsientoController {
         })
       }
 
+      if (!sala_id) {
+        return res.status(400).json({
+          error: 'No se puede guardar la distribución de asientos sin una sala asignada',
+          message: 'El curso debe tener una sala asignada. Contacta al administrador para asignar una sala primero.'
+        })
+      }
+
       if (!Array.isArray(asientos)) {
         return res.status(400).json({
           error: 'El campo "asientos" debe ser un array'
@@ -79,6 +86,32 @@ export class AsignacionAsientoController {
       }
 
       const client = supabaseAdmin || supabase
+
+      // Validar capacidad de la sala
+      if (sala_id) {
+        const { data: sala, error: salaError } = await client
+          .from('Sala')
+          .select('capacidad')
+          .eq('sala_id', sala_id)
+          .single()
+
+        if (salaError) {
+          return res.status(404).json({
+            error: 'Sala no encontrada'
+          })
+        }
+
+        // Contar asientos ocupados
+        const asientosOcupados = asientos.filter(a => a.estudiante_id).length
+
+        if (sala.capacidad && asientosOcupados > sala.capacidad) {
+          return res.status(400).json({
+            error: `La sala tiene una capacidad de ${sala.capacidad} estudiantes, pero se están intentando asignar ${asientosOcupados} estudiantes`,
+            capacidad_sala: sala.capacidad,
+            estudiantes_asignados: asientosOcupados
+          })
+        }
+      }
 
       // Paso 1: Archivar asignaciones actuales (marcar como no actuales)
       const { error: archiveError } = await client
@@ -378,6 +411,56 @@ export class AsignacionAsientoController {
       })
     } catch (error) {
       console.error('Error en removeStudentFromSeat:', error)
+      return res.status(500).json({
+        error: 'Error interno del servidor'
+      })
+    }
+  }
+
+  /**
+   * Obtener el historial completo de asientos de un estudiante en un curso
+   */
+  async getStudentSeatHistory(req: Request, res: Response) {
+    try {
+      const { curso_id, estudiante_id } = req.params
+
+      if (!curso_id || !estudiante_id) {
+        return res.status(400).json({
+          error: 'Los campos curso_id y estudiante_id son requeridos'
+        })
+      }
+
+      const client = supabaseAdmin || supabase
+
+      // Obtener todas las asignaciones del estudiante en este curso (actuales y archivadas)
+      const { data, error } = await client
+        .from('AsignacionAsiento')
+        .select(`
+          *,
+          Sala:sala_id (
+            sala_id,
+            nombre,
+            capacidad
+          )
+        `)
+        .eq('curso_id', curso_id)
+        .eq('estudiante_id', estudiante_id)
+        .order('fecha_asignacion', { ascending: false })
+
+      if (error) {
+        console.error('Error obteniendo historial de asientos del estudiante:', error)
+        return res.status(500).json({
+          error: 'Error al obtener historial de asientos',
+          details: error.message
+        })
+      }
+
+      return res.status(200).json({
+        message: 'Historial de asientos obtenido exitosamente',
+        data: data || []
+      })
+    } catch (error) {
+      console.error('Error en getStudentSeatHistory:', error)
       return res.status(500).json({
         error: 'Error interno del servidor'
       })

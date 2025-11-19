@@ -16,6 +16,7 @@ export interface Curso {
   generacion: number
   capacidad_maxima?: number | null
   profesor_jefe_id?: string | null
+  sala_id?: string | null
   created_at?: string | null
   updated_at?: string | null
   nivel_obj: Nivel
@@ -37,6 +38,7 @@ export interface CreateCursoDTO {
   generacion: number
   capacidad_maxima?: number | null
   profesor_jefe_id?: string | null
+  sala_id?: string | null
 }
 
 export interface UpdateCursoDTO {
@@ -46,6 +48,7 @@ export interface UpdateCursoDTO {
   generacion?: number
   capacidad_maxima?: number | null
   profesor_jefe_id?: string | null
+  sala_id?: string | null
 }
 
 export interface AsignarProfesorJefeDTO {
