@@ -14,12 +14,7 @@
           class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 4v16m8-8H4"
-            />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
           Nuevo Taller
         </button>
@@ -67,23 +62,14 @@
 
       <!-- Loading State -->
       <div v-if="tallerStore.loading" class="bg-white rounded-lg shadow p-8 text-center">
-        <div
-          class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"
-        ></div>
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
         <p class="text-gray-600 mt-4">Cargando talleres...</p>
       </div>
 
       <!-- Error State -->
-      <div
-        v-else-if="tallerStore.error"
-        class="bg-red-50 border border-red-200 rounded-lg p-4"
-      >
+      <div v-else-if="tallerStore.error" class="bg-red-50 border border-red-200 rounded-lg p-4">
         <div class="flex items-center">
-          <svg
-            class="w-5 h-5 text-red-600 mr-2"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
+          <svg class="w-5 h-5 text-red-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
             <path
               fill-rule="evenodd"
               d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
@@ -94,50 +80,34 @@
         </div>
       </div>
 
-      <!-- Table -->
+      <!-- Tabla de Talleres -->
       <div v-else class="bg-white rounded-lg shadow overflow-hidden">
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
               <tr>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Taller
                 </th>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Horarios
                 </th>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Sala
                 </th>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Profesor
                 </th>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Capacidad
                 </th>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Costo Adicional
                 </th>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Estado
                 </th>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Acciones
                 </th>
               </tr>
@@ -158,10 +128,7 @@
                   <div class="text-sm font-medium text-gray-900">
                     {{ taller.nombre }}
                   </div>
-                  <div
-                    v-if="taller.descripcion"
-                    class="text-sm text-gray-500 max-w-xs truncate"
-                  >
+                  <div v-if="taller.descripcion" class="text-sm text-gray-500 max-w-xs truncate">
                     {{ taller.descripcion }}
                   </div>
                   <div class="text-xs text-gray-400 mt-1">
@@ -224,8 +191,7 @@
                         d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
                       />
                     </svg>
-                    {{ taller.inscritos || 0 }} /
-                    {{ taller.capacidad_maxima ?? 0 }}
+                    {{ taller.inscritos || 0 }} / {{ taller.capacidad_maxima ?? 0 }}
                   </div>
                   <div class="mt-1">
                     <div class="w-20 bg-gray-200 rounded-full h-2">
@@ -269,17 +235,45 @@
 
                 <!-- Acciones -->
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                  <!-- Ver estudiantes inscritos -->
+                  <button
+                    @click="openVerEstudiantesModal(taller)"
+                    class="text-blue-600 hover:text-blue-900"
+                    title="Ver estudiantes inscritos"
+                  >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.065 7-9.542 7s-8.268-2.943-9.542-7z"
+                      />
+                    </svg>
+                  </button>
+
+                  <!-- Asignar estudiantes -->
+                  <button
+                    @click="openAsignarEstudiantesModal(taller)"
+                    class="text-indigo-600 hover:text-indigo-900"
+                    title="Asignar estudiantes"
+                  >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857M15 7a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                    </svg>
+                  </button>
+
+                  <!-- Editar -->
                   <button
                     @click="openEditModal(taller)"
                     class="text-primary-600 hover:text-primary-900"
                     title="Editar"
                   >
-                    <svg
-                      class="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
                         stroke-linecap="round"
                         stroke-linejoin="round"
@@ -288,18 +282,15 @@
                       />
                     </svg>
                   </button>
+
+                  <!-- Activar / Desactivar -->
                   <button
                     v-if="taller.estado_activo"
                     @click="confirmDelete(taller)"
                     class="text-red-600 hover:text-red-900"
                     title="Desactivar"
                   >
-                    <svg
-                      class="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
                         stroke-linecap="round"
                         stroke-linejoin="round"
@@ -314,12 +305,7 @@
                     class="text-green-600 hover:text-green-900"
                     title="Activar"
                   >
-                    <svg
-                      class="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
                         stroke-linecap="round"
                         stroke-linejoin="round"
@@ -341,27 +327,15 @@
         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
         @click.self="closeModal"
       >
-        <div
-          class="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
-        >
+        <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
           <div class="p-6">
             <div class="flex justify-between items-center mb-6">
               <h2 class="text-2xl font-bold text-gray-900">
                 {{ isEditing ? 'Editar Taller' : 'Nuevo Taller' }}
               </h2>
               <button @click="closeModal" class="text-gray-400 hover:text-gray-600">
-                <svg
-                  class="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
@@ -449,10 +423,7 @@
                     <p v-if="salaStore.loading" class="text-xs text-gray-500 mt-1">
                       Cargando salas...
                     </p>
-                    <p
-                      v-else-if="salaStore.error"
-                      class="text-xs text-red-500 mt-1"
-                    >
+                    <p v-else-if="salaStore.error" class="text-xs text-red-500 mt-1">
                       {{ salaStore.error }}
                     </p>
                   </div>
@@ -480,10 +451,7 @@
                     <p v-if="teacherStore.loading" class="text-xs text-gray-500 mt-1">
                       Cargando profesores...
                     </p>
-                    <p
-                      v-else-if="teacherStore.error"
-                      class="text-xs text-red-500 mt-1"
-                    >
+                    <p v-else-if="teacherStore.error" class="text-xs text-red-500 mt-1">
                       {{ teacherStore.error }}
                     </p>
                   </div>
@@ -530,18 +498,8 @@
                     @click="addHorario"
                     class="px-3 py-1 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-1"
                   >
-                    <svg
-                      class="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M12 4v16m8-8H4"
-                      />
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                     </svg>
                     Agregar Horario
                   </button>
@@ -584,27 +542,15 @@
                         @click="removeHorario(index)"
                         class="text-red-600 hover:text-red-800"
                       >
-                        <svg
-                          class="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M6 18L18 6M6 6l12 12"
-                          />
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                       </button>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <div>
-                        <label
-                          class="block text-xs font-medium text-gray-700 mb-1"
-                        >
+                        <label class="block text-xs font-medium text-gray-700 mb-1">
                           Día de la Semana
                           <span class="text-red-500">*</span>
                         </label>
@@ -624,9 +570,7 @@
                       </div>
 
                       <div>
-                        <label
-                          class="block text-xs font-medium text-gray-700 mb-1"
-                        >
+                        <label class="block text-xs font-medium text-gray-700 mb-1">
                           Hora Inicio <span class="text-red-500">*</span>
                         </label>
                         <input
@@ -638,9 +582,7 @@
                       </div>
 
                       <div>
-                        <label
-                          class="block text-xs font-medium text-gray-700 mb-1"
-                        >
+                        <label class="block text-xs font-medium text-gray-700 mb-1">
                           Hora Término <span class="text-red-500">*</span>
                         </label>
                         <input
@@ -746,24 +688,229 @@
           </div>
         </div>
       </div>
+
+      <!-- Modal Asignar Estudiantes -->
+      <div
+        v-if="showAsignarModal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+        @click.self="closeAsignarModal"
+      >
+        <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+          <div class="p-6 space-y-4">
+            <div class="flex justify-between items-center">
+              <div>
+                <h2 class="text-2xl font-bold text-gray-900">
+                  Asignar estudiantes
+                </h2>
+                <p class="text-sm text-gray-500">
+                  Taller: <span class="font-semibold">{{ tallerSeleccionado?.nombre }}</span>
+                </p>
+              </div>
+              <button @click="closeAsignarModal" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <!-- Resumen de cupos -->
+            <div class="bg-gray-50 rounded-lg p-3 flex flex-wrap gap-4 text-sm">
+              <div>
+                Cupos seleccionados:
+                <span class="font-semibold">
+                  {{ selectedEstudiantesIds.length }} / {{ tallerSeleccionado?.capacidad_maxima ?? 0 }}
+                </span>
+              </div>
+              <div>
+                Actualmente inscritos:
+                <span class="font-semibold">{{ estudiantesAsignadosInicial.length }}</span>
+              </div>
+            </div>
+
+            <!-- Buscador -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">
+                Buscar estudiante
+              </label>
+              <input
+                v-model="asignarSearch"
+                type="text"
+                placeholder="Nombre, RUT o correo..."
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+            </div>
+
+            <!-- Lista de estudiantes -->
+            <div class="border rounded-lg">
+              <div class="flex justify-between items-center px-4 py-2 bg-gray-50 text-xs text-gray-500">
+                <span>{{ filteredEstudiantesDisponibles.length }} estudiantes encontrados</span>
+                <span>Marca o desmarca para inscribir / retirar</span>
+              </div>
+
+              <div v-if="filteredEstudiantesDisponibles.length === 0" class="p-4 text-sm text-gray-500">
+                No se encontraron estudiantes para el criterio de búsqueda.
+              </div>
+
+              <div
+                v-else
+                class="max-h-80 overflow-y-auto divide-y divide-gray-100"
+              >
+                <label
+                  v-for="est in filteredEstudiantesDisponibles"
+                  :key="est.estudiante_id"
+                  class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    :value="est.estudiante_id"
+                    v-model="selectedEstudiantesIds"
+                  />
+                  <div class="flex-1">
+                    <div class="text-sm font-medium text-gray-900">
+                      {{ est.nombre_completo }}
+                    </div>
+                    <div class="text-xs text-gray-500">
+                      {{ est.rut }} • {{ est.email || 'Sin correo' }}
+                    </div>
+                  </div>
+                  <div class="text-xs">
+                    <span
+                      v-if="estudiantesAsignadosSet.has(est.estudiante_id)"
+                      class="px-2 py-0.5 rounded-full bg-green-100 text-green-800"
+                    >
+                      Inscrito
+                    </span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Botones -->
+            <div class="flex justify-end gap-3 pt-4 border-t">
+              <button
+                type="button"
+                @click="closeAsignarModal"
+                class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                @click="saveAsignaciones"
+                :disabled="savingAsignaciones || !tallerSeleccionado"
+                class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                {{ savingAsignaciones ? 'Guardando...' : 'Guardar cambios' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- FIN Modal Asignar Estudiantes -->
+
+      <!-- Modal Ver Estudiantes Inscritos -->
+      <div
+        v-if="showVerEstudiantesModal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+        @click.self="closeVerEstudiantesModal"
+      >
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div class="p-6 space-y-4">
+            <!-- Header -->
+            <div class="flex justify-between items-center">
+              <h2 class="text-2xl font-bold text-gray-900">
+                Estudiantes inscritos
+              </h2>
+              <button @click="closeVerEstudiantesModal" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <p class="text-sm text-gray-500">
+              Taller: <span class="font-semibold">{{ tallerVer?.nombre }}</span>
+            </p>
+
+            <!-- Loading -->
+            <div v-if="loadingVerEstudiantes" class="py-6 text-center">
+              <div class="animate-spin h-8 w-8 border-2 border-primary-600 border-t-transparent rounded-full mx-auto"></div>
+              <p class="text-gray-600 mt-3">Cargando...</p>
+            </div>
+
+            <!-- Lista -->
+            <div v-else>
+              <div v-if="estudiantesInscritos.length === 0" class="p-4 text-gray-500 text-center">
+                No hay estudiantes inscritos.
+              </div>
+
+              <div v-else class="divide-y divide-gray-200 max-h-80 overflow-y-auto">
+                <div
+                  v-for="est in estudiantesInscritos"
+                  :key="est.grupo_id"
+                  class="p-3 flex justify-between items-center"
+                >
+                  <div>
+                    <div class="text-gray-900 font-medium">{{ est.nombre }}</div>
+                    <div class="text-sm text-gray-500">{{ est.rut }} • {{ est.email }}</div>
+                    <div class="text-xs text-gray-400 mt-1">
+                      Estado:
+                      <span
+                        :class="{
+                          'text-green-600': est.estado === 'ACTIVO',
+                          'text-yellow-600': est.estado === 'SUSPENDIDO',
+                          'text-red-600': est.estado === 'RETIRADO'
+                        }"
+                      >
+                        {{ est.estado }}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="text-xs text-gray-400 text-right">
+                    <div v-if="est.fecha_inscripcion">Inscrito: {{ est.fecha_inscripcion }}</div>
+                    <div v-if="est.fecha_retiro">Retiro: {{ est.fecha_retiro }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="flex justify-end pt-4 border-t">
+              <button
+                @click="closeVerEstudiantesModal"
+                class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- FIN Modal Ver Estudiantes -->
     </div>
   </AdminLayout>
 </template>
-
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import { useTallerStore } from '@/store/taller.store'
-import { useSalaStore } from '../../store/sala.store'
+import { useSalaStore } from '@/store/sala.store'
 import { useTeacherStore } from '@/store/teacher.store'
+import { useStudentStore } from '@/store/student.store'
+import grupoTallerService from '@/services/grupoTaller.service'
+
 import type { Taller, TallerFormData } from '@/types/taller.types'
+import type { Estudiante } from '@/types/users.types'
 
 const tallerStore = useTallerStore()
 const salaStore = useSalaStore()
 const teacherStore = useTeacherStore()
+const studentStore = useStudentStore()
 
-// Estados del modal
+// --------- Estado principal ----------
 const showModal = ref(false)
 const showDeleteModal = ref(false)
 const showActivateModal = ref(false)
@@ -773,7 +920,6 @@ const editingId = ref<string | null>(null)
 const tallerToDelete = ref<Taller | null>(null)
 const tallerToActivate = ref<Taller | null>(null)
 
-// Formulario
 const formData = ref<TallerFormData>({
   nombre: '',
   descripcion: null,
@@ -787,13 +933,11 @@ const formData = ref<TallerFormData>({
   fecha_termino: null
 })
 
-// Filtros
 const filters = ref({
   search: '',
   estado_activo: undefined as boolean | undefined
 })
 
-// Talleres filtrados
 const filteredTalleres = computed(() => {
   return tallerStore.talleres.filter((t) => {
     const matchesEstado =
@@ -808,7 +952,6 @@ const filteredTalleres = computed(() => {
   })
 })
 
-// Helpers de capacidad
 const capacidadRatio = (taller: Taller): number => {
   const cap = taller.capacidad_maxima ?? 0
   if (!cap) return 0
@@ -987,16 +1130,182 @@ const handleActivate = async () => {
   }
 }
 
+// --------- Asignar estudiantes ---------
+interface GrupoTallerInscripcion {
+  grupo_id: string
+  taller_id: string
+  estudiante_id: string
+  estado: string
+  fecha_inscripcion: string
+  fecha_retiro: string | null
+  observaciones: string | null
+  Estudiante?: {
+    estudiante_id: string
+    nombre_completo: string
+    rut: string
+    email: string | null
+  } | null
+}
+
+const showAsignarModal = ref(false)
+const tallerSeleccionado = ref<Taller | null>(null)
+const estudiantesDisponibles = ref<Estudiante[]>([])
+const asignarSearch = ref('')
+const selectedEstudiantesIds = ref<string[]>([])
+const estudiantesAsignadosInicial = ref<string[]>([])
+const inscripcionesActuales = ref<GrupoTallerInscripcion[]>([])
+const savingAsignaciones = ref(false)
+
+const estudiantesAsignadosSet = computed(
+  () => new Set(estudiantesAsignadosInicial.value)
+)
+
+const filteredEstudiantesDisponibles = computed(() => {
+  const term = asignarSearch.value.trim().toLowerCase()
+  const all = estudiantesDisponibles.value
+
+  if (!term) return all
+
+  return all.filter((e) => {
+    const nombre = e.nombre_completo?.toLowerCase() || ''
+    const rut = e.rut?.toLowerCase() || ''
+    const email = e.email?.toLowerCase() || ''
+    return (
+      nombre.includes(term) ||
+      rut.includes(term) ||
+      email.includes(term)
+    )
+  })
+})
+
+const openAsignarEstudiantesModal = async (taller: Taller) => {
+  tallerSeleccionado.value = taller
+  showAsignarModal.value = true
+  asignarSearch.value = ''
+  savingAsignaciones.value = false
+
+  try {
+    // 1) Cargar estudiantes
+    await studentStore.fetchEstudiantes()
+    estudiantesDisponibles.value = studentStore.estudiantesActivos.length
+      ? studentStore.estudiantesActivos
+      : studentStore.estudiantes
+
+    // 2) Cargar inscripciones actuales del taller
+    const inscripciones = await grupoTallerService.getAll({
+      taller_id: taller.taller_id,
+      estado: 'ACTIVO'
+    })
+
+    inscripcionesActuales.value = inscripciones as GrupoTallerInscripcion[]
+    estudiantesAsignadosInicial.value = inscripcionesActuales.value.map(
+      (i) => i.estudiante_id
+    )
+    selectedEstudiantesIds.value = [...estudiantesAsignadosInicial.value]
+  } catch (error: any) {
+    console.error('Error al cargar estudiantes/inscripciones del taller:', error?.response || error)
+    alert(error?.response?.data?.message || 'No se pudieron cargar las inscripciones del taller.')
+    showAsignarModal.value = false
+  }
+}
+
+const closeAsignarModal = () => {
+  showAsignarModal.value = false
+  tallerSeleccionado.value = null
+  selectedEstudiantesIds.value = []
+  estudiantesAsignadosInicial.value = []
+  inscripcionesActuales.value = []
+}
+
+const saveAsignaciones = async () => {
+  if (!tallerSeleccionado.value) return
+
+  savingAsignaciones.value = true
+  try {
+    const inicialSet = new Set(estudiantesAsignadosInicial.value)
+    const seleccionSet = new Set(selectedEstudiantesIds.value)
+
+    const toAdd = [...seleccionSet].filter((id) => !inicialSet.has(id))
+    const toRemove = [...inicialSet].filter((id) => !seleccionSet.has(id))
+
+    // Crear nuevas inscripciones
+    for (const estId of toAdd) {
+      await grupoTallerService.create({
+        taller_id: tallerSeleccionado.value.taller_id,
+        estudiante_id: estId,
+        observaciones: null
+      })
+    }
+
+    // Retirar inscripciones que ya no están seleccionadas
+    for (const estId of toRemove) {
+      const inscripcion = inscripcionesActuales.value.find(
+        (i) => i.estudiante_id === estId && i.estado === 'ACTIVO'
+      )
+      if (inscripcion) {
+        await grupoTallerService.retirar(inscripcion.grupo_id, {
+          observaciones: 'Retiro desde gestión de talleres'
+        })
+      }
+    }
+
+    // Refrescar talleres (para actualizar conteo de inscritos)
+    await tallerStore.fetchTalleres()
+    alert('Inscripciones actualizadas correctamente')
+    closeAsignarModal()
+  } catch (error: any) {
+    console.error('Error al guardar asignaciones:', error?.response || error)
+    alert(error?.response?.data?.message || 'Error al guardar las asignaciones')
+  } finally {
+    savingAsignaciones.value = false
+  }
+}
+
+// --------- Ver estudiantes inscritos ----------
+const showVerEstudiantesModal = ref(false)
+const tallerVer = ref<Taller | null>(null)
+const estudiantesInscritos = ref<any[]>([])
+const loadingVerEstudiantes = ref(false)
+
+const openVerEstudiantesModal = async (taller: Taller) => {
+  showVerEstudiantesModal.value = true
+  tallerVer.value = taller
+  estudiantesInscritos.value = []
+  loadingVerEstudiantes.value = true
+
+  try {
+    const inscripciones = await grupoTallerService.getAll({
+      taller_id: taller.taller_id
+    })
+
+    estudiantesInscritos.value = (inscripciones as any[]).map((i) => ({
+      ...i,
+      nombre: i.Estudiante?.nombre_completo || 'Sin nombre',
+      rut: i.Estudiante?.rut || 'N/A',
+      email: i.Estudiante?.email || 'Sin email'
+    }))
+  } catch (error: any) {
+    console.error(error)
+    alert(error?.response?.data?.message || 'No se pudo cargar la lista de estudiantes inscritos.')
+  } finally {
+    loadingVerEstudiantes.value = false
+  }
+}
+
+const closeVerEstudiantesModal = () => {
+  showVerEstudiantesModal.value = false
+  tallerVer.value = null
+  estudiantesInscritos.value = []
+}
+
+// --------- Carga inicial ---------
 onMounted(async () => {
   try {
     await Promise.all([
       tallerStore.fetchTalleres(),
-      salaStore.fetchSalas(),                    // Salas para el select
-      teacherStore.fetchProfesores({             // 🔹 Profesores para el select
-      })
+      salaStore.fetchSalas(),
+      teacherStore.fetchProfesores({})
     ])
-
-    console.log('Profesores cargados:', teacherStore.profesores)
   } catch (error) {
     console.error('Error al cargar datos iniciales:', error)
   }

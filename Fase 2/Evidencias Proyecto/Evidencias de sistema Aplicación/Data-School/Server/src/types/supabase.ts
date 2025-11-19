@@ -791,6 +791,7 @@ export type Database = {
           nivel_id: number
           nombre: string
           profesor_jefe_id: string | null
+          sala_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -802,6 +803,7 @@ export type Database = {
           nivel_id: number
           nombre: string
           profesor_jefe_id?: string | null
+          sala_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -813,6 +815,7 @@ export type Database = {
           nivel_id?: number
           nombre?: string
           profesor_jefe_id?: string | null
+          sala_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -829,6 +832,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "Profesor"
             referencedColumns: ["profesor_id"]
+          },
+          {
+            foreignKeyName: "Curso_sala_id_fkey"
+            columns: ["sala_id"]
+            isOneToOne: false
+            referencedRelation: "Sala"
+            referencedColumns: ["sala_id"]
           },
         ]
       }
@@ -1807,8 +1817,6 @@ export type Database = {
           profesor_encargado_id: string | null
           sala_id: string | null
           taller_id: string
-          fecha_inicio: string | null
-          fecha_termino: string | null
         }
         Insert: {
           capacidad_maxima?: number | null
@@ -1823,8 +1831,6 @@ export type Database = {
           profesor_encargado_id?: string | null
           sala_id?: string | null
           taller_id: string
-          fecha_inicio?: string | null
-          fecha_termino?: string | null
         }
         Update: {
           capacidad_maxima?: number | null
@@ -1839,8 +1845,6 @@ export type Database = {
           profesor_encargado_id?: string | null
           sala_id?: string | null
           taller_id?: string
-          fecha_inicio?: string | null
-          fecha_termino?: string | null
         }
         Relationships: [
           {
@@ -2083,6 +2087,81 @@ export type Database = {
       }
     }
     Views: {
+      looker_encuesta_responses: {
+        Row: {
+          estudiante_id: string | null
+          fecha_respuesta: string | null
+          id_encuesta: string | null
+          pregunta_id: string | null
+          respuesta_valor: string | null
+          respuestas: Json | null
+          titulo_encuesta: string | null
+          version_encuesta: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "Encuesta_Estudiante_estudiante_id_fkey"
+            columns: ["estudiante_id"]
+            isOneToOne: false
+            referencedRelation: "Estudiante"
+            referencedColumns: ["estudiante_id"]
+          },
+          {
+            foreignKeyName: "Encuesta_Estudiante_estudiante_id_fkey"
+            columns: ["estudiante_id"]
+            isOneToOne: false
+            referencedRelation: "vista_resumen_estudiantes"
+            referencedColumns: ["estudiante_id"]
+          },
+          {
+            foreignKeyName: "Encuesta_Estudiante_id_encuesta_fkey"
+            columns: ["id_encuesta"]
+            isOneToOne: false
+            referencedRelation: "Encuesta"
+            referencedColumns: ["encuesta_id"]
+          },
+        ]
+      }
+      looker_encuesta_responses_completa: {
+        Row: {
+          encuesta_titulo: string | null
+          encuesta_version: string | null
+          estudiante_id: string | null
+          fecha_respuesta: string | null
+          id_encuesta: string | null
+          pregunta_descripcion: string | null
+          pregunta_id: string | null
+          pregunta_texto: string | null
+          pregunta_tipo: string | null
+          respuesta_texto: string | null
+          respuesta_valor_id: string | null
+          respuestas_json: Json | null
+          titulo: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "Encuesta_Estudiante_estudiante_id_fkey"
+            columns: ["estudiante_id"]
+            isOneToOne: false
+            referencedRelation: "Estudiante"
+            referencedColumns: ["estudiante_id"]
+          },
+          {
+            foreignKeyName: "Encuesta_Estudiante_estudiante_id_fkey"
+            columns: ["estudiante_id"]
+            isOneToOne: false
+            referencedRelation: "vista_resumen_estudiantes"
+            referencedColumns: ["estudiante_id"]
+          },
+          {
+            foreignKeyName: "Encuesta_Estudiante_id_encuesta_fkey"
+            columns: ["id_encuesta"]
+            isOneToOne: false
+            referencedRelation: "Encuesta"
+            referencedColumns: ["encuesta_id"]
+          },
+        ]
+      }
       vista_horario_completo: {
         Row: {
           asignatura: string | null

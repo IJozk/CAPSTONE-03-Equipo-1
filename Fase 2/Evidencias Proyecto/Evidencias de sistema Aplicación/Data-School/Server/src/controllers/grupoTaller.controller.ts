@@ -3,7 +3,9 @@ import { supabaseAdmin } from '@/config/supabase'
 
 export class GrupoTallerController {
 
-    // Inscribir estudiante a un taller
+    // ============================================================
+    // 🟩 CREAR INSCRIPCIÓN / REACTIVAR SI EXISTE
+    // ============================================================
     public async create(req: Request, res: Response): Promise<Response> {
         try {
             const {
@@ -12,17 +14,16 @@ export class GrupoTallerController {
                 observaciones
             } = req.body
 
-            // Validar campos requeridos
             if (!taller_id || !estudiante_id) {
                 return res.status(400).json({
                     message: 'taller_id y estudiante_id son requeridos'
                 })
             }
 
-            // Verificar que el taller existe y está activo
+            // --- Verificar taller ---
             const { data: taller, error: tallerError } = await supabaseAdmin!
                 .from('Taller')
-                .select('taller_id, nombre, capacidad_maxima, estado_activo')
+                .select('taller_id, capacidad_maxima, estado_activo')
                 .eq('taller_id', taller_id)
                 .single()
 
@@ -34,10 +35,10 @@ export class GrupoTallerController {
                 return res.status(400).json({ message: 'El taller no está activo' })
             }
 
-            // Verificar que el estudiante existe
+            // --- Verificar estudiante ---
             const { data: estudiante, error: estError } = await supabaseAdmin!
                 .from('Estudiante')
-                .select('estudiante_id, nombre_completo')
+                .select('estudiante_id')
                 .eq('estudiante_id', estudiante_id)
                 .single()
 
@@ -45,28 +46,34 @@ export class GrupoTallerController {
                 return res.status(404).json({ message: 'Estudiante no encontrado' })
             }
 
-            // Verificar que el estudiante no esté ya inscrito activamente en el taller
-            const { data: inscripcionExistente } = await supabaseAdmin!
+            // --- Buscar inscripción existente (cualquier estado) ---
+            const { data: inscripcionExistente, error: inscError } = await supabaseAdmin!
                 .from('Grupo_taller')
-                .select('grupo_id, estado')
+                .select('grupo_id, estado, observaciones')
                 .eq('taller_id', taller_id)
                 .eq('estudiante_id', estudiante_id)
-                .eq('estado', 'ACTIVO')
                 .maybeSingle()
 
-            if (inscripcionExistente) {
+            if (inscError && inscError.code !== 'PGRST116') {
+                throw inscError
+            }
+
+            // Si ya está activo -> error
+            if (inscripcionExistente && inscripcionExistente.estado === 'ACTIVO') {
                 return res.status(400).json({
                     message: 'El estudiante ya está inscrito en este taller'
                 })
             }
 
-            // Verificar capacidad del taller
+            // --- Verificar capacidad (para activar o reactivar) ---
             if (taller.capacidad_maxima) {
-                const { data: inscritos } = await supabaseAdmin!
+                const { data: inscritos, error: capError } = await supabaseAdmin!
                     .from('Grupo_taller')
                     .select('grupo_id')
                     .eq('taller_id', taller_id)
                     .eq('estado', 'ACTIVO')
+
+                if (capError) throw capError
 
                 if (inscritos && inscritos.length >= taller.capacidad_maxima) {
                     return res.status(400).json({
@@ -75,13 +82,32 @@ export class GrupoTallerController {
                 }
             }
 
-            // Crear inscripción
+            // --- Si existe la inscripción pero estaba RETIRADO / SUSPENDIDO → REACTIVAR ---
+            if (inscripcionExistente && inscripcionExistente.estado !== 'ACTIVO') {
+                const { data, error } = await supabaseAdmin!
+                    .from('Grupo_taller')
+                    .update({
+                        estado: 'ACTIVO',
+                        fecha_inscripcion: new Date().toISOString(),
+                        fecha_retiro: null,
+                        observaciones: observaciones ?? inscripcionExistente.observaciones ?? null
+                    })
+                    .eq('grupo_id', inscripcionExistente.grupo_id)
+                    .select()
+                    .single()
+
+                if (error) throw error
+
+                return res.status(200).json(data)  // reactivado
+            }
+
+            // --- Crear inscripción nueva ---
             const { data, error } = await supabaseAdmin!
                 .from('Grupo_taller')
                 .insert({
                     taller_id,
                     estudiante_id,
-                    observaciones,
+                    observaciones: observaciones ?? null,
                     estado: 'ACTIVO',
                     fecha_inscripcion: new Date().toISOString()
                 })
@@ -90,14 +116,17 @@ export class GrupoTallerController {
 
             if (error) throw error
 
-            return res.status(201).json(data)
+            return res.status(201).json(data) // creado
 
         } catch (error: any) {
+            console.error('Error en create Grupo_taller:', error)
             return res.status(500).json({ message: error.message })
         }
     }
 
-    // Obtener todas las inscripciones con filtros
+    // ============================================================
+    // 🟦 OBTENER INSCRIPCIONES (con filtros)
+    // ============================================================
     public async getAll(req: Request, res: Response): Promise<Response> {
         try {
             const { taller_id, estudiante_id, estado } = req.query
@@ -110,17 +139,9 @@ export class GrupoTallerController {
                     Estudiante(estudiante_id, nombre_completo, rut, email)
                 `)
 
-            if (taller_id) {
-                query = query.eq('taller_id', taller_id)
-            }
-
-            if (estudiante_id) {
-                query = query.eq('estudiante_id', estudiante_id)
-            }
-
-            if (estado) {
-                query = query.eq('estado', estado)
-            }
+            if (taller_id) query = query.eq('taller_id', taller_id)
+            if (estudiante_id) query = query.eq('estudiante_id', estudiante_id)
+            if (estado) query = query.eq('estado', estado)
 
             query = query.order('fecha_inscripcion', { ascending: false })
 
@@ -135,7 +156,9 @@ export class GrupoTallerController {
         }
     }
 
-    // Obtener inscripción por ID
+    // ============================================================
+    // 🟩 OBTENER INSCRIPCIÓN POR ID
+    // ============================================================
     public async getById(req: Request, res: Response): Promise<Response> {
         try {
             const { id } = req.params
@@ -177,7 +200,9 @@ export class GrupoTallerController {
         }
     }
 
-    // Obtener talleres de un estudiante
+    // ============================================================
+    // 🟩 INSCRIPCIONES POR ESTUDIANTE
+    // ============================================================
     public async getByEstudiante(req: Request, res: Response): Promise<Response> {
         try {
             const { estudiante_id } = req.params
@@ -198,9 +223,7 @@ export class GrupoTallerController {
                 `)
                 .eq('estudiante_id', estudiante_id)
 
-            if (estado) {
-                query = query.eq('estado', estado)
-            }
+            if (estado) query = query.eq('estado', estado)
 
             query = query.order('fecha_inscripcion', { ascending: false })
 
@@ -215,18 +238,17 @@ export class GrupoTallerController {
         }
     }
 
-    // Actualizar inscripción
+    // ============================================================
+    // 🟧 ACTUALIZAR OBSERVACIONES
+    // ============================================================
     public async update(req: Request, res: Response): Promise<Response> {
         try {
             const { id } = req.params
             const { observaciones } = req.body
 
-            const updateData: any = {}
-            if (observaciones !== undefined) updateData.observaciones = observaciones
-
             const { data, error } = await supabaseAdmin!
                 .from('Grupo_taller')
-                .update(updateData)
+                .update({ observaciones })
                 .eq('grupo_id', id)
                 .select()
                 .single()
@@ -244,24 +266,21 @@ export class GrupoTallerController {
         }
     }
 
-    // Retirar estudiante del taller
+    // ============================================================
+    // 🟥 RETIRAR ESTUDIANTE (estado = RETIRADO)
+    // ============================================================
     public async retirar(req: Request, res: Response): Promise<Response> {
         try {
             const { id } = req.params
             const { observaciones } = req.body
 
-            const updateData: any = {
-                estado: 'RETIRADO',
-                fecha_retiro: new Date().toISOString()
-            }
-
-            if (observaciones) {
-                updateData.observaciones = observaciones
-            }
-
             const { data, error } = await supabaseAdmin!
                 .from('Grupo_taller')
-                .update(updateData)
+                .update({
+                    estado: 'RETIRADO',
+                    fecha_retiro: new Date().toISOString(),
+                    observaciones: observaciones ?? null
+                })
                 .eq('grupo_id', id)
                 .select()
                 .single()
@@ -279,23 +298,20 @@ export class GrupoTallerController {
         }
     }
 
-    // Suspender estudiante del taller
+    // ============================================================
+    // 🟧 SUSPENDER ESTUDIANTE (estado = SUSPENDIDO)
+    // ============================================================
     public async suspender(req: Request, res: Response): Promise<Response> {
         try {
             const { id } = req.params
             const { observaciones } = req.body
 
-            const updateData: any = {
-                estado: 'SUSPENDIDO'
-            }
-
-            if (observaciones) {
-                updateData.observaciones = observaciones
-            }
-
             const { data, error } = await supabaseAdmin!
                 .from('Grupo_taller')
-                .update(updateData)
+                .update({
+                    estado: 'SUSPENDIDO',
+                    observaciones: observaciones ?? null
+                })
                 .eq('grupo_id', id)
                 .select()
                 .single()
@@ -313,19 +329,20 @@ export class GrupoTallerController {
         }
     }
 
-    // Reactivar estudiante en el taller
+    // ============================================================
+    // 🟩 REACTIVAR INSCRIPCIÓN (estado → ACTIVO)
+    // ============================================================
     public async reactivar(req: Request, res: Response): Promise<Response> {
         try {
             const { id } = req.params
 
-            // Verificar el estado actual
-            const { data: inscripcion, error: fetchError } = await supabaseAdmin!
+            const { data: inscripcion, error } = await supabaseAdmin!
                 .from('Grupo_taller')
                 .select('*, Taller(capacidad_maxima, taller_id)')
                 .eq('grupo_id', id)
                 .single()
 
-            if (fetchError || !inscripcion) {
+            if (error || !inscripcion) {
                 return res.status(404).json({ message: 'Inscripción no encontrada' })
             }
 
@@ -333,7 +350,7 @@ export class GrupoTallerController {
                 return res.status(400).json({ message: 'La inscripción ya está activa' })
             }
 
-            // Verificar capacidad del taller
+            // Verificar capacidad
             if (inscripcion.Taller.capacidad_maxima) {
                 const { data: inscritos } = await supabaseAdmin!
                     .from('Grupo_taller')
@@ -348,7 +365,7 @@ export class GrupoTallerController {
                 }
             }
 
-            const { data, error } = await supabaseAdmin!
+            const { data: updated, error: updError } = await supabaseAdmin!
                 .from('Grupo_taller')
                 .update({
                     estado: 'ACTIVO',
@@ -358,16 +375,18 @@ export class GrupoTallerController {
                 .select()
                 .single()
 
-            if (error) throw error
+            if (updError) throw updError
 
-            return res.status(200).json(data)
+            return res.status(200).json(updated)
 
         } catch (error: any) {
             return res.status(500).json({ message: error.message })
         }
     }
 
-    // Eliminar inscripción
+    // ============================================================
+    // 🗑 ELIMINAR INSCRIPCIÓN
+    // ============================================================
     public async delete(req: Request, res: Response): Promise<Response> {
         try {
             const { id } = req.params

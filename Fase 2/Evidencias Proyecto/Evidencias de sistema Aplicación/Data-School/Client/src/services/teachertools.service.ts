@@ -122,7 +122,7 @@ class TeacherService {
         },
         total_estudiantes: 0, // No se muestra en la UI
         horas_semanales: asignatura.horas_semanales || 0,
-        sala: asignatura.sala_id || 'Sin sala',
+        sala: asignatura.Curso?.sala_id || 'Sin sala',
         periodo: asignatura.periodo || 'N/A'
       };
     });

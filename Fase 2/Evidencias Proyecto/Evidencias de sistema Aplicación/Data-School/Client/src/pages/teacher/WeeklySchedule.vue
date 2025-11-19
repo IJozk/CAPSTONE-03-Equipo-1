@@ -206,18 +206,21 @@ const daysOfWeek = [
   { number: 6, name: 'Sáb' }  // Sábado
 ];
 
-// Time slots for the schedule (8:00 AM to 6:00 PM in 1-hour blocks)
+// Time slots for the schedule (40-minute academic hours from 8:30 AM)
 const timeSlots = [
-  { start: '08:00', end: '09:00' },
-  { start: '09:00', end: '10:00' },
-  { start: '10:00', end: '11:00' },
-  { start: '11:00', end: '12:00' },
-  { start: '12:00', end: '13:00' },
-  { start: '13:00', end: '14:00' },
-  { start: '14:00', end: '15:00' },
-  { start: '15:00', end: '16:00' },
-  { start: '16:00', end: '17:00' },
-  { start: '17:00', end: '18:00' }
+  { start: '08:30', end: '09:10' }, // Bloque 1
+  { start: '09:10', end: '09:50' }, // Bloque 2
+  { start: '09:50', end: '10:05' }, // Recreo 1
+  { start: '10:05', end: '10:45' }, // Bloque 3
+  { start: '10:45', end: '11:25' }, // Bloque 4
+  { start: '11:25', end: '11:40' }, // Recreo 2
+  { start: '11:40', end: '12:20' }, // Bloque 5
+  { start: '12:20', end: '13:00' }, // Bloque 6
+  { start: '13:00', end: '13:40' }, // Almuerzo
+  { start: '13:40', end: '14:20' }, // Bloque 7
+  { start: '14:20', end: '15:00' }, // Bloque 8
+  { start: '15:00', end: '15:40' }, // Bloque 9
+  { start: '15:40', end: '16:20' }  // Bloque 10
 ];
 
 // Helper function to get the Sunday of the current week
