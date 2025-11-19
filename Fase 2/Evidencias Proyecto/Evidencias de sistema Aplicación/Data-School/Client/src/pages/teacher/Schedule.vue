@@ -4,7 +4,7 @@
       <!-- Header -->
       <div class="mb-6">
         <h1 class="text-2xl font-bold text-gray-900">Mi Calendario</h1>
-        <p class="text-gray-600 mt-1">Visualiza tus evaluaciones programadas por mes</p>
+        <p class="text-gray-600 mt-1">Visualiza tus evaluaciones, eventos y talleres programados</p>
       </div>
 
       <!-- Month Navigation -->
@@ -21,7 +21,7 @@
 
           <div class="text-center">
             <h2 class="text-xl font-bold text-gray-900">{{ currentMonthName }} {{ currentYear }}</h2>
-            <p class="text-sm text-gray-600">{{ totalEvaluationsThisMonth }} evaluaciones este mes</p>
+            <p class="text-sm text-gray-600">{{ totalItemsThisMonth }} eventos este mes</p>
           </div>
 
           <button
@@ -38,7 +38,7 @@
       <!-- Loading -->
       <div v-if="loading" class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
         <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-        <p class="mt-2 text-gray-600">Cargando evaluaciones...</p>
+        <p class="mt-2 text-gray-600">Cargando calendario...</p>
       </div>
 
       <!-- Error -->
@@ -83,25 +83,25 @@
               </span>
             </div>
 
-            <!-- Evaluations for this day -->
+            <!-- Items for this day -->
             <div class="space-y-1">
               <div
-                v-for="evaluation in getEvaluationsForDay(day)"
-                :key="evaluation.evaluacion_id"
-                @click="selectedEvaluation = evaluation"
+                v-for="item in getItemsForDay(day)"
+                :key="`${item.tipo}-${item.id}`"
+                @click="selectedItem = item"
                 class="px-2 py-1 rounded text-xs cursor-pointer transition-all hover:shadow-md"
-                :class="getEvaluationColor(evaluation.tipo)"
+                :class="getItemColor(item.tipo)"
               >
-                <div class="font-semibold truncate">{{ evaluation.nombre }}</div>
-                <div class="text-xs opacity-90 truncate">{{ evaluation.asignatura_nombre }}</div>
+                <div class="font-semibold truncate">{{ item.titulo }}</div>
+                <div class="text-xs opacity-90 truncate">{{ item.asignatura || 'General' }}</div>
               </div>
 
-              <!-- Show "+" if more than 3 evaluations -->
+              <!-- Show "+" if more than 3 items -->
               <div
-                v-if="getEvaluationsForDay(day).length > 3"
+                v-if="getItemsForDay(day).length > 3"
                 class="text-xs text-gray-500 font-medium text-center"
               >
-                +{{ getEvaluationsForDay(day).length - 3 }} más
+                +{{ getItemsForDay(day).length - 3 }} más
               </div>
             </div>
           </div>
@@ -112,43 +112,31 @@
           <div class="flex flex-wrap gap-4 text-xs">
             <div class="flex items-center">
               <div class="w-3 h-3 rounded bg-blue-100 border border-blue-300 mr-2"></div>
-              <span class="text-gray-700">Prueba</span>
-            </div>
-            <div class="flex items-center">
-              <div class="w-3 h-3 rounded bg-green-100 border border-green-300 mr-2"></div>
-              <span class="text-gray-700">Trabajo</span>
+              <span class="text-gray-700">Evaluación</span>
             </div>
             <div class="flex items-center">
               <div class="w-3 h-3 rounded bg-yellow-100 border border-yellow-300 mr-2"></div>
-              <span class="text-gray-700">Tarea</span>
+              <span class="text-gray-700">Evento</span>
             </div>
             <div class="flex items-center">
-              <div class="w-3 h-3 rounded bg-purple-100 border border-purple-300 mr-2"></div>
-              <span class="text-gray-700">Proyecto</span>
-            </div>
-            <div class="flex items-center">
-              <div class="w-3 h-3 rounded bg-pink-100 border border-pink-300 mr-2"></div>
-              <span class="text-gray-700">Presentación</span>
-            </div>
-            <div class="flex items-center">
-              <div class="w-3 h-3 rounded bg-gray-100 border border-gray-300 mr-2"></div>
-              <span class="text-gray-700">Otros</span>
+              <div class="w-3 h-3 rounded bg-green-100 border border-green-300 mr-2"></div>
+              <span class="text-gray-700">Taller</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Evaluation Detail Modal -->
+      <!-- Detail Modal -->
       <div
-        v-if="selectedEvaluation"
+        v-if="selectedItem"
         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-        @click="selectedEvaluation = null"
+        @click="selectedItem = null"
       >
         <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6" @click.stop>
           <div class="flex justify-between items-start mb-4">
-            <h3 class="text-xl font-bold text-gray-900">Detalle de Evaluación</h3>
+            <h3 class="text-xl font-bold text-gray-900">Detalle</h3>
             <button
-              @click="selectedEvaluation = null"
+              @click="selectedItem = null"
               class="text-gray-400 hover:text-gray-600"
             >
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -159,66 +147,78 @@
 
           <div class="space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-              <p class="text-lg font-semibold text-gray-900">{{ selectedEvaluation.nombre }}</p>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Título</label>
+              <p class="text-lg font-semibold text-gray-900">{{ selectedItem.titulo }}</p>
             </div>
 
-            <div>
+            <div v-if="selectedItem.asignatura">
               <label class="block text-sm font-medium text-gray-700 mb-1">Asignatura</label>
-              <p class="text-gray-900">{{ selectedEvaluation.asignatura_nombre }}</p>
+              <p class="text-gray-900">{{ selectedItem.asignatura }}</p>
             </div>
 
-            <div>
+            <div v-if="selectedItem.curso">
               <label class="block text-sm font-medium text-gray-700 mb-1">Curso</label>
-              <p class="text-gray-900">{{ selectedEvaluation.curso_nombre }}</p>
+              <p class="text-gray-900">{{ selectedItem.curso }}</p>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
                 <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold"
-                      :class="getEvaluationColor(selectedEvaluation.tipo)">
-                  {{ selectedEvaluation.tipo }}
+                      :class="getItemColor(selectedItem.tipo)">
+                  {{ selectedItem.tipo }}
                 </span>
               </div>
 
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
-                <p class="text-gray-900">{{ formatDate(selectedEvaluation.fecha_evaluacion) }}</p>
+                <p class="text-gray-900">{{ formatDate(selectedItem.fecha) }}</p>
               </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Puntaje Máximo</label>
-                <p class="text-gray-900">{{ selectedEvaluation.puntaje_maximo }} pts</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Porcentaje</label>
-                <p class="text-gray-900">{{ selectedEvaluation.porcentaje_nota }}%</p>
-              </div>
-            </div>
-
-            <div v-if="selectedEvaluation.descripcion">
+            <div v-if="selectedItem.descripcion">
               <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-              <p class="text-gray-700 text-sm">{{ selectedEvaluation.descripcion }}</p>
+              <p class="text-gray-700 text-sm">{{ selectedItem.descripcion }}</p>
             </div>
 
-            <div v-if="selectedEvaluation.is_recuperativa" class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-              <p class="text-sm text-yellow-800 font-medium">⚠️ Evaluación Recuperativa</p>
+            <!-- Info adicional para evaluaciones -->
+            <div v-if="selectedItem.tipo === 'EVALUACION' && selectedItem.detalles" class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p class="text-sm text-blue-800 font-medium">📝 Evaluación</p>
+              <div class="mt-2 space-y-1 text-sm text-blue-700">
+                <p v-if="selectedItem.detalles.puntaje_maximo">Puntaje Máximo: {{ selectedItem.detalles.puntaje_maximo }} pts</p>
+                <p v-if="selectedItem.detalles.porcentaje_nota">Porcentaje: {{ selectedItem.detalles.porcentaje_nota }}%</p>
+                <p v-if="selectedItem.detalles.tipo_evaluacion">Tipo: {{ selectedItem.detalles.tipo_evaluacion }}</p>
+              </div>
+            </div>
+
+            <!-- Info adicional para talleres -->
+            <div v-if="selectedItem.tipo === 'TALLER' && selectedItem.detalles" class="bg-green-50 border border-green-200 rounded-lg p-3">
+              <p class="text-sm text-green-800 font-medium">🎓 Taller</p>
+              <div class="mt-2 space-y-1 text-sm text-green-700">
+                <p v-if="selectedItem.detalles.lugar">Lugar: {{ selectedItem.detalles.lugar }}</p>
+                <p v-if="selectedItem.detalles.cupos_maximos">Cupos: {{ selectedItem.detalles.cupos_maximos }}</p>
+              </div>
+            </div>
+
+            <!-- Info adicional para eventos -->
+            <div v-if="selectedItem.tipo === 'EVENTO' && selectedItem.detalles" class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+              <p class="text-sm text-yellow-800 font-medium">🎉 Evento</p>
+              <div class="mt-2 space-y-1 text-sm text-yellow-700">
+                <p v-if="selectedItem.detalles.lugar">Lugar: {{ selectedItem.detalles.lugar }}</p>
+              </div>
             </div>
           </div>
 
           <div class="mt-6 flex justify-end space-x-3">
             <button
-              @click="selectedEvaluation = null"
+              @click="selectedItem = null"
               class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
             >
               Cerrar
             </button>
             <button
-              @click="goToEvaluation(selectedEvaluation)"
+              v-if="selectedItem.tipo === 'EVALUACION'"
+              @click="goToEvaluation(selectedItem)"
               class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
             >
               Ver Notas
@@ -234,13 +234,16 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import teacherService from '@/services/teachertools.service';
+import eventoService from '@/services/evento.service';
+import { useTallerStore } from '@/store/taller.store';
 import type { Evaluation } from '@/types/teacher.types';
 
 const router = useRouter();
+const tallerStore = useTallerStore();
 const loading = ref(false);
 const error = ref('');
-const evaluations = ref<Evaluation[]>([]);
-const selectedEvaluation = ref<Evaluation | null>(null);
+const calendarItems = ref<any[]>([]);
+const selectedItem = ref<any | null>(null);
 
 // Current month/year state
 const currentMonth = ref(new Date().getMonth()); // 0-11
@@ -256,10 +259,10 @@ const monthNames = [
 // Computed
 const currentMonthName = computed(() => monthNames[currentMonth.value]);
 
-const totalEvaluationsThisMonth = computed(() => {
-  return evaluations.value.filter(ev => {
-    const evDate = new Date(ev.fecha_evaluacion);
-    return evDate.getMonth() === currentMonth.value && evDate.getFullYear() === currentYear.value;
+const totalItemsThisMonth = computed(() => {
+  return calendarItems.value.filter(item => {
+    const itemDate = new Date(item.fecha);
+    return itemDate.getMonth() === currentMonth.value && itemDate.getFullYear() === currentYear.value;
   }).length;
 });
 
@@ -335,27 +338,25 @@ const getDayClass = (day: CalendarDay): string => {
   return classes.join(' ');
 };
 
-const getEvaluationsForDay = (day: CalendarDay): Evaluation[] => {
-  return evaluations.value.filter(ev => {
-    const evDate = new Date(ev.fecha_evaluacion);
+const getItemsForDay = (day: CalendarDay): any[] => {
+  return calendarItems.value.filter(item => {
+    const itemDate = new Date(item.fecha);
     return (
-      evDate.getDate() === day.date.getDate() &&
-      evDate.getMonth() === day.date.getMonth() &&
-      evDate.getFullYear() === day.date.getFullYear()
+      itemDate.getDate() === day.date.getDate() &&
+      itemDate.getMonth() === day.date.getMonth() &&
+      itemDate.getFullYear() === day.date.getFullYear()
     );
-  }).slice(0, 3); // Show max 3 evaluations per day
+  }).slice(0, 3); // Show max 3 items per day
 };
 
-const getEvaluationColor = (tipo: string): string => {
+const getItemColor = (tipo: string): string => {
   const colors: Record<string, string> = {
-    PRUEBA: 'bg-blue-100 text-blue-800 border-blue-300',
-    TRABAJO: 'bg-green-100 text-green-800 border-green-300',
-    TAREA: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-    PROYECTO: 'bg-purple-100 text-purple-800 border-purple-300',
-    PRESENTACION: 'bg-pink-100 text-pink-800 border-pink-300',
-    OTROS: 'bg-gray-100 text-gray-800 border-gray-300'
+    EVALUACION: 'bg-blue-100 text-blue-800 border-blue-300',
+    EVENTO: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+    TALLER: 'bg-green-100 text-green-800 border-green-300',
+    OTRO: 'bg-gray-100 text-gray-800 border-gray-300'
   };
-  return colors[tipo] || colors.OTROS;
+  return colors[tipo] || colors.OTRO;
 };
 
 const formatDate = (dateString: string): string => {
@@ -386,35 +387,109 @@ const nextMonth = () => {
   }
 };
 
-const goToEvaluation = (evaluation: Evaluation) => {
+const goToEvaluation = (item: any) => {
   // Navigate to grades page for this evaluation
-  router.push({
-    name: 'teacher-grades',
-    query: {
-      evaluation: evaluation.evaluacion_id,
-      subject: evaluation.asignatura_id
-    }
-  });
+  if (item.evaluacion_id && item.asignatura_id) {
+    router.push({
+      name: 'teacher-grades',
+      query: {
+        evaluation: item.evaluacion_id,
+        subject: item.asignatura_id
+      }
+    });
+  }
 };
 
-// Load evaluations
-const loadEvaluations = async () => {
+// Load calendar data
+const loadCalendarData = async () => {
   loading.value = true;
   error.value = '';
 
   try {
-    console.log('Cargando todas las evaluaciones del profesor...');
-    evaluations.value = await teacherService.getAllMyEvaluations();
-    console.log('Evaluaciones cargadas:', evaluations.value.length);
+    console.log('📅 Cargando calendario del profesor...');
+
+    // Cargar evaluaciones, eventos y talleres en paralelo
+    const [evaluaciones, eventos, talleres] = await Promise.all([
+      teacherService.getAllMyEvaluations().catch((err) => {
+        console.error('Error cargando evaluaciones:', err);
+        return [];
+      }),
+      eventoService.getAll().catch((err) => {
+        console.error('Error cargando eventos:', err);
+        return [];
+      }),
+      tallerStore.fetchTalleres().then(() => tallerStore.talleres).catch((err) => {
+        console.error('Error cargando talleres:', err);
+        return [];
+      })
+    ]);
+
+    console.log('📋 Evaluaciones cargadas:', evaluaciones.length);
+    console.log('🎉 Eventos cargados:', eventos.length);
+    console.log('🎓 Talleres cargados:', talleres.length);
+
+    // Procesar evaluaciones
+    const evaluacionesItems = evaluaciones.map((ev: any) => ({
+      id: ev.evaluacion_id,
+      evaluacion_id: ev.evaluacion_id,
+      asignatura_id: ev.asignatura_id,
+      tipo: 'EVALUACION',
+      titulo: ev.nombre,
+      descripcion: ev.descripcion || 'Evaluación programada',
+      fecha: ev.fecha_evaluacion,
+      asignatura: ev.asignatura_nombre || 'Sin asignatura',
+      curso: ev.curso_nombre || '',
+      detalles: {
+        puntaje_maximo: ev.puntaje_maximo,
+        porcentaje_nota: ev.porcentaje_nota,
+        tipo_evaluacion: ev.tipo,
+        is_recuperativa: ev.is_recuperativa
+      }
+    }));
+
+    // Procesar eventos
+    const eventosItems = eventos.map((ev: any) => ({
+      id: ev.evento_id,
+      tipo: 'EVENTO',
+      titulo: ev.nombre || 'Sin título',
+      descripcion: ev.descripcion || `Evento en ${ev.lugar || 'ubicación por definir'}`,
+      fecha: ev.fecha_inicio || new Date().toISOString(),
+      asignatura: null,
+      detalles: {
+        lugar: ev.lugar
+      }
+    }));
+
+    // Procesar talleres
+    const talleresItems = talleres.map((taller: any) => ({
+      id: taller.taller_id,
+      tipo: 'TALLER',
+      titulo: taller.nombre || 'Sin título',
+      descripcion: taller.descripcion || 'Taller programado',
+      fecha: taller.fecha_inicio || new Date().toISOString(),
+      asignatura: null,
+      detalles: {
+        lugar: taller.lugar,
+        cupos_maximos: taller.cupos_maximos
+      }
+    }));
+
+    // Combinar y ordenar por fecha
+    calendarItems.value = [...evaluacionesItems, ...eventosItems, ...talleresItems].sort((a, b) => {
+      return new Date(a.fecha).getTime() - new Date(b.fecha).getTime();
+    });
+
+    console.log('📅 Total de items en calendario:', calendarItems.value.length);
+
   } catch (err: any) {
-    error.value = err.message || 'Error al cargar las evaluaciones';
-    console.error('Error loading evaluations:', err);
+    error.value = err.message || 'Error al cargar el calendario';
+    console.error('❌ Error loading calendar:', err);
   } finally {
     loading.value = false;
   }
 };
 
 onMounted(() => {
-  loadEvaluations();
+  loadCalendarData();
 });
 </script>
