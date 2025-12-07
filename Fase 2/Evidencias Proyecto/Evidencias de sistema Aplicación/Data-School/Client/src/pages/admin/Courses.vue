@@ -234,6 +234,8 @@
                     type="number"
                     required
                     placeholder="Ej: 2024"
+                    step="1"
+                    @keypress="onlyNumbers"
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                 </div>
@@ -247,6 +249,8 @@
                     type="number"
                     required
                     placeholder="Ej: 2024"
+                    step="1"
+                    @keypress="onlyNumbers"
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                 </div>
@@ -260,6 +264,7 @@
                   type="number"
                   min="1"
                   placeholder="Dejar vacío para sin límite"
+                  @keypress="onlyNumbers"
                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
@@ -1125,6 +1130,13 @@ const loadProfesores = async () => {
   } catch (error) {
     console.error('Error cargando profesores:', error)
     alert('Error al cargar la lista de profesores')
+  }
+}
+
+const onlyNumbers = (event: KeyboardEvent) => {
+  const key = event.key
+  if (!/^\d$/.test(key) && !['Backspace', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'Delete'].includes(key)) {
+    event.preventDefault()
   }
 }
 
