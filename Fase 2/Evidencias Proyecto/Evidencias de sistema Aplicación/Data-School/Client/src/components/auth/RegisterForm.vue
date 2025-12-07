@@ -427,7 +427,8 @@ import {
   validatePasswordMatch,
   validateRole,
   validateTelefono,
-  validateFechaNacimiento
+  validateFechaNacimiento,
+  validateFechaContratacion
 } from '@/utils/validators';
 import type { RegisterDTO, RegisterValidationErrors, RoleOption } from '@/types/auth.types';
 import { UserRole } from '@/types/auth.types';
@@ -641,9 +642,16 @@ const validateField = (field: keyof RegisterDTO) => {
       break;
     }
     case 'fecha_contratacion': {
-      if ( formData.value.role === UserRole.ADMINISTRADOR || formData.value.role === UserRole.ADMINISTRATIVO) {
-        if (!formData.value.fecha_contratacion) errors.value.fecha_contratacion = 'Fecha de contratación requerida';
-        else delete errors.value.fecha_contratacion;
+      if (formData.value.role === UserRole.ADMINISTRADOR || formData.value.role === UserRole.ADMINISTRATIVO) {
+        
+        if (!formData.value.fecha_contratacion) {
+          errors.value.fecha_contratacion = 'Fecha de contratación requerida';
+        } else {
+          const error = validateFechaContratacion(formData.value.fecha_contratacion);
+          if (error) errors.value.fecha_contratacion = error;
+          else delete errors.value.fecha_contratacion;
+        }
+
       }
       break;
     }

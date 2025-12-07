@@ -64,13 +64,24 @@ export const validateNombreCompleto = (nombre: string): string | null => {
     return 'El nombre completo es requerido';
   }
 
-  if (nombre.trim().length < 3) {
-    return 'El nombre debe tener al menos 3 caracteres';
+  // Limpiar espacios dobles
+  const clean = nombre.trim().replace(/\s+/g, ' ');
+
+  if (clean.length < 5) {
+    return 'El nombre es demasiado corto';
   }
 
-  const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
-  if (!nameRegex.test(nombre)) {
-    return 'El nombre solo puede contener letras y espacios';
+  // Debe tener al menos nombre y apellido
+  const parts = clean.split(' ');
+  if (parts.length < 2) {
+    return 'Debe ingresar al menos nombre y apellido';
+  }
+
+  // Regex que acepta nombres reales en Chile
+  const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s'-]+$/;
+
+  if (!nameRegex.test(clean)) {
+    return 'El nombre solo puede contener letras, espacios, guiones o apóstrofes';
   }
 
   return null;
@@ -78,6 +89,7 @@ export const validateNombreCompleto = (nombre: string): string | null => {
 
 /**
  * Valida RUT chileno con algoritmo módulo 11
+ * Acepta RUTs desde 1-9 hasta 99.999.999-X
  * @param rut - RUT a validar
  * @returns Mensaje de error o null si es válido
  */
@@ -89,8 +101,8 @@ export const validateRUT = (rut: string): string | null => {
   // Limpiar RUT (quitar puntos y guión)
   const cleanRut = rut.replace(/\./g, '').replace(/-/g, '');
 
-  // Verificar formato básico - MODIFICADO: mínimo 2 caracteres
-  if (cleanRut.length < 2 || cleanRut.length > 9) {
+  // Verificar formato básico (mínimo 2 caracteres: número + verificador)
+  if (cleanRut.length < 2) {
     return 'RUT inválido';
   }
 
@@ -103,7 +115,13 @@ export const validateRUT = (rut: string): string | null => {
     return 'RUT debe contener solo números';
   }
 
-  // Calcular dígito verificador
+  // Validar rango: desde 1 hasta 99.999.999
+  const rutValue = parseInt(rutNumber);
+  if (rutValue < 1 || rutValue > 99999999) {
+    return 'RUT fuera del rango válido';
+  }
+
+  // Calcular dígito verificador usando algoritmo módulo 11
   let sum = 0;
   let multiplier = 2;
 
@@ -148,7 +166,7 @@ export const formatRUT = (rut: string): string => {
   const number = clean.slice(0, -1);
   const verifier = clean.slice(-1);
 
-  // Formatear número con puntos (solo si tiene más de 3 dígitos)
+  // Formatear número con puntos
   let formatted = '';
   let counter = 0;
 
@@ -169,6 +187,7 @@ export const formatRUT = (rut: string): string => {
 
 /**
  * Valida teléfono chileno
+ * Acepta formato +56912345678 o 912345678
  * @param telefono - Teléfono a validar
  * @returns Mensaje de error o null si es válido
  */
@@ -177,9 +196,14 @@ export const validateTelefono = (telefono: string): string | null => {
     return null; // Opcional
   }
 
-  const phoneRegex = /^\+?56[0-9]{9}$/;
-  if (!phoneRegex.test(telefono.replace(/\s/g, ''))) {
-    return 'Formato inválido. Debe ser +56XXXXXXXXX';
+  // Remover espacios, guiones y paréntesis
+  const clean = telefono.replace(/[\s\-\(\)]/g, '');
+
+  // Validar formato: +56912345678 o 912345678
+  const phoneRegex = /^(\+?56)?9\d{8}$/;
+  
+  if (!phoneRegex.test(clean)) {
+    return 'Formato inválido. Use +56912345678 o 912345678';
   }
 
   return null;
@@ -231,18 +255,17 @@ export const validatePasswordStrength = (password: string): {
     errors.push('Al menos un número');
   }
 
-  if (!/[@$!%*?&]/.test(password)) {
-    errors.push('Al menos un símbolo (@$!%*?&)');
+  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+    errors.push('Al menos un carácter especial');
   }
 
   // Calcular fortaleza
   let strength: 'weak' | 'medium' | 'strong' = 'weak';
+  
   if (errors.length === 0) {
-    if (password.length >= 12) {
-      strength = 'strong';
-    } else {
-      strength = 'medium';
-    }
+    strength = 'strong';
+  } else if (errors.length <= 2) {
+    strength = 'medium';
   }
 
   return {
@@ -262,7 +285,7 @@ export const validateRole = (role: string): string | null => {
     return 'Debes seleccionar un rol';
   }
 
-  const validRoles = ['ADMINISTRADOR', 'DIRECTOR', 'UTP', 'PROFESOR', 'ESTUDIANTE_APODERADO'];
+  const validRoles = ['ADMINISTRADOR', 'ADMINISTRATIVO', 'PROFESOR', 'ESTUDIANTE_APODERADO'];
   if (!validRoles.includes(role)) {
     return 'Rol inválido';
   }
@@ -273,7 +296,7 @@ export const validateRole = (role: string): string | null => {
 /**
  * Valida fecha de nacimiento
  * - No puede ser futura
- * - Debe tener al menos 3 años de antigüedad
+ * - Debe tener entre 3 y 22 años de edad
  * @param fecha - Fecha en formato YYYY-MM-DD
  * @returns Mensaje de error o null si es válido
  */
@@ -289,24 +312,115 @@ export const validateFechaNacimiento = (fecha: string): string | null => {
   hoy.setHours(0, 0, 0, 0);
   fechaNacimiento.setHours(0, 0, 0, 0);
 
+  // Validar que sea una fecha válida
+  if (isNaN(fechaNacimiento.getTime())) {
+    return 'Fecha inválida';
+  }
+
   // Validar que no sea fecha futura
   if (fechaNacimiento > hoy) {
     return 'La fecha de nacimiento no puede ser futura';
   }
 
-  // Calcular edad
-  const edadEnMilisegundos = hoy.getTime() - fechaNacimiento.getTime();
-  const edadEnAnios = edadEnMilisegundos / (1000 * 60 * 60 * 24 * 365.25);
-
-  // Validar edad mínima de 3 años
-  if (edadEnAnios < 3) {
-    return 'El estudiante debe tener al menos 3 años de edad';
+  // Calcular edad exacta considerando mes y día
+  let edad = hoy.getFullYear() - fechaNacimiento.getFullYear();
+  const mesDiff = hoy.getMonth() - fechaNacimiento.getMonth();
+  
+  if (mesDiff < 0 || (mesDiff === 0 && hoy.getDate() < fechaNacimiento.getDate())) {
+    edad--;
   }
 
-  // Validar edad máxima razonable (opcional, por ejemplo 100 años)
-  if (edadEnAnios > 100) {
-    return 'La fecha de nacimiento no es válida';
+  // Validar rango de edad: 3 a 22 años
+  if (edad < 3) {
+    return 'La edad mínima es 3 años';
+  }
+
+  if (edad > 22) {
+    return 'La edad máxima es 22 años';
   }
 
   return null;
+};
+
+/**
+ * Valida fecha de contratación
+ * - No puede ser futura
+ * - No puede ser más de 3 meses en el pasado
+ * @param fecha - Fecha en formato YYYY-MM-DD
+ * @returns Mensaje de error o null si es válido
+ */
+export const validateFechaContratacion = (fecha: string): string | null => {
+  if (!fecha || fecha.trim().length === 0) {
+    return 'La fecha de contratación es requerida';
+  }
+
+  const fechaContratacion = new Date(fecha);
+  const hoy = new Date();
+  
+  // Resetear horas para comparar solo fechas
+  hoy.setHours(0, 0, 0, 0);
+  fechaContratacion.setHours(0, 0, 0, 0);
+
+  // Validar que sea una fecha válida
+  if (isNaN(fechaContratacion.getTime())) {
+    return 'Fecha inválida';
+  }
+
+  // Validar que no sea fecha futura
+  if (fechaContratacion > hoy) {
+    return 'La fecha de contratación no puede ser futura';
+  }
+
+  // Calcular fecha límite (3 meses atrás)
+  const tresMesesAtras = new Date(hoy);
+  tresMesesAtras.setMonth(hoy.getMonth() - 3);
+
+  // Validar que no sea más antigua de 3 meses
+  if (fechaContratacion < tresMesesAtras) {
+    return 'La fecha de contratación no puede ser anterior a 3 meses';
+  }
+
+  return null;
+};
+
+/**
+ * Obtiene la fecha mínima permitida para fecha de contratación (3 meses atrás)
+ * @returns Fecha en formato YYYY-MM-DD
+ */
+export const getMinContratacionDate = (): string => {
+  const hoy = new Date();
+  const tresMesesAtras = new Date(hoy);
+  tresMesesAtras.setMonth(hoy.getMonth() - 3);
+  return tresMesesAtras.toISOString().split('T')[0];
+};
+
+/**
+ * Obtiene la fecha máxima permitida para fecha de contratación (hoy)
+ * @returns Fecha en formato YYYY-MM-DD
+ */
+export const getMaxContratacionDate = (): string => {
+  const hoy = new Date();
+  return hoy.toISOString().split('T')[0];
+};
+
+/**
+ * Obtiene la fecha mínima permitida para fecha de nacimiento (22 años atrás)
+ * @returns Fecha en formato YYYY-MM-DD
+ */
+export const getMinNacimientoDate = (): string => {
+  const hoy = new Date();
+  const veintidosAniosAtras = new Date(hoy);
+  veintidosAniosAtras.setFullYear(hoy.getFullYear() - 22);
+  return veintidosAniosAtras.toISOString().split('T')[0];
+};
+
+/**
+ * Obtiene la fecha máxima permitida para fecha de nacimiento (3 años atrás)
+ * @returns Fecha en formato YYYY-MM-DD
+ */
+export const getMaxNacimientoDate = (): string => {
+  const hoy = new Date();
+  const tresAniosAtras = new Date(hoy);
+  tresAniosAtras.setFullYear(hoy.getFullYear() - 3);
+  return tresAniosAtras.toISOString().split('T')[0];
 };
