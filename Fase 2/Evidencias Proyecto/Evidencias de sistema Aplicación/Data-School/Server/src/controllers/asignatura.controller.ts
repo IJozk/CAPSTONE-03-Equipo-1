@@ -30,7 +30,8 @@ export class AsignaturaController {
           Curso:curso_id (
             curso_id,
             nombre,
-            nivel_id
+            nivel_id,
+            sala_id
           ),
           Profesor:profesor_id (
             profesor_id,
@@ -109,7 +110,8 @@ export class AsignaturaController {
             curso_id,
             nombre,
             nivel_id,
-            anio_academico
+            anio_academico,
+            sala_id
           ),
           Profesor:profesor_id (
             profesor_id,
