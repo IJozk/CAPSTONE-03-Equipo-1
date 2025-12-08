@@ -229,13 +229,117 @@ const generateReport = async () => {
 
   loading.value = true;
   try {
-    report.value = await teacherService.getAttendanceReport(
-      selectedSubjectId.value,
-      startDate.value,
-      endDate.value
-    );
+    // Obtener los estudiantes de la asignatura
+    await teacherStore.fetchSubjectStudents(selectedSubjectId.value);
+    const estudiantes = teacherStore.currentSubjectStudents;
+
+    if (estudiantes.length === 0) {
+      alert('No hay estudiantes en esta asignatura');
+      return;
+    }
+
+    // Generar todas las fechas del rango
+    const start = new Date(startDate.value);
+    const end = new Date(endDate.value);
+    const dates: string[] = [];
+
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      dates.push(d.toISOString().split('T')[0]);
+    }
+
+    console.log('📅 Generando reporte para', dates.length, 'días');
+
+    // Obtener asistencias para cada fecha
+    const asistenciasPorFecha = new Map<string, any[]>();
+
+    for (const fecha of dates) {
+      try {
+        const asistencia = await teacherService.getAttendance(selectedSubjectId.value, fecha);
+        if (asistencia.attendance && asistencia.attendance.length > 0) {
+          asistenciasPorFecha.set(fecha, asistencia.attendance);
+        }
+      } catch (err) {
+        console.log(`No hay asistencia registrada para ${fecha}`);
+      }
+    }
+
+    console.log('📊 Asistencias obtenidas para', asistenciasPorFecha.size, 'días');
+
+    // El total de clases es la cantidad de días con asistencia registrada
+    const totalClasesRegistradas = asistenciasPorFecha.size;
+
+    console.log('📊 DEBUG: Total de días con asistencia registrada:', totalClasesRegistradas);
+    console.log('📊 DEBUG: Total de estudiantes:', estudiantes.length);
+
+    // Calcular estadísticas por estudiante
+    const estudiantesReporte = estudiantes.map(estudiante => {
+      let presentes = 0;
+      let ausentes = 0;
+      let retrasos = 0;
+
+      console.log(`\n👤 Procesando estudiante: ${estudiante.nombre_completo} (ID: ${estudiante.estudiante_id})`);
+
+      // Iterar sobre cada día con asistencia registrada
+      asistenciasPorFecha.forEach((asistencias, fecha) => {
+        const asistenciaEstudiante = asistencias.find(
+          a => a.estudiante_id === estudiante.estudiante_id
+        );
+
+        console.log(`   📅 ${fecha}:`, asistenciaEstudiante
+          ? `Registro encontrado - Presente: ${asistenciaEstudiante.presente}`
+          : 'Sin registro (ausente)');
+
+        if (asistenciaEstudiante) {
+          // Hay registro para este estudiante en este día
+          if (asistenciaEstudiante.presente) {
+            presentes++;
+            // Contar retrasos solo si estuvo presente
+            if (asistenciaEstudiante.retraso_minutos > 0) {
+              retrasos++;
+            }
+          } else {
+            // Marcado explícitamente como ausente
+            ausentes++;
+          }
+        } else {
+          // No hay registro para este estudiante = ausente
+          ausentes++;
+        }
+      });
+
+      const porcentaje_asistencia = totalClasesRegistradas > 0
+        ? (presentes / totalClasesRegistradas) * 100
+        : 0;
+
+      console.log(`   ✅ Resultado: ${presentes} presentes, ${ausentes} ausentes, ${retrasos} retrasos, ${porcentaje_asistencia.toFixed(1)}% asistencia`);
+
+      return {
+        nombre_completo: estudiante.nombre_completo,
+        total_clases: totalClasesRegistradas,
+        presentes,
+        ausentes,
+        retrasos,
+        porcentaje_asistencia
+      };
+    });
+
+    // Calcular promedio del curso
+    const promedioAsistencia = estudiantesReporte.length > 0
+      ? estudiantesReporte.reduce((sum, e) => sum + e.porcentaje_asistencia, 0) / estudiantesReporte.length
+      : 0;
+
+    report.value = {
+      estudiantes: estudiantesReporte,
+      promedios: {
+        asistencia_curso: promedioAsistencia
+      }
+    };
+
+    console.log('✅ Reporte generado exitosamente');
+
   } catch (error) {
     console.error('Error generating report:', error);
+    alert('Error al generar el reporte. Por favor intenta de nuevo.');
   } finally {
     loading.value = false;
   }
@@ -266,21 +370,258 @@ const formatDate = (dateString: string): string => {
   });
 };
 
+const exportToCSV = () => {
+  if (!report.value) return;
+
+  try {
+    // Obtener el nombre de la asignatura seleccionada
+    const subject = teacherStore.subjects.find(s => s.asignatura_id === selectedSubjectId.value);
+    const subjectName = subject ? `${subject.nombre} - ${subject.curso.nombre}` : 'Asignatura';
+
+    // Preparar los datos
+    const data = report.value.estudiantes.map((student, index) => ({
+      'N°': index + 1,
+      'Estudiante': student.nombre_completo,
+      'Total Clases': student.total_clases,
+      'Presentes': student.presentes,
+      'Ausentes': student.ausentes,
+      'Retrasos': student.retrasos,
+      '% Asistencia': student.porcentaje_asistencia.toFixed(1)
+    }));
+
+    if (data.length === 0) {
+      alert('No hay datos para exportar');
+      return;
+    }
+
+    // Crear CSV con encabezado personalizado
+    const headers = Object.keys(data[0]);
+    const csvLines = [
+      `Reporte de Asistencia - ${subjectName}`,
+      `Período: ${formatDate(startDate.value)} - ${formatDate(endDate.value)}`,
+      `Promedio del Curso: ${report.value.promedios.asistencia_curso.toFixed(1)}%`,
+      '',
+      headers.join(','),
+      ...data.map(row => headers.map(header => {
+        const value = row[header as keyof typeof row];
+        const stringValue = String(value);
+        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+          return `"${stringValue.replace(/"/g, '""')}"`;
+        }
+        return stringValue;
+      }).join(','))
+    ];
+
+    const csvContent = csvLines.join('\n');
+
+    // Crear BOM para UTF-8
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+
+    link.setAttribute('href', url);
+    link.setAttribute('download', `reporte_asistencia_${selectedSubjectId.value}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    console.log('✅ CSV exportado exitosamente');
+  } catch (error) {
+    console.error('Error exportando CSV:', error);
+    alert('Error al exportar CSV');
+  }
+};
+
 const exportToPDF = () => {
   if (!report.value) return;
 
-  // Simulación de exportación
-  alert('Funcionalidad de exportación a PDF en desarrollo. Los datos del reporte están listos para ser procesados.');
-  console.log('Export to PDF:', report.value);
+  try {
+    // Obtener el nombre de la asignatura seleccionada
+    const subject = teacherStore.subjects.find(s => s.asignatura_id === selectedSubjectId.value);
+    const subjectName = subject ? `${subject.nombre} - ${subject.curso.nombre}` : 'Asignatura';
+
+    // Crear contenido HTML para el PDF
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Reporte de Asistencia</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            color: #333;
+          }
+          h1 {
+            color: #2563eb;
+            text-align: center;
+            margin-bottom: 10px;
+          }
+          .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 14px;
+          }
+          .summary {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+          }
+          .summary-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+          }
+          .summary-card h3 {
+            margin: 0 0 5px 0;
+            font-size: 12px;
+            color: #6b7280;
+            font-weight: normal;
+          }
+          .summary-card p {
+            margin: 0;
+            font-size: 24px;
+            font-weight: bold;
+            color: #2563eb;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+          }
+          th {
+            background-color: #2563eb;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+            font-size: 11px;
+          }
+          td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            font-size: 12px;
+          }
+          tr:nth-child(even) {
+            background-color: #f9fafb;
+          }
+          .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+          }
+          .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+          }
+          .badge-green { background-color: #d1fae5; color: #065f46; }
+          .badge-red { background-color: #fee2e2; color: #991b1b; }
+          .badge-yellow { background-color: #fef3c7; color: #92400e; }
+          .badge-emerald { background-color: #d1fae5; color: #065f46; }
+          .badge-orange { background-color: #fed7aa; color: #9a3412; }
+        </style>
+      </head>
+      <body>
+        <h1>Reporte de Asistencia</h1>
+        <div class="subtitle">
+          <strong>${subjectName}</strong><br>
+          Período: ${formatDate(startDate.value)} - ${formatDate(endDate.value)}
+        </div>
+
+        <div class="summary">
+          <div class="summary-card">
+            <h3>Total Estudiantes</h3>
+            <p>${report.value.estudiantes.length}</p>
+          </div>
+          <div class="summary-card">
+            <h3>Promedio Asistencia</h3>
+            <p>${report.value.promedios.asistencia_curso.toFixed(1)}%</p>
+          </div>
+          <div class="summary-card">
+            <h3>Total Clases</h3>
+            <p>${maxClasses.value}</p>
+          </div>
+          <div class="summary-card">
+            <h3>Generado</h3>
+            <p style="font-size: 14px;">${new Date().toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })}</p>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="text-align: center;">N°</th>
+              <th>Estudiante</th>
+              <th style="text-align: center;">Total Clases</th>
+              <th style="text-align: center;">Presentes</th>
+              <th style="text-align: center;">Ausentes</th>
+              <th style="text-align: center;">Retrasos</th>
+              <th style="text-align: center;">% Asistencia</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${report.value.estudiantes.map((student, index) => {
+              const percentage = student.porcentaje_asistencia;
+              let badgeClass = 'badge-red';
+              if (percentage >= 90) badgeClass = 'badge-emerald';
+              else if (percentage >= 80) badgeClass = 'badge-green';
+              else if (percentage >= 70) badgeClass = 'badge-yellow';
+              else if (percentage >= 60) badgeClass = 'badge-orange';
+
+              return `
+              <tr>
+                <td style="text-align: center;">${index + 1}</td>
+                <td>${student.nombre_completo}</td>
+                <td style="text-align: center;">${student.total_clases}</td>
+                <td style="text-align: center;"><span class="badge badge-green">${student.presentes}</span></td>
+                <td style="text-align: center;"><span class="badge badge-red">${student.ausentes}</span></td>
+                <td style="text-align: center;"><span class="badge badge-yellow">${student.retrasos}</span></td>
+                <td style="text-align: center;"><span class="badge ${badgeClass}">${percentage.toFixed(1)}%</span></td>
+              </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+
+        <div class="footer">
+          <p>Data-School - Sistema de Gestión Escolar</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Crear ventana de impresión
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+
+      // Esperar a que se cargue el contenido antes de imprimir
+      printWindow.onload = () => {
+        printWindow.print();
+      };
+    } else {
+      alert('Por favor, permite ventanas emergentes para exportar a PDF');
+    }
+
+    console.log('✅ PDF generado exitosamente');
+  } catch (error) {
+    console.error('Error exportando PDF:', error);
+    alert('Error al exportar PDF');
+  }
 };
 
-const exportToExcel = () => {
-  if (!report.value) return;
-
-  // Simulación de exportación
-  alert('Funcionalidad de exportación a Excel en desarrollo. Los datos del reporte están listos para ser procesados.');
-  console.log('Export to Excel:', report.value);
-};
+const exportToExcel = exportToCSV; // Excel usa el mismo formato CSV
 
 // Lifecycle
 onMounted(async () => {

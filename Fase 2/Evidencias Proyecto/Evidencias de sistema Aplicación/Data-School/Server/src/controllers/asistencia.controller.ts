@@ -104,6 +104,7 @@ export class AsistenciaController {
             const {
                 estudiante_id,
                 asignatura_id,
+                fecha, // fecha exacta (cuando el frontend pide un día concreto)
                 fecha_inicio,
                 fecha_fin,
                 presente
@@ -126,12 +127,18 @@ export class AsistenciaController {
                 query = query.eq('asignatura_id', String(asignatura_id))
             }
 
-            if (fecha_inicio) {
-                query = query.gte('fecha', fecha_inicio)
-            }
+            // Soporte para búsqueda por fecha exacta (param `fecha`) además
+            // de los rangos `fecha_inicio` / `fecha_fin`.
+            if (fecha) {
+                query = query.eq('fecha', String(fecha))
+            } else {
+                if (fecha_inicio) {
+                    query = query.gte('fecha', fecha_inicio)
+                }
 
-            if (fecha_fin) {
-                query = query.lte('fecha', fecha_fin)
+                if (fecha_fin) {
+                    query = query.lte('fecha', fecha_fin)
+                }
             }
 
             if (presente !== undefined) {
