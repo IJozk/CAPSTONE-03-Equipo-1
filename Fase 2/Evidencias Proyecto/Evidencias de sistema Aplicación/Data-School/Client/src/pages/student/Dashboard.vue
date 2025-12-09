@@ -1,32 +1,38 @@
 <template>
     <div class="space-y-6">
-      <!-- Page Header -->
-      <div class="flex justify-between items-center">
-        <div>
-          <h1 class="text-3xl font-bold text-gray-900">Mi Panel Estudiantil</h1>
-          <p class="text-gray-600 mt-1">Bienvenido, {{ studentName }}. Aquí está tu resumen académico.</p>
-        </div>
-        <button
-          @click="refreshDashboard"
-          :disabled="loading"
-          class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
-        >
-          <svg
-            class="w-5 h-5"
-            :class="{ 'animate-spin': loading }"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+      <!-- Welcome Section -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex justify-between items-center">
+          <div>
+            <h1 class="text-2xl font-bold text-gray-900">
+              Bienvenido, {{ studentName }}
+            </h1>
+            <p class="text-gray-600 mt-1">
+              {{ currentDate }}
+            </p>
+          </div>
+          <button
+            @click="refreshDashboard"
+            :disabled="loading"
+            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:bg-gray-400"
           >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
-          Actualizar
-        </button>
+            <svg
+              class="w-5 h-5"
+              :class="{ 'animate-spin': loading }"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            Actualizar
+          </button>
+        </div>
       </div>
 
       <!-- Stats Cards -->
@@ -36,7 +42,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm text-gray-600">Promedio General</p>
-              <p class="text-3xl font-bold text-gray-900 mt-1">{{ stats.promedioGeneral?.toFixed(1) || '-' }}</p>
+              <p class="text-3xl font-bold text-gray-900 mt-1">{{ stats.promedio_general?.toFixed(1) || '-' }}</p>
             </div>
             <div class="bg-blue-100 rounded-full p-3">
               <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -51,7 +57,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm text-gray-600">Asistencia</p>
-              <p class="text-3xl font-bold text-gray-900 mt-1">{{ stats.asistencia }}%</p>
+              <p class="text-3xl font-bold text-gray-900 mt-1">{{ stats.porcentaje_asistencia }}%</p>
             </div>
             <div class="bg-green-100 rounded-full p-3">
               <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -66,7 +72,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm text-gray-600">Asignaturas</p>
-              <p class="text-3xl font-bold text-gray-900 mt-1">{{ stats.totalAsignaturas }}</p>
+              <p class="text-3xl font-bold text-gray-900 mt-1">{{ stats.total_asignaturas }}</p>
             </div>
             <div class="bg-purple-100 rounded-full p-3">
               <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -81,7 +87,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm text-gray-600">Próximas Eval.</p>
-              <p class="text-3xl font-bold text-gray-900 mt-1">{{ stats.proximasEvaluaciones }}</p>
+              <p class="text-3xl font-bold text-gray-900 mt-1">{{ stats.evaluaciones_proximas }}</p>
             </div>
             <div class="bg-yellow-100 rounded-full p-3">
               <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -195,6 +201,72 @@
           </div>
         </div>
       </div>
+
+      <!-- Eventos Próximos -->
+      <div class="bg-white rounded-lg shadow">
+        <div class="p-6 border-b border-gray-200">
+          <h2 class="text-xl font-bold text-gray-900">Próximos Eventos</h2>
+          <p class="text-sm text-gray-600 mt-1">Evaluaciones y eventos destacados de los próximos 7 días</p>
+        </div>
+        <div class="p-6">
+          <div v-if="loading" class="text-center py-8">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          </div>
+          <div v-else-if="eventosProximos.length === 0" class="text-center py-8 text-gray-500">
+            No hay eventos próximos en los próximos 7 días
+          </div>
+          <div v-else class="space-y-3">
+            <div
+              v-for="(evento, index) in eventosProximos"
+              :key="index"
+              class="p-4 border-l-4 rounded-lg"
+              :class="{
+                'border-red-500 bg-red-50': evento.color === 'red',
+                'border-blue-500 bg-blue-50': evento.color === 'blue',
+                'border-green-500 bg-green-50': evento.color === 'green',
+                'border-yellow-500 bg-yellow-50': evento.color === 'yellow',
+                'border-gray-500 bg-gray-50': !evento.color
+              }"
+            >
+              <div class="flex justify-between items-start">
+                <div class="flex-1">
+                  <div class="flex items-center gap-2">
+                    <span
+                      class="px-2 py-1 text-xs font-semibold rounded"
+                      :class="{
+                        'bg-red-100 text-red-800': evento.tipo === 'evaluacion',
+                        'bg-blue-100 text-blue-800': evento.tipo === 'taller',
+                        'bg-green-100 text-green-800': evento.tipo === 'evento',
+                        'bg-gray-100 text-gray-800': !evento.tipo
+                      }"
+                    >
+                      {{
+                        evento.tipo === 'evaluacion' ? 'Evaluación' :
+                        evento.tipo === 'evento' ? 'Evento' :
+                        evento.tipo === 'taller' ? 'Taller' :
+                        evento.tipo
+                      }}
+                    </span>
+                    <h3 class="font-semibold text-gray-900">{{ evento.titulo }}</h3>
+                  </div>
+                  <p class="text-sm text-gray-600 mt-2">{{ evento.descripcion }}</p>
+                </div>
+                <div class="text-right ml-4">
+                  <p class="text-sm font-medium text-gray-900">
+                    {{ new Date(evento.fecha).toLocaleDateString('es-CL', {
+                      day: 'numeric',
+                      month: 'short'
+                    }) }}
+                  </p>
+                  <p class="text-xs text-gray-500">
+                    {{ new Date(evento.fecha).toLocaleDateString('es-CL', { weekday: 'short' }) }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Modal de Encuesta -->
@@ -211,10 +283,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/store/auth.store';
 import { useStudentStore } from '@/store/student.store';
 import { useEncuestaEstudianteStore } from '@/store/encuestaEstudiante.store';
-import horarioService from '@/services/horario.service';
-import evaluacionService from '@/services/evaluacion.service';
-import asistenciaService from '@/services/attendance.service';
-import asignaturaService from '@/services/asignatura.service';
+import studentService from '@/services/student.service';
 import SurveyModal from '@/components/surveys/SurveyModal.vue';
 
 const authStore = useAuthStore();
@@ -231,25 +300,63 @@ const studentName = computed(() =>
 
 const estudianteId = computed(() => authStore.user?.estudiante_profile?.estudiante_id);
 
-// Stats computados desde datos reales
-const stats = ref({
-  promedioGeneral: 0,
-  asistencia: 0,
-  totalAsignaturas: 0,
-  proximasEvaluaciones: 0
+// Fecha actual formateada
+const currentDate = computed(() => {
+  const today = new Date();
+  return today.toLocaleDateString('es-CL', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+});
+
+// Dashboard data
+const dashboardData = ref<any>(null);
+
+// Stats computados desde datos reales del dashboard
+const stats = computed(() => dashboardData.value?.stats || {
+  promedio_general: 0,
+  porcentaje_asistencia: 0,
+  total_asignaturas: 0,
+  evaluaciones_proximas: 0,
+  anotaciones: { positivas: 0, negativas: 0, neutras: 0 }
 });
 
 // Horario del día actual
 const horarioHoy = ref<any[]>([]);
 
-// Notas recientes
-const notasRecientes = ref<any[]>([]);
+// Notas recientes desde el dashboard
+const notasRecientes = computed(() => {
+  if (!dashboardData.value?.notas_recientes) return [];
+  return dashboardData.value.notas_recientes.map((nota: any) => ({
+    id: nota.created_at,
+    evaluacion: nota.evaluacion_nombre,
+    asignatura: nota.asignatura_nombre,
+    nota: nota.nota,
+    fecha: new Date(nota.fecha || nota.created_at).toLocaleDateString('es-CL')
+  }));
+});
 
-// Asignaturas con promedio
-const asignaturas = ref<any[]>([]);
+// Asignaturas con promedio desde el dashboard
+const asignaturas = computed(() => {
+  if (!dashboardData.value?.asignaturas) return [];
+  return dashboardData.value.asignaturas.map((asig: any) => ({
+    id: asig.asignatura_id,
+    nombre: asig.nombre,
+    profesor: asig.profesor,
+    promedio: asig.promedio
+  }));
+});
+
+// Eventos próximos desde el dashboard
+const eventosProximos = computed(() => {
+  if (!dashboardData.value?.eventos_proximos) return [];
+  return dashboardData.value.eventos_proximos;
+});
 
 /**
- * Carga todos los datos del dashboard
+ * Carga todos los datos del dashboard desde el nuevo endpoint
  */
 const loadDashboardData = async () => {
   if (!estudianteId.value) {
@@ -260,71 +367,18 @@ const loadDashboardData = async () => {
   loading.value = true;
 
   try {
-    // Cargar datos en paralelo
-    const [notasData, horarioData, asistenciaData, asignaturasData] = await Promise.all([
-      evaluacionService.getNotasEstudiante(estudianteId.value).catch(() => []),
-      horarioService.getHorarioEstudiante(estudianteId.value, '2025-1').catch(() => []),
-      asistenciaService.getAttendance().catch(() => []),
-      asignaturaService.getAll().catch(() => [])
-    ]);
+    console.log('📊 Cargando dashboard para estudiante:', estudianteId.value);
 
-    // Procesar notas y calcular promedio general
-    asignaturas.value = notasData.map(asig => ({
-      id: asig.asignatura_id,
-      nombre: asig.nombre_asignatura,
-      profesor: asig.profesor_nombre,
-      promedio: asig.promedio
-    }));
+    // Cargar dashboard completo desde el backend
+    dashboardData.value = await studentService.getDashboard(estudianteId.value);
 
-    // Calcular promedio general
-    if (notasData.length > 0) {
-      const sumaPromedios = notasData.reduce((acc, asig) => acc + asig.promedio, 0);
-      stats.value.promedioGeneral = sumaPromedios / notasData.length;
-    }
+    console.log('✅ Dashboard cargado:', dashboardData.value);
 
-    stats.value.totalAsignaturas = asignaturasData.length;
-
-    // Procesar horario del día actual
-    const diaActual = new Date().getDay(); // 0 = Domingo, 1 = Lunes, etc.
-    const horarioDelDia = horarioData.filter((h: any) => h.dia_semana === diaActual);
-    horarioHoy.value = horarioDelDia.slice(0, 5).map((h: any) => ({
-      asignatura: h.asignatura,
-      profesor: h.profesor,
-      horario: `${h.hora_inicio} - ${h.hora_termino}`,
-      sala: h.sala
-    }));
-
-    // Procesar notas recientes (últimas 3)
-    const todasLasNotas = notasData.flatMap(asig =>
-      asig.notas.map(nota => ({
-        id: nota.nota_id,
-        evaluacion: nota.evaluacion_nombre,
-        asignatura: asig.nombre_asignatura,
-        nota: nota.nota,
-        fecha: new Date(nota.fecha).toLocaleDateString('es-CL')
-      }))
-    );
-
-    // Ordenar por fecha y tomar las 3 más recientes
-    todasLasNotas.sort((a, b) => {
-      const dateA = a.fecha.split('/').reverse().join('');
-      const dateB = b.fecha.split('/').reverse().join('');
-      return dateB.localeCompare(dateA);
-    });
-
-    notasRecientes.value = todasLasNotas.slice(0, 3);
-
-    // Calcular porcentaje de asistencia
-    if (asistenciaData.length > 0) {
-      const presentes = asistenciaData.filter((a: any) => a.presente).length;
-      stats.value.asistencia = Math.round((presentes / asistenciaData.length) * 100);
-    }
-
-    // Obtener evaluaciones próximas (simulado por ahora)
-    stats.value.proximasEvaluaciones = 0;
+    // Cargar horario del día desde el dashboard
+    horarioHoy.value = dashboardData.value?.horario_hoy || [];
 
   } catch (error) {
-    console.error('Error loading dashboard data:', error);
+    console.error('❌ Error loading dashboard data:', error);
   } finally {
     loading.value = false;
   }

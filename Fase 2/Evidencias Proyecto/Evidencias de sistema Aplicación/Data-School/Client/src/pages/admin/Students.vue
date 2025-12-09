@@ -6,15 +6,37 @@
           <h1 class="text-3xl font-bold text-gray-900">Gestión de Estudiantes</h1>
           <p class="text-gray-600 mt-1">Administra los estudiantes del colegio</p>
         </div>
-        <router-link
-          to="/register"
-          class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
-          Nuevo Estudiante
-        </router-link>
+        <div class="flex gap-2">
+          <button
+            @click="exportToCSV"
+            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+            title="Exportar a CSV"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            CSV
+          </button>
+          <button
+            @click="exportToPDF"
+            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+            title="Exportar a PDF"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+            PDF
+          </button>
+          <router-link
+            to="/register"
+            class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Nuevo Estudiante
+          </router-link>
+        </div>
       </div>
 
       <div class="bg-white rounded-lg shadow p-8">
@@ -1310,4 +1332,192 @@ onMounted(async () => {
     console.error('Error fetching students:', error);
   }
 });
+
+// Funciones de exportación
+const exportToCSV = () => {
+  try {
+    // Preparar los datos
+    const data = studentStore.estudiantes.map(student => ({
+      'RUT': student.rut || '-',
+      'Nombre Completo': student.nombre_completo,
+      'Email': student.email || '-',
+      'Fecha de Nacimiento': student.fecha_nacimiento || '-',
+      'Género': student.genero === 'M' ? 'Masculino' : student.genero === 'F' ? 'Femenino' : 'Otro',
+      'Teléfono': student.telefono || '-',
+      'Dirección': student.direccion || '-',
+      'Estado': student.estado_activo ? 'Activo' : 'Inactivo',
+      'Fecha de Registro': formatDate(student.created_at)
+    }))
+
+    if (data.length === 0) {
+      alert('No hay datos para exportar')
+      return
+    }
+
+    // Crear CSV
+    const headers = Object.keys(data[0])
+    const csvContent = [
+      headers.join(','),
+      ...data.map(row => headers.map(header => {
+        const value = row[header as keyof typeof row]
+        // Escapar comillas y envolver en comillas si contiene comas
+        const stringValue = String(value)
+        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+          return `"${stringValue.replace(/"/g, '""')}"`
+        }
+        return stringValue
+      }).join(','))
+    ].join('\n')
+
+    // Crear BOM para UTF-8
+    const BOM = '\uFEFF'
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+
+    link.setAttribute('href', url)
+    link.setAttribute('download', `estudiantes_${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
+    console.log('✅ CSV exportado exitosamente')
+  } catch (error) {
+    console.error('Error exportando CSV:', error)
+    alert('Error al exportar CSV')
+  }
+}
+
+const exportToPDF = () => {
+  try {
+    const data = studentStore.estudiantes.map(student => ({
+      rut: student.rut || '-',
+      nombre: student.nombre_completo,
+      email: student.email || '-',
+      fecha_nacimiento: student.fecha_nacimiento || '-',
+      telefono: student.telefono || '-',
+      estado: student.estado_activo ? 'Activo' : 'Inactivo'
+    }))
+
+    if (data.length === 0) {
+      alert('No hay datos para exportar')
+      return
+    }
+
+    // Crear contenido HTML para el PDF
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Reporte de Estudiantes</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            color: #333;
+          }
+          h1 {
+            color: #2563eb;
+            text-align: center;
+            margin-bottom: 10px;
+          }
+          .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+          }
+          th {
+            background-color: #2563eb;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+          }
+          td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+          }
+          tr:nth-child(even) {
+            background-color: #f9fafb;
+          }
+          tr:hover {
+            background-color: #f3f4f6;
+          }
+          .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+          }
+        </style>
+      </head>
+      <body>
+        <h1>Reporte de Estudiantes</h1>
+        <div class="subtitle">Generado el ${new Date().toLocaleDateString('es-CL', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        })}</div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>RUT</th>
+              <th>Nombre Completo</th>
+              <th>Email</th>
+              <th>Fecha de Nacimiento</th>
+              <th>Teléfono</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.map(student => `
+              <tr>
+                <td>${student.rut}</td>
+                <td>${student.nombre}</td>
+                <td>${student.email}</td>
+                <td>${student.fecha_nacimiento}</td>
+                <td>${student.telefono}</td>
+                <td>${student.estado}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <div class="footer">
+          <p>Total de estudiantes: ${data.length}</p>
+          <p>Data-School - Sistema de Gestión Escolar</p>
+        </div>
+      </body>
+      </html>
+    `
+
+    // Crear ventana de impresión
+    const printWindow = window.open('', '_blank')
+    if (printWindow) {
+      printWindow.document.write(htmlContent)
+      printWindow.document.close()
+
+      // Esperar a que se cargue el contenido antes de imprimir
+      printWindow.onload = () => {
+        printWindow.print()
+      }
+    } else {
+      alert('Por favor, permite ventanas emergentes para exportar a PDF')
+    }
+
+    console.log('✅ PDF generado exitosamente')
+  } catch (error) {
+    console.error('Error exportando PDF:', error)
+    alert('Error al exportar PDF')
+  }
+}
 </script>

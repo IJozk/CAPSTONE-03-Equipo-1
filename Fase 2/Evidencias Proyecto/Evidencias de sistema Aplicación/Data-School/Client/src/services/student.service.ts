@@ -80,6 +80,21 @@ class StudentService {
       throw new Error(error.response?.data?.message || 'Error al actualizar perfil');
     }
   }
+
+  /**
+   * Obtiene el dashboard completo del estudiante con todas las estadísticas
+   * @param estudianteId - ID del estudiante
+   * @returns Dashboard con estadísticas, notas, asignaturas, etc.
+   */
+  async getDashboard(estudianteId: string): Promise<any> {
+    try {
+      const response = await apiClient.get(`/estudiantes/${estudianteId}/dashboard`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching student dashboard:', error);
+      throw new Error(error.response?.data?.message || 'Error al obtener dashboard del estudiante');
+    }
+  }
 }
 
 // Exportar instancia única del servicio

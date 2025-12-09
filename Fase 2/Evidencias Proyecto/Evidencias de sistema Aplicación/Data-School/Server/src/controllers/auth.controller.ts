@@ -154,38 +154,47 @@ export class AuthController {
         })
       }
 
-      // Obtener información adicional del usuario desde la tabla User
-      let adminData = null;
-      let adminError = null;
+// Obtener información adicional del usuario desde la tabla User
+let adminData = null
+let adminError = null
 
-      if (userData.role === 'ADMINISTRADOR' || userData.role === 'ADMINISTRATIVO' || userData.role === 'DIRECTOR') {
-        // Obtener información adicional del usuario desde la tabla Administrativo
-        const client = supabaseAdmin || supabase;
+if (userData.role === 'ADMINISTRADOR' || userData.role === 'ADMINISTRATIVO' || userData.role === 'DIRECTOR') {
+  const client = supabaseAdmin || supabase
 
-        try {
-          const result = await client
-            .from('Administrativo')
-            .select('administrativo_id, nombre_completo, cargo, rut, telefono, area_id, fecha_contratacion, colegio_id')
-            .eq('user_id', userData.user_id)
-            .maybeSingle(); // Usar maybeSingle() en lugar de single() para evitar error si no existe
+  try {
+    const result = await client
+      .from('Administrativo')
+      .select(`
+        administrativo_id,
+        nombre_completo,
+        cargo,
+        rut,
+        telefono,
+        area_id,
+        fecha_contratacion,
+        estado_activo,
+        created_at,
+        updated_at,
+        colegio_id
+      `)
+      .eq('user_id', userData.user_id)
+      .maybeSingle()
 
-          adminData = result.data;
-          adminError = result.error;
+    adminData = result.data
+    adminError = result.error
 
-          // Solo advertir si no existe el perfil, pero permitir el login
-          if (adminError || !adminData) {
-            console.warn('Usuario administrativo sin perfil completo:', {
-              user_id: userData.user_id,
-              role: userData.role,
-              error: adminError?.message || 'No se encontró registro en tabla Administrativo'
-            })
-            // No retornar error - permitir login sin perfil completo
-          }
-        } catch (err) {
-          console.error('Excepción al obtener datos de administrativo:', err)
-          // Continuar sin el perfil administrativo
-        }
-      }
+    if (adminError || !adminData) {
+      console.warn('Usuario administrativo sin perfil completo:', {
+        user_id: userData.user_id,
+        role: userData.role,
+        error: adminError?.message || 'No se encontró registro en tabla Administrativo'
+      })
+    }
+  } catch (err) {
+    console.error('Excepción al obtener datos de administrativo:', err)
+  }
+}
+
 
       // Obtener información adicional del usuario de rol profesor
       let teacherData = null;
@@ -306,41 +315,92 @@ export class AuthController {
     }
   }
 
-  // Obtener usuario actual
-  async getCurrentUser(req: Request, res: Response) {
-    try {
-      const authHeader = req.headers.authorization
+// Obtener usuario actual (igual forma que login, usando el token)
+async getCurrentUser(req: Request, res: Response) {
+  try {
+    const authHeader = req.headers.authorization
 
-      if (!authHeader) {
-        return res.status(401).json({
-          error: 'Token no proporcionado'
-        })
-      }
-
-      const token = authHeader.replace('Bearer ', '')
-
-      const { data, error } = await supabase.auth.getUser(token)
-
-      if (error) {
-        return res.status(401).json({
-          error: 'Token inválido'
-        })
-      }
-
-      return res.status(200).json({
-        user: {
-          id: data.user?.id,
-          email: data.user?.email,
-          created_at: data.user?.created_at
-        }
-      })
-    } catch (error) {
-      console.error('Error al obtener usuario:', error)
-      return res.status(500).json({
-        error: 'Error interno del servidor'
-      })
+    if (!authHeader) {
+      return res.status(401).json({ error: 'Token no proporcionado' })
     }
+
+    const token = authHeader.replace('Bearer ', '')
+
+    // 1. Obtener usuario de Supabase Auth
+    const { data, error } = await supabase.auth.getUser(token)
+
+    if (error || !data.user) {
+      return res.status(401).json({ error: 'Token inválido' })
+    }
+
+    // 2. Buscar en tabla User
+    const { data: userData, error: userError } = await supabase
+      .from('User')
+      .select('user_id, email_address, role, colegio_id, is_active, profile_completed')
+      .eq('auth_user_id', data.user.id)
+      .single()
+
+    if (userError || !userData) {
+      return res.status(404).json({ error: 'Usuario no encontrado en el sistema' })
+    }
+
+    // 3. Cargar perfil según rol (reusamos lo de login, abreviado aquí)
+
+    // Perfil administrativo
+    let adminData = null
+    let adminError = null
+
+    if (userData.role === 'ADMINISTRADOR' || userData.role === 'ADMINISTRATIVO' || userData.role === 'DIRECTOR') {
+      const client = supabaseAdmin || supabase
+
+      const result = await client
+        .from('Administrativo')
+        .select(`
+          administrativo_id,
+          nombre_completo,
+          cargo,
+          rut,
+          telefono,
+          area_id,
+          fecha_contratacion,
+          estado_activo,
+          created_at,
+          updated_at,
+          colegio_id
+        `)
+        .eq('user_id', userData.user_id)
+        .maybeSingle()
+
+      adminData = result.data
+      adminError = result.error
+    }
+
+    // (Si quieres, aquí puedes también traer profesor / estudiante igual que en login)
+
+    if (!userData.is_active) {
+      return res.status(403).json({ error: 'Usuario inactivo. Contacta al administrador.' })
+    }
+
+    return res.status(200).json({
+      user: {
+        id: userData.user_id,
+        auth_id: data.user.id,
+        email: userData.email_address,
+        role: userData.role,
+        colegio_id: userData.colegio_id,
+        profile_completed: userData.profile_completed,
+        created_at: data.user.created_at,
+        ...((userData.role === 'ADMINISTRADOR' || userData.role === 'ADMINISTRATIVO' || userData.role === 'DIRECTOR') && !adminError && adminData
+          ? { admin_profile: adminData }
+          : {})
+      }
+    })
+  } catch (error) {
+    console.error('Error al obtener usuario:', error)
+    return res.status(500).json({ error: 'Error interno del servidor' })
   }
+}
+
 
   // Solicitar recuperación de contraseña
   async forgotPassword(req: Request, res: Response) {

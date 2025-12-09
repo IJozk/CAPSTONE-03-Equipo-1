@@ -336,6 +336,23 @@ export const useTeacherStore = defineStore('teacher', {
     },
 
     /**
+     * Cargar todas las evaluaciones del profesor (de todas sus asignaturas)
+     */
+    async fetchAllMyEvaluations() {
+      this.loading = true;
+      this.error = null;
+      try {
+        this.evaluations = await teacherToolsService.getAllMyEvaluations();
+      } catch (error: any) {
+        this.error = error.message || 'Error al cargar evaluaciones';
+        console.error('Error fetching all evaluations:', error);
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
      * Crear nueva evaluación
      */
     async createEvaluation(data: any) {

@@ -250,6 +250,7 @@ const evaluations = ref<Evaluation[]>([]);
 const students = ref<Student[]>([]);
 const saving = ref(false);
 const successMessage = ref('');
+const error = ref('');
 
 interface GradeData {
   resultado_id: number | null;
