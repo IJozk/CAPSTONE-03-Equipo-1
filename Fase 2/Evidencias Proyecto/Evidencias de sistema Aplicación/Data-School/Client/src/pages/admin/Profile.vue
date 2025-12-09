@@ -10,8 +10,13 @@
         <div class="text-gray-600">Cargando información del perfil...</div>
       </div>
 
-      <div v-else-if="error" class="bg-white rounded-lg shadow p-8 text-center">
-        <div class="text-red-600">Error: {{ error }}</div>
+      <div v-else-if="error" class="bg-white rounded-lg shadow p-8">
+        <div class="text-red-600 mb-4">Error: {{ error }}</div>
+        <!-- Debug info -->
+        <details class="mt-4">
+          <summary class="cursor-pointer text-sm text-gray-600">Ver datos de debug</summary>
+          <pre class="mt-2 p-4 bg-gray-100 rounded text-xs overflow-auto">{{ debugInfo }}</pre>
+        </details>
       </div>
 
       <!-- Información del perfil -->
@@ -68,7 +73,7 @@
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Rol</label>
               <span class="px-3 py-1 inline-flex text-sm font-semibold rounded-full bg-purple-100 text-purple-800">
-                {{ userProfile.role || '-' }}
+                {{ getRoleLabel(userProfile.role) }}
               </span>
             </div>
 
@@ -87,6 +92,12 @@
               <p class="text-gray-900 text-base">{{ formatDate(userProfile.created_at) }}</p>
             </div>
           </div>
+
+          <!-- Debug Section (solo en desarrollo) -->
+          <details class="mt-8 border-t pt-4">
+            <summary class="cursor-pointer text-sm text-gray-500">Ver datos completos (debug)</summary>
+            <pre class="mt-2 p-4 bg-gray-50 rounded text-xs overflow-auto">{{ JSON.stringify(userProfile, null, 2) }}</pre>
+          </details>
         </div>
       </div>
     </div>
@@ -102,6 +113,7 @@ const authStore = useAuthStore()
 
 const loading = ref(true)
 const error = ref('')
+const debugInfo = ref({})
 
 // Datos del usuario que usa la vista
 const userProfile = ref({
@@ -122,25 +134,60 @@ const loadUserProfile = async () => {
 
   try {
     const userData = authStore.user
-    console.log('Datos del usuario en authStore:', userData)
+    console.log('=== DATOS COMPLETOS DEL USUARIO ===')
+    console.log(JSON.stringify(userData, null, 2))
+    
+    debugInfo.value = userData || {}
 
     if (!userData) throw new Error('No se encontró información del usuario')
 
-    const adminProfile = (userData as any).admin_profile
+    // Intentar diferentes estructuras posibles
+    const adminProfile = (userData as any).admin_profile || 
+                        (userData as any).administrativo || 
+                        (userData as any).Administrativo ||
+                        userData
 
+    console.log('=== PERFIL ADMIN DETECTADO ===')
+    console.log(JSON.stringify(adminProfile, null, 2))
+
+    // Mapear todos los campos posibles
     userProfile.value = {
-      nombre_completo: adminProfile?.nombre_completo || '',
-      email: (userData as any).email || '',
-      rut: adminProfile?.rut || '',
-      telefono: adminProfile?.telefono || '',
-      genero: '', // si lo tienes en Administrativo, lo agregas aquí
-      direccion: '', // idem
-      cargo: adminProfile?.cargo || '',
-      role: (userData as any).role || '',
-      created_at: adminProfile?.created_at || (userData as any).created_at || ''
+      nombre_completo: adminProfile?.nombre_completo || 
+                       adminProfile?.nombre || 
+                       (userData as any).nombre_completo ||
+                       '',
+      email: (userData as any).email || 
+             adminProfile?.email || 
+             '',
+      rut: adminProfile?.rut || 
+           (userData as any).rut || 
+           '',
+      telefono: adminProfile?.telefono || 
+                adminProfile?.phone ||
+                (userData as any).telefono || 
+                '',
+      genero: adminProfile?.genero || 
+              (userData as any).genero || 
+              '',
+      direccion: adminProfile?.direccion || 
+                 (userData as any).direccion || 
+                 '',
+      cargo: adminProfile?.cargo || 
+             (userData as any).cargo || 
+             '',
+      role: (userData as any).role || 
+            adminProfile?.role || 
+            '',
+      created_at: adminProfile?.created_at || 
+                  (userData as any).created_at || 
+                  adminProfile?.createdAt ||
+                  (userData as any).createdAt ||
+                  ''
     }
 
-    console.log('Perfil cargado:', userProfile.value)
+    console.log('=== PERFIL FINAL MAPEADO ===')
+    console.log(JSON.stringify(userProfile.value, null, 2))
+
   } catch (err: any) {
     console.error('Error al cargar perfil:', err)
     error.value = err.message || 'Error al cargar la información del perfil'
@@ -149,18 +196,21 @@ const loadUserProfile = async () => {
   }
 }
 
-
 // Formatear fecha
 const formatDate = (dateString: string) => {
   if (!dateString) return '-'
-  const date = new Date(dateString)
-  return date.toLocaleDateString('es-CL', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+  try {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('es-CL', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  } catch (e) {
+    return dateString
+  }
 }
 
 // Obtener etiqueta de género
@@ -168,9 +218,23 @@ const getGenderLabel = (gender: string) => {
   const labels: Record<string, string> = {
     M: 'Masculino',
     F: 'Femenino',
-    O: 'Otro'
+    O: 'Otro',
+    masculino: 'Masculino',
+    femenino: 'Femenino',
+    otro: 'Otro'
   }
   return labels[gender] || gender || '-'
+}
+
+// Obtener etiqueta de rol
+const getRoleLabel = (role: string) => {
+  const labels: Record<string, string> = {
+    admin: 'Administrador',
+    user: 'Usuario',
+    administrativo: 'Administrativo',
+    super_admin: 'Super Administrador'
+  }
+  return labels[role] || role || '-'
 }
 
 onMounted(() => {

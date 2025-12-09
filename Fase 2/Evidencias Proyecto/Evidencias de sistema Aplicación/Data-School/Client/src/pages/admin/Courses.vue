@@ -250,7 +250,6 @@
                     required
                     placeholder="Ej: 2024"
                     step="1"
-                    @keypress="onlyNumbers"
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                 </div>
@@ -1162,13 +1161,16 @@ const handleAsignarProfesorJefe = async () => {
 
   submitting.value = true
   try {
+    // Asignar el profesor jefe
     await cursoStore.asignarProfesorJefe(selectedCursoForProfesor.value.curso_id, {
       profesor_jefe_id: selectedProfesorJefeId.value
     })
 
+    // Obtener los datos actualizados del curso específico
+    await cursoStore.fetchOne(selectedCursoForProfesor.value.curso_id)
+
     alert(selectedProfesorJefeId.value ? 'Profesor jefe asignado exitosamente' : 'Profesor jefe removido exitosamente')
     closeProfesorJefeModal()
-    await loadCursos() // Recargar cursos para actualizar la vista
   } catch (error: any) {
     console.error('Error asignando profesor jefe:', error)
     alert(`Error: ${error.message}`)

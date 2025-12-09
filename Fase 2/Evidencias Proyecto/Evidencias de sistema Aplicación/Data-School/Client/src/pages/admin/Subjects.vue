@@ -281,6 +281,7 @@
                     type="number"
                     min="0"
                     placeholder="Ej: 4"
+                    @keypress="onlyNumbers"
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                 </div>
@@ -541,6 +542,13 @@ const handleDelete = async () => {
     alert(`Error: ${error.message}`)
   } finally {
     submitting.value = false
+  }
+}
+
+const onlyNumbers = (event: KeyboardEvent) => {
+  const key = event.key
+  if (!/^\d$/.test(key) && !['Backspace', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'Delete'].includes(key)) {
+    event.preventDefault()
   }
 }
 
