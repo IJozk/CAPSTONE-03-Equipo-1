@@ -30,7 +30,7 @@
                   <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                   </svg>
-                  <span>{{ currentSubject.curso.nivel }}</span>
+                  <span class="font-semibold">{{ currentSubject.curso.nivel }} {{ currentSubject.curso.nombre }}</span>
                 </div>
                 <div class="flex items-center">
                   <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -193,6 +193,113 @@
               </svg>
               <h3 class="text-lg font-medium text-gray-900 mb-2">No hay estudiantes</h3>
               <p class="text-gray-600">{{ studentSearchQuery ? 'No se encontraron estudiantes con ese criterio' : 'Esta asignatura no tiene estudiantes inscritos' }}</p>
+            </div>
+          </div>
+
+          <!-- Tab: Libro de Notas -->
+          <div v-if="activeTab === 'grades'">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-xl font-bold text-gray-900">Libro de Notas</h2>
+              <div class="flex items-center space-x-2">
+                <span class="text-sm text-gray-600">
+                  <strong>Curso:</strong> {{ currentSubject.curso.nivel }} {{ currentSubject.curso.nombre }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Grades Table -->
+            <div v-if="filteredStudents.length > 0 && evaluations.length > 0" class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200 border border-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 border-r border-gray-200">#</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 border-r border-gray-200 min-w-[200px]">Estudiante</th>
+                    <th
+                      v-for="evaluation in evaluations"
+                      :key="evaluation.evaluacion_id"
+                      class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-l border-gray-200 min-w-[100px]"
+                    >
+                      <div class="flex flex-col">
+                        <span class="font-semibold">{{ evaluation.nombre }}</span>
+                        <span class="text-xs text-gray-400 normal-case">{{ formatDateShort(evaluation.fecha_evaluacion) }}</span>
+                        <span class="text-xs text-gray-400 normal-case">{{ evaluation.porcentaje_nota }}%</span>
+                      </div>
+                    </th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-l-2 border-gray-300 bg-gray-100">
+                      Promedio
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                  <tr v-for="student in filteredStudents" :key="student.estudiante_id" class="hover:bg-gray-50">
+                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-white border-r border-gray-200">
+                      {{ student.numero_lista }}
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap sticky left-0 bg-white border-r border-gray-200">
+                      <div class="text-sm font-medium text-gray-900">{{ student.nombre_completo }}</div>
+                      <div class="text-xs text-gray-500">{{ student.rut }}</div>
+                    </td>
+                    <td
+                      v-for="evaluation in evaluations"
+                      :key="`${student.estudiante_id}-${evaluation.evaluacion_id}`"
+                      class="px-4 py-3 whitespace-nowrap text-center border-l border-gray-200"
+                    >
+                      <span :class="getGradeClass(getStudentGrade(student.estudiante_id, evaluation.evaluacion_id))" class="text-sm font-semibold">
+                        {{ formatGrade(getStudentGrade(student.estudiante_id, evaluation.evaluacion_id)) }}
+                      </span>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-center border-l-2 border-gray-300 bg-gray-50">
+                      <span :class="getGradeClass(student.promedio_asignatura)" class="text-sm font-bold">
+                        {{ student.promedio_asignatura ? student.promedio_asignatura.toFixed(1) : 'S/N' }}
+                      </span>
+                    </td>
+                  </tr>
+                  <!-- Row with averages -->
+                  <tr class="bg-gray-100 font-semibold">
+                    <td colspan="2" class="px-4 py-3 text-sm text-gray-900 sticky left-0 bg-gray-100 border-r border-gray-200">
+                      Promedio General
+                    </td>
+                    <td
+                      v-for="evaluation in evaluations"
+                      :key="`avg-${evaluation.evaluacion_id}`"
+                      class="px-4 py-3 whitespace-nowrap text-center border-l border-gray-200"
+                    >
+                      <span :class="getGradeClass(evaluation.promedio_nota)" class="text-sm font-bold">
+                        {{ evaluation.promedio_nota ? evaluation.promedio_nota.toFixed(1) : 'S/N' }}
+                      </span>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-center border-l-2 border-gray-300 bg-gray-200">
+                      <span :class="getGradeClass(studentStats.averageGrade)" class="text-sm font-bold">
+                        {{ studentStats.averageGrade.toFixed(1) }}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Empty state - No evaluations -->
+            <div v-else-if="evaluations.length === 0" class="bg-yellow-50 border border-yellow-200 rounded-lg p-8 text-center">
+              <svg class="w-16 h-16 mx-auto text-yellow-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <h3 class="text-lg font-medium text-gray-900 mb-2">No hay evaluaciones</h3>
+              <p class="text-gray-600 mb-4">Debes crear al menos una evaluación para ver el libro de notas</p>
+              <button
+                @click="activeTab = 'evaluations'"
+                class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+              >
+                Ir a Evaluaciones
+              </button>
+            </div>
+
+            <!-- Empty state - No students -->
+            <div v-else class="text-center py-12">
+              <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+              <h3 class="text-lg font-medium text-gray-900 mb-2">No hay estudiantes</h3>
+              <p class="text-gray-600">Esta asignatura no tiene estudiantes inscritos</p>
             </div>
           </div>
 
@@ -573,7 +680,7 @@ const router = useRouter();
 const route = useRoute();
 const teacherStore = useTeacherStore();
 
-type TabType = 'students' | 'evaluations' | 'attendance' | 'statistics';
+type TabType = 'students' | 'grades' | 'evaluations' | 'attendance' | 'statistics';
 const activeTab = ref<TabType>('students');
 const studentSearchQuery = ref('');
 const loading = ref(false);
@@ -643,6 +750,12 @@ const tabs = computed(() => [
     id: 'students' as TabType,
     label: 'Estudiantes',
     icon: StudentsIcon,
+    count: students.value.length
+  },
+  {
+    id: 'grades' as TabType,
+    label: 'Libro de Notas',
+    icon: EvaluationsIcon,
     count: students.value.length
   },
   {
@@ -783,6 +896,26 @@ const formatDate = (dateString: string) => {
     month: 'long',
     day: 'numeric'
   });
+};
+
+const formatDateShort = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('es-CL', {
+    day: '2-digit',
+    month: '2-digit'
+  });
+};
+
+const getStudentGrade = (studentId: string, evaluationId: number): number | null => {
+  // TODO: Implementar lógica para obtener la nota del estudiante en una evaluación específica
+  // Por ahora retornamos null como placeholder
+  // Esto debería venir del store o hacer una llamada al API
+  return null;
+};
+
+const formatGrade = (grade: number | null): string => {
+  if (grade === null || grade === undefined) return '-';
+  return grade.toFixed(1);
 };
 
 // Navigation functions

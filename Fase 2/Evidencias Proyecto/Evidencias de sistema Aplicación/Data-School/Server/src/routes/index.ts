@@ -42,6 +42,7 @@ import datosEstudianteRoutes from './datosEstudiante.router'
 import anotacionesRoutes from './anotaciones.router'
 import zonaRoutes from './zona.router'
 import asignacionAsientoRoutes from './asignacionAsiento.router'
+import claseRoutes from './clase.router'
 
 const router = Router()
 
@@ -102,6 +103,9 @@ router.use('/zonas', zonaRoutes)
 
 // Rutas de asignación de asientos
 router.use('/', asignacionAsientoRoutes)
+
+// Rutas de gestión automática de clases
+router.use('/clases', claseRoutes)
 
 // Rutas protegidas
 router.use('/protected', protectedRoutes)

@@ -91,25 +91,27 @@ class TeacherService {
     // Mapear la respuesta del backend al formato esperado por el frontend
     const asignaturas = response.data.data || response.data;
 
-    // Mapeo de nivel_id a nombre del nivel
-    const nivelMap: Record<number, string> = {
-      1: 'Primero Básico',
-      2: 'Segundo Básico',
-      3: 'Tercero Básico',
-      4: 'Cuarto Básico',
-      5: 'Quinto Básico',
-      6: 'Sexto Básico',
-      7: 'Séptimo Básico',
-      8: 'Octavo Básico',
-      9: 'Primero Medio',
-      10: 'Segundo Medio',
-      11: 'Tercero Medio',
-      12: 'Cuarto Medio'
-    };
-
     return asignaturas.map((asignatura: any) => {
-      const nivelId = asignatura.Curso?.nivel_id;
-      const nivelNombre = nivelId ? nivelMap[nivelId] || `Nivel ${nivelId}` : 'Sin nivel';
+      // Construir el nivel completo combinando numero, nivel y nombre del curso
+      // Por ejemplo: numero=7, nivel="Básico", nombre="A" -> "Séptimo Básico A"
+      const nivelCurso = asignatura.Curso?.NivelCurso;
+      const nombreCurso = asignatura.Curso?.nombre;
+      let nivelCompleto = 'Sin nivel';
+
+      if (nivelCurso?.numero && nivelCurso?.nivel) {
+        const numerosEnPalabras: Record<number, string> = {
+          1: 'Primero', 2: 'Segundo', 3: 'Tercero', 4: 'Cuarto',
+          5: 'Quinto', 6: 'Sexto', 7: 'Séptimo', 8: 'Octavo',
+          9: 'Primero', 10: 'Segundo', 11: 'Tercero', 12: 'Cuarto'
+        };
+        const numeroEnPalabra = numerosEnPalabras[nivelCurso.numero] || nivelCurso.numero.toString();
+        nivelCompleto = `${numeroEnPalabra} ${nivelCurso.nivel}`;
+
+        // Agregar el nombre del curso (A, B, C, etc.) si existe
+        if (nombreCurso) {
+          nivelCompleto = `${nivelCompleto} ${nombreCurso}`;
+        }
+      }
 
       return {
         asignatura_id: asignatura.asignatura_id,
@@ -117,12 +119,13 @@ class TeacherService {
         codigo: asignatura.codigo,
         curso: {
           curso_id: asignatura.Curso?.curso_id || asignatura.curso_id,
-          nombre: asignatura.Curso?.nombre || 'Sin curso',
-          nivel: nivelNombre
+          nombre: nombreCurso || 'Sin curso',
+          nivel: nivelCompleto
         },
-        total_estudiantes: 0, // No se muestra en la UI
+        total_estudiantes: asignatura.total_estudiantes || 0,
+        total_evaluaciones: asignatura.total_evaluaciones || 0,
         horas_semanales: asignatura.horas_semanales || 0,
-        sala: asignatura.Curso?.sala_id || 'Sin sala',
+        sala: asignatura.Sala?.nombre || asignatura.Curso?.sala_id || 'Sin sala',
         periodo: asignatura.periodo || 'N/A'
       };
     });
@@ -590,11 +593,11 @@ class TeacherService {
 
   /**
    * Genera reporte de asistencia para una asignatura
-   * GET /api/teachers/subjects/:subjectId/attendance-report?start_date=:startDate&end_date=:endDate
+   * GET /api/asignaturas/:subjectId/attendance-report?start_date=:startDate&end_date=:endDate
    */
   async getAttendanceReport(subjectId: string, startDate: string, endDate: string): Promise<AttendanceReport> {
     const response = await apiClient.get<{ report: AttendanceReport }>(
-      `/teachers/subjects/${subjectId}/attendance-report`,
+      `/asignaturas/${subjectId}/attendance-report`,
       {
         params: {
           start_date: startDate,

@@ -92,11 +92,11 @@ export class AnioAcademicoController {
                 `)
 
             if (colegio_id) {
-                query = query.eq('colegio_id', colegio_id)
+                query = query.eq('colegio_id', colegio_id as string)
             }
 
             if (anio) {
-                query = query.eq('anio', anio)
+                query = query.eq('anio', Number(anio))
             }
 
             if (estado_activo !== undefined) {
@@ -127,7 +127,7 @@ export class AnioAcademicoController {
                     *,
                     Colegio(colegio_id, nombre, direccion)
                 `)
-                .eq('anio_id', id)
+                .eq('anio_id', Number(id))
                 .single()
 
             if (error) throw error
@@ -255,7 +255,7 @@ export class AnioAcademicoController {
             const { data, error } = await supabaseAdmin!
                 .from('AnioAcademico')
                 .update(updateData)
-                .eq('anio_id', id)
+                .eq('anio_id', Number(id))
                 .select()
                 .single()
 
@@ -281,7 +281,7 @@ export class AnioAcademicoController {
             const { data: anioAcademico, error: fetchError } = await supabaseAdmin!
                 .from('AnioAcademico')
                 .select('colegio_id')
-                .eq('anio_id', id)
+                .eq('anio_id', Number(id))
                 .single()
 
             if (fetchError || !anioAcademico) {
@@ -300,7 +300,7 @@ export class AnioAcademicoController {
             const { data, error } = await supabaseAdmin!
                 .from('AnioAcademico')
                 .update({ estado_activo: true })
-                .eq('anio_id', id)
+                .eq('anio_id', Number(id))
                 .select()
                 .single()
 
@@ -324,7 +324,7 @@ export class AnioAcademicoController {
             const { data, error } = await supabaseAdmin!
                 .from('AnioAcademico')
                 .update({ estado_activo: false })
-                .eq('anio_id', id)
+                .eq('anio_id', Number(id))
                 .select()
                 .single()
 
@@ -351,7 +351,7 @@ export class AnioAcademicoController {
             const { error } = await supabaseAdmin!
                 .from('AnioAcademico')
                 .delete()
-                .eq('anio_id', id)
+                .eq('anio_id', Number(id))
 
             if (error) throw error
 

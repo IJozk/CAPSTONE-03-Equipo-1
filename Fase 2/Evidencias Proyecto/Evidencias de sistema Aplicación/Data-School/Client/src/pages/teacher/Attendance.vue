@@ -2,265 +2,328 @@
   <div class="min-h-screen bg-gray-50 p-6">
     <div class="max-w-7xl mx-auto">
       <!-- Header -->
-      <h1 class="text-2xl font-bold text-gray-900 mb-6">Registro de Asistencia</h1>
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">Registro de Asistencia</h1>
+        <p class="text-gray-600 mt-1">Visualiza y registra la asistencia de tus clases semanales</p>
+      </div>
 
-      <!-- Selectors -->
-      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Fecha</label>
-            <input
-              v-model="selectedDate"
-              type="date"
-              :max="today"
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+      <!-- Week Navigator -->
+      <div class="mb-6">
+        <WeekNavigator
+          :current-date="currentDate"
+          @update:current-date="currentDate = $event"
+        />
+      </div>
+
+      <!-- Legend -->
+      <div class="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <h3 class="text-sm font-medium text-gray-900 mb-3">Estado de las clases:</h3>
+        <div class="flex flex-wrap gap-4 text-xs">
+          <div class="flex items-center">
+            <div class="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+            <span class="text-gray-700">Asistencia registrada</span>
+          </div>
+          <div class="flex items-center">
+            <div class="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
+            <span class="text-gray-700">En curso</span>
+          </div>
+          <div class="flex items-center">
+            <div class="w-3 h-3 rounded-full bg-orange-500 mr-2"></div>
+            <span class="text-gray-700">Sin registrar (pasada)</span>
+          </div>
+          <div class="flex items-center">
+            <div class="w-3 h-3 rounded-full bg-purple-500 mr-2"></div>
+            <span class="text-gray-700">Próxima (hoy)</span>
+          </div>
+          <div class="flex items-center">
+            <div class="w-3 h-3 rounded-full bg-gray-400 mr-2"></div>
+            <span class="text-gray-700">Programada (futura)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading state -->
+      <div v-if="loadingClasses" class="space-y-4">
+        <div v-for="day in 5" :key="day">
+          <div class="h-6 bg-gray-200 rounded w-32 mb-3 animate-pulse"></div>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div v-for="i in 3" :key="i" class="h-40 bg-gray-200 rounded-lg animate-pulse"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Weekly schedule grid -->
+      <div v-else-if="Object.keys(classesByDay).length > 0" class="space-y-6">
+        <div v-for="(classes, day) in classesByDay" :key="day">
+          <!-- Day header -->
+          <div class="flex items-center mb-3">
+            <h2 class="text-lg font-bold text-gray-900">{{ getDayName(Number(day)) }}</h2>
+            <span class="ml-3 text-sm text-gray-600">{{ getDayDate(Number(day)) }}</span>
+            <span class="ml-auto text-sm font-medium" :class="getDayStatsClass(classes)">
+              {{ getDayStats(classes) }}
+            </span>
+          </div>
+
+          <!-- Classes grid -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <ClassCard
+              v-for="clase in classes"
+              :key="clase.clase_id || `${clase.horario_id}-${clase.fecha}`"
+              :clase="clase"
+              @click="openAttendancePanel(clase)"
             />
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Asignatura</label>
-            <select
-              v-model="selectedSubjectId"
-              @change="loadStudents"
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-            >
-              <option value="">Seleccionar asignatura</option>
-              <option v-for="subject in teacherStore.subjects" :key="subject.asignatura_id" :value="subject.asignatura_id">
-                {{ subject.nombre }} - {{ subject.curso.nombre }}
-              </option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Quick Actions -->
-        <div v-if="students.length > 0" class="mt-4 flex space-x-2">
-          <button @click="markAllPresent" class="px-3 py-1.5 text-sm bg-green-50 text-green-700 rounded-lg hover:bg-green-100">
-            Marcar Todos Presentes
-          </button>
-          <button @click="markAllAbsent" class="px-3 py-1.5 text-sm bg-red-50 text-red-700 rounded-lg hover:bg-red-100">
-            Marcar Todos Ausentes
-          </button>
-          <button @click="clearAll" class="px-3 py-1.5 text-sm bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100">
-            Limpiar Todo
-          </button>
         </div>
       </div>
 
-      <!-- Loading -->
-      <div v-if="loading" class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
-        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-        <p class="mt-2 text-gray-600">Cargando estudiantes...</p>
+      <!-- Empty state -->
+      <div v-else class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+        <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">No hay clases programadas</h3>
+        <p class="text-gray-600">No se encontraron clases para esta semana</p>
       </div>
 
-      <!-- No students message -->
-      <div v-else-if="selectedSubjectId && students.length === 0 && !loading" class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <div class="flex items-start">
-          <svg class="w-5 h-5 text-yellow-600 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-          </svg>
-          <div>
-            <p class="text-sm font-medium text-yellow-800">No se encontraron estudiantes matriculados en esta asignatura</p>
-            <p class="text-xs text-yellow-700 mt-1">Verifica que el curso tenga estudiantes con matrícula activa.</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Students List -->
-      <div v-else-if="students.length > 0" class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="w-full">
-            <thead class="bg-gray-50 border-b">
-              <tr>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600">N°</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600">ESTUDIANTE</th>
-                <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600">PRESENTE</th>
-                <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600">RETRASO (min)</th>
-                <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600">RETIRO (min)</th>
-                <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600">JUSTIFICADO</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600">OBSERVACIONES</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y">
-              <tr v-for="student in students" :key="student.estudiante_id"
-                  :class="getRowClass(attendance[student.estudiante_id])">
-                <td class="px-4 py-3 text-sm">{{ student.numero_lista }}</td>
-                <td class="px-4 py-3 text-sm font-medium">{{ student.nombre_completo }}</td>
-                <td class="px-4 py-3 text-center">
-                  <input
-                    v-model="attendance[student.estudiante_id].presente"
-                    type="checkbox"
-                    class="w-5 h-5 text-primary-600 rounded focus:ring-primary-500"
-                  />
-                </td>
-                <td class="px-4 py-3">
-                  <input
-                    v-model.number="attendance[student.estudiante_id].retraso_minutos"
-                    type="number"
-                    min="0"
-                    class="w-20 px-2 py-1 text-center border rounded focus:ring-2 focus:ring-primary-500"
-                  />
-                </td>
-                <td class="px-4 py-3">
-                  <input
-                    v-model.number="attendance[student.estudiante_id].retiro_anticipado_minutos"
-                    type="number"
-                    min="0"
-                    class="w-20 px-2 py-1 text-center border rounded focus:ring-2 focus:ring-primary-500"
-                  />
-                </td>
-                <td class="px-4 py-3 text-center">
-                  <input
-                    v-model="attendance[student.estudiante_id].justificado"
-                    type="checkbox"
-                    class="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                </td>
-                <td class="px-4 py-3">
-                  <input
-                    v-model="attendance[student.estudiante_id].observaciones"
-                    type="text"
-                    class="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-primary-500"
-                    placeholder="Observaciones..."
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Stats & Actions -->
-        <div class="px-6 py-4 bg-gray-50 border-t flex justify-between items-center">
-          <div class="flex space-x-6 text-sm">
-            <div><span class="font-medium">Total:</span> {{ students.length }}</div>
-            <div class="text-green-600"><span class="font-medium">Presentes:</span> {{ stats.present }}</div>
-            <div class="text-red-600"><span class="font-medium">Ausentes:</span> {{ stats.absent }}</div>
-            <div class="text-yellow-600"><span class="font-medium">Retrasos:</span> {{ stats.delays }}</div>
-            <div class="text-blue-600"><span class="font-medium">% Asistencia:</span> {{ stats.percentage }}%</div>
-          </div>
-          <button
-            @click="saveAttendance"
-            :disabled="saving || !selectedSubjectId"
-            class="px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 disabled:bg-gray-300"
-          >
-            {{ saving ? 'Guardando...' : 'Guardar Asistencia' }}
-          </button>
-        </div>
-      </div>
-
-      <!-- Success Message -->
-      <div v-if="successMessage" class="mt-6 bg-green-50 border border-green-200 rounded-lg p-4">
-        <p class="text-sm text-green-800">{{ successMessage }}</p>
-      </div>
+      <!-- Quick Attendance Panel -->
+      <AttendanceQuickPanel
+        :is-open="isPanelOpen"
+        :clase="selectedClase"
+        :students="currentStudents"
+        :loading="loadingStudents"
+        @close="closeAttendancePanel"
+        @save="handleSaveAttendance"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, reactive } from 'vue';
-import { useRoute } from 'vue-router';
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { useTeacherStore } from '@/store/teacher.store';
+import { useAuthStore } from '@/store/auth.store';
 import teacherService from '@/services/teachertools.service';
-import type { Student, AttendanceRecord } from '@/types/teacher.types';
+import apiClient from '@/services/api.config';
+import WeekNavigator from '@/components/teacher/WeekNavigator.vue';
+import ClassCard from '@/components/teacher/ClassCard.vue';
+import AttendanceQuickPanel from '@/components/teacher/AttendanceQuickPanel.vue';
+import type { WeeklyClass, AttendanceRecord } from '@/types/teacher.types';
 
-const route = useRoute();
+const router = useRouter();
 const teacherStore = useTeacherStore();
+const authStore = useAuthStore();
 
-const today = new Date().toISOString().split('T')[0];
-const selectedDate = ref(today);
-const selectedSubjectId = ref('');
-const students = ref<Student[]>([]);
-const attendance = ref<Record<string, AttendanceRecord>>({});
-const saving = ref(false);
-const loading = ref(false);
-const successMessage = ref('');
+const currentDate = ref(new Date());
+const loadingClasses = ref(false);
+const loadingStudents = ref(false);
+const weeklyClasses = ref<WeeklyClass[]>([]);
+const isPanelOpen = ref(false);
+const selectedClase = ref<WeeklyClass | null>(null);
+const currentStudents = ref<AttendanceRecord[]>([]);
 
-const stats = computed(() => {
-  const records = Object.values(attendance.value);
-  const present = records.filter(r => r.presente).length;
-  const absent = records.filter(r => !r.presente).length;
-  const delays = records.filter(r => r.retraso_minutos > 0).length;
-  const percentage = students.value.length > 0 ? Math.round((present / students.value.length) * 100) : 0;
-  return { present, absent, delays, percentage };
+// Group classes by day of week
+const classesByDay = computed(() => {
+  const grouped: Record<number, WeeklyClass[]> = {};
+
+  weeklyClasses.value.forEach(clase => {
+    if (!grouped[clase.dia_semana]) {
+      grouped[clase.dia_semana] = [];
+    }
+    grouped[clase.dia_semana].push(clase);
+  });
+
+  // Sort classes by time within each day
+  Object.keys(grouped).forEach(day => {
+    grouped[Number(day)].sort((a, b) => {
+      return a.hora_inicio.localeCompare(b.hora_inicio);
+    });
+  });
+
+  // Sort days (Monday to Friday)
+  const sortedGrouped: Record<number, WeeklyClass[]> = {};
+  [1, 2, 3, 4, 5, 6, 7].forEach(day => {
+    if (grouped[day]) {
+      sortedGrouped[day] = grouped[day];
+    }
+  });
+
+  return sortedGrouped;
 });
 
-const getRowClass = (record: AttendanceRecord) => {
-  if (record.presente) return 'bg-green-50';
-  if (!record.presente && record.justificado) return 'bg-blue-50';
-  if (!record.presente) return 'bg-red-50';
-  return '';
+const getDayName = (dayNumber: number): string => {
+  const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  return days[dayNumber === 7 ? 0 : dayNumber];
 };
 
-const loadStudents = async () => {
-  if (!selectedSubjectId.value) return;
+const getDayDate = (dayNumber: number): string => {
+  const monday = getMonday(currentDate.value);
+  const targetDate = new Date(monday);
+  targetDate.setDate(monday.getDate() + (dayNumber - 1));
 
-  loading.value = true;
-  try {
-    console.log('Cargando estudiantes para asignatura:', selectedSubjectId.value);
-    students.value = await teacherService.getSubjectStudents(selectedSubjectId.value);
-    console.log('Estudiantes cargados:', students.value.length);
-
-    attendance.value = {};
-    students.value.forEach(s => {
-      attendance.value[s.estudiante_id] = {
-        estudiante_id: s.estudiante_id,
-        nombre_completo: s.nombre_completo,
-        numero_lista: s.numero_lista,
-        presente: false,
-        retraso_minutos: 0,
-        retiro_anticipado_minutos: 0,
-        justificado: false,
-        observaciones: ''
-      };
-    });
-  } catch (error) {
-    console.error('Error cargando estudiantes:', error);
-  } finally {
-    loading.value = false;
-  }
-};
-
-const markAllPresent = () => {
-  Object.values(attendance.value).forEach(a => a.presente = true);
-};
-
-const markAllAbsent = () => {
-  Object.values(attendance.value).forEach(a => a.presente = false);
-};
-
-const clearAll = () => {
-  Object.values(attendance.value).forEach(a => {
-    a.presente = false;
-    a.retraso_minutos = 0;
-    a.retiro_anticipado_minutos = 0;
-    a.justificado = false;
-    a.observaciones = '';
+  return targetDate.toLocaleDateString('es-CL', {
+    day: 'numeric',
+    month: 'long'
   });
 };
 
-const saveAttendance = async () => {
-  saving.value = true;
-  successMessage.value = '';
-  try {
-    await teacherService.saveAttendance({
-      fecha: selectedDate.value,
-      asignatura_id: selectedSubjectId.value,
-      asistencias: Object.values(attendance.value)
-    });
-    successMessage.value = 'Asistencia registrada exitosamente';
-    setTimeout(() => successMessage.value = '', 3000);
-  } catch (error) {
-    console.error('Error saving attendance:', error);
-  } finally {
-    saving.value = false;
+const getDayStats = (classes: WeeklyClass[]): string => {
+  const total = classes.length;
+  const registered = classes.filter(c => c.asistencia_registrada).length;
+
+  if (registered === total) {
+    return `✓ ${registered}/${total} registradas`;
+  } else if (registered > 0) {
+    return `${registered}/${total} registradas`;
+  } else {
+    return `${total} clases`;
   }
 };
 
-onMounted(async () => {
-  if (teacherStore.subjects.length === 0) {
-    await teacherStore.fetchMySubjects();
+const getDayStatsClass = (classes: WeeklyClass[]): string => {
+  const total = classes.length;
+  const registered = classes.filter(c => c.asistencia_registrada).length;
+
+  if (registered === total) {
+    return 'text-green-600';
+  } else if (registered > 0) {
+    return 'text-orange-600';
+  } else {
+    return 'text-gray-600';
   }
-  if (route.query.subject) {
-    selectedSubjectId.value = route.query.subject as string;
-    await loadStudents();
+};
+
+const getMonday = (date: Date): Date => {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(d.setDate(diff));
+};
+
+const openAttendancePanel = async (clase: WeeklyClass) => {
+  selectedClase.value = clase;
+  isPanelOpen.value = true;
+
+  // Load students for this class
+  loadingStudents.value = true;
+  try {
+    // Fetch students from the subject using existing service
+    const students = await teacherService.getSubjectStudents(clase.asignatura_id);
+
+    // Map students to attendance records
+    currentStudents.value = students.map(student => ({
+      estudiante_id: student.estudiante_id,
+      nombre_completo: student.nombre_completo,
+      numero_lista: student.numero_lista,
+      rut: student.rut,
+      presente: false,
+      retraso_minutos: 0,
+      retiro_anticipado_minutos: 0,
+      justificado: false,
+      observaciones: ''
+    }));
+
+    // If attendance already registered, load existing data
+    if (clase.asistencia_registrada) {
+      await loadExistingAttendance(clase);
+    }
+  } catch (error) {
+    console.error('Error loading students:', error);
+  } finally {
+    loadingStudents.value = false;
   }
+};
+
+const closeAttendancePanel = () => {
+  isPanelOpen.value = false;
+  selectedClase.value = null;
+  currentStudents.value = [];
+};
+
+const handleSaveAttendance = async (data: { clase: WeeklyClass; attendance: AttendanceRecord[] }) => {
+  try {
+    // Save attendance using existing service
+    await teacherService.saveAttendance({
+      fecha: data.clase.fecha,
+      asignatura_id: data.clase.asignatura_id,
+      asistencias: data.attendance
+    });
+
+    // Update the class in the list
+    const claseIndex = weeklyClasses.value.findIndex(
+      c => c.clase_id === data.clase.clase_id ||
+      (c.horario_id === data.clase.horario_id && c.fecha === data.clase.fecha)
+    );
+
+    if (claseIndex !== -1) {
+      weeklyClasses.value[claseIndex].asistencia_registrada = true;
+      weeklyClasses.value[claseIndex].presentes = data.attendance.filter(a => a.presente).length;
+      weeklyClasses.value[claseIndex].ausentes = data.attendance.filter(a => !a.presente).length;
+    }
+
+    closeAttendancePanel();
+    alert('Asistencia guardada exitosamente');
+  } catch (error) {
+    console.error('Error saving attendance:', error);
+    alert('Error al guardar la asistencia');
+  }
+};
+
+const loadExistingAttendance = async (clase: WeeklyClass) => {
+  try {
+    // TODO: Implement actual API call to load existing attendance for this specific class
+    // This would require a new backend endpoint
+    console.log('Loading existing attendance for clase:', clase.clase_id);
+  } catch (error) {
+    console.error('Error loading existing attendance:', error);
+  }
+};
+
+const loadWeeklyClasses = async () => {
+  loadingClasses.value = true;
+
+  try {
+    const monday = getMonday(currentDate.value);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    const fechaInicio = monday.toISOString().split('T')[0];
+    const fechaFin = sunday.toISOString().split('T')[0];
+
+    // Obtener ID del profesor desde el authStore
+    const profesorId = authStore.user?.profesor_profile?.profesor_id;
+
+    if (!profesorId) {
+      console.error('No se encontró el ID del profesor en authStore', authStore.user);
+      weeklyClasses.value = [];
+      return;
+    }
+
+    // Llamar al endpoint usando apiClient (maneja automáticamente la autenticación)
+    const response = await apiClient.get(`/clases/teacher/${profesorId}`, {
+      params: {
+        fecha_inicio: fechaInicio,
+        fecha_fin: fechaFin
+      }
+    });
+
+    weeklyClasses.value = response.data;
+
+  } catch (error) {
+    console.error('Error loading weekly classes:', error);
+    weeklyClasses.value = [];
+  } finally {
+    loadingClasses.value = false;
+  }
+};
+
+// Watch for date changes
+watch(currentDate, () => {
+  loadWeeklyClasses();
+});
+
+// Load initial data
+onMounted(() => {
+  loadWeeklyClasses();
 });
 </script>

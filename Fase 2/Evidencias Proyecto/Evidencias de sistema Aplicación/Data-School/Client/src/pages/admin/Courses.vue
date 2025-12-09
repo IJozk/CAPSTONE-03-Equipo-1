@@ -1194,7 +1194,14 @@ const handleAsignarProfesorJefe = async () => {
     await loadCursos() // Recargar cursos para actualizar la vista
   } catch (error: any) {
     console.error('Error asignando profesor jefe:', error)
-    alert(`Error: ${error.message}`)
+
+    // Mostrar mensaje detallado si hay información del curso existente
+    const errorData = error.response?.data
+    if (errorData?.details) {
+      alert(`Error: ${errorData.details}`)
+    } else {
+      alert(`Error: ${error.message}`)
+    }
   } finally {
     submitting.value = false
   }

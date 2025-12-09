@@ -266,7 +266,7 @@ export class AuthController {
             : {}),
           // Información adicional para profesores
           ...(userData.role === 'PROFESOR' && !teacherError && teacherData
-            ? { teacher_profile: teacherData }
+            ? { profesor_profile: teacherData }
             : {}),
           // Información adicional para estudiantes
           ...(userData.role === 'ESTUDIANTE_APODERADO' && !studentError && studentData

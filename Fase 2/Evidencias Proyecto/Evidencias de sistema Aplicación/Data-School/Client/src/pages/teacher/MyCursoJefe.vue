@@ -38,12 +38,9 @@
         <div class="bg-gradient-to-r from-primary-600 to-primary-700 rounded-lg shadow-lg p-6 text-white">
           <div class="flex items-center justify-between">
             <div>
-              <h2 class="text-3xl font-bold">{{ cursoJefe.nombre }}</h2>
+              <h2 class="text-3xl font-bold">{{ getNivelDisplay(cursoJefe.nivel_id) }} {{ cursoJefe.nombre }}</h2>
               <p class="text-primary-100 mt-1 text-lg">
-                {{ getNivelDisplay(cursoJefe.nivel_id) }} · Año {{ cursoJefe.anio_academico }}
-              </p>
-              <p class="text-primary-100 text-sm mt-1">
-                Generación {{ cursoJefe.generacion }}
+                Año {{ cursoJefe.anio_academico }} · Generación {{ cursoJefe.generacion }}
               </p>
             </div>
             <div class="text-right">
@@ -56,7 +53,7 @@
         </div>
 
         <!-- Stats Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           <!-- Total Asignaturas -->
           <div class="bg-white rounded-lg shadow p-6">
             <div class="flex items-center">
@@ -102,6 +99,40 @@
                   {{ stats.capacidad_disponible !== null ? stats.capacidad_disponible : '∞' }}
                 </p>
                 <p class="text-sm text-gray-600">Cupos Disponibles</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Promedio Asistencia -->
+          <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <svg class="h-8 w-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div class="ml-4">
+                <p class="text-2xl font-bold text-gray-900">
+                  {{ loadingStats ? '-' : `${stats.promedio_asistencia?.toFixed(1) || 0}%` }}
+                </p>
+                <p class="text-sm text-gray-600">Asistencia Promedio</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Promedio Calificaciones -->
+          <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <svg class="h-8 w-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                </svg>
+              </div>
+              <div class="ml-4">
+                <p class="text-2xl font-bold text-gray-900">
+                  {{ loadingStats ? '-' : (stats.promedio_calificaciones?.toFixed(1) || '-') }}
+                </p>
+                <p class="text-sm text-gray-600">Promedio Curso</p>
               </div>
             </div>
           </div>
@@ -251,6 +282,7 @@ const studentStore = useStudentStore()
 
 const loading = ref(false)
 const loadingStudents = ref(false)
+const loadingStats = ref(false)
 const error = ref<string | null>(null)
 const cursos = ref<Curso[]>([])
 const activeTab = ref<'list' | 'seating'>('list')
@@ -261,7 +293,9 @@ const stats = ref<CursoStats>({
   curso: {} as Curso,
   total_asignaturas: 0,
   total_estudiantes: 0,
-  capacidad_disponible: null
+  capacidad_disponible: null,
+  promedio_asistencia: 0,
+  promedio_calificaciones: 0
 })
 
 onMounted(async () => {
@@ -358,7 +392,7 @@ const estudiantesConMetricas = computed<Student[]>(() => {
   return estudiantes.value.map((estudiante, index) => ({
     estudiante_id: estudiante.estudiante_id,
     nombre_completo: estudiante.nombre_completo,
-    rut: estudiante.rut,
+    rut: String(estudiante.rut),
     numero_lista: index + 1, // Asignar número de lista secuencial
     promedio_asignatura: 0, // TODO: Obtener promedio real
     asistencia_porcentaje: 0, // TODO: Obtener asistencia real
