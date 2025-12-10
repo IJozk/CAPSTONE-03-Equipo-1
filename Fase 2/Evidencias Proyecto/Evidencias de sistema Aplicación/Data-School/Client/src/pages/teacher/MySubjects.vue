@@ -219,8 +219,8 @@ const goToGrades = (subjectId: string) => {
 
 // Cargar asignaturas al montar
 onMounted(async () => {
-  if (teacherStore.subjects.length === 0) {
-    await teacherStore.fetchMySubjects();
-  }
+  // Siempre recargar para asegurar datos actualizados
+  console.log('🔄 MySubjects - Cargando asignaturas...');
+  await teacherStore.fetchMySubjects(true);
 });
 </script>

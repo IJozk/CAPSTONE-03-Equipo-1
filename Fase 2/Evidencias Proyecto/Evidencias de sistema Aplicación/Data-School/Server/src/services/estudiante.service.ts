@@ -420,6 +420,204 @@ export class EstudianteService {
 
     return { message: 'Estudiante habilitado exitosamente' }
   }
+
+  /**
+   * Obtiene el dashboard del estudiante con estadísticas completas
+   */
+  async getDashboard(estudianteId: string) {
+    console.log('📊 Obteniendo dashboard para estudiante:', estudianteId)
+
+    // 1. Obtener datos del estudiante
+    const { data: estudiante, error: estudianteError } = await supabaseAdmin!
+      .from('Estudiante')
+      .select('*, User(email_address)')
+      .eq('estudiante_id', estudianteId)
+      .single()
+
+    if (estudianteError) throw estudianteError
+    if (!estudiante) {
+      throw new NotFoundError('Estudiante', estudianteId)
+    }
+
+    // 2. Obtener matrícula activa y curso
+    console.log('🔍 Buscando matrícula para estudiante:', estudianteId)
+
+    const { data: matricula, error: matriculaError } = await supabaseAdmin!
+      .from('Matricula')
+      .select(`
+        *,
+        Curso(
+          curso_id,
+          nombre,
+          nivel_id
+        )
+      `)
+      .eq('estudiante_id', estudianteId)
+      .eq('estado_matricula_id', 1)
+      .maybeSingle()
+
+    if (matriculaError) {
+      console.error('❌ Error obteniendo matrícula:', matriculaError)
+    }
+
+    const cursoId = matricula?.curso_id
+
+    // 3. Obtener asignaturas del curso
+    let asignaturas: any[] = []
+    if (cursoId) {
+      const result = await supabaseAdmin!
+        .from('Asignatura')
+        .select(`
+          asignatura_id,
+          nombre,
+          codigo,
+          Profesor(nombre_completo)
+        `)
+        .eq('curso_id', cursoId)
+        .eq('estado_activo', true)
+
+      asignaturas = result.data || []
+    }
+
+    // 4. Calcular promedio general y obtener notas recientes
+    const { data: resultados } = await supabaseAdmin!
+      .from('ResultadoEvaluacion')
+      .select(`
+        *,
+        Evaluacion(
+          nombre,
+          fecha_evaluacion,
+          Asignatura(nombre)
+        )
+      `)
+      .eq('estudiante_id', estudianteId)
+      .order('created_at', { ascending: false })
+      .limit(100)
+
+    let promedioGeneral = 0
+    const promediosPorAsignatura: any = {}
+
+    if (resultados && resultados.length > 0) {
+      resultados.forEach((resultado: any) => {
+        const asignaturaId = resultado.Evaluacion?.Asignatura?.nombre
+        if (!asignaturaId) return
+
+        if (!promediosPorAsignatura[asignaturaId]) {
+          promediosPorAsignatura[asignaturaId] = {
+            notas: [],
+            suma: 0,
+            count: 0
+          }
+        }
+
+        if (resultado.nota) {
+          promediosPorAsignatura[asignaturaId].notas.push(resultado.nota)
+          promediosPorAsignatura[asignaturaId].suma += resultado.nota
+          promediosPorAsignatura[asignaturaId].count += 1
+        }
+      })
+
+      const promedios = Object.values(promediosPorAsignatura).map((asig: any) =>
+        asig.count > 0 ? asig.suma / asig.count : 0
+      )
+
+      if (promedios.length > 0) {
+        promedioGeneral = promedios.reduce((a: number, b: number) => a + b, 0) / promedios.length
+      }
+    }
+
+    const notasRecientes = resultados?.slice(0, 5).map((r: any) => ({
+      evaluacion_nombre: r.Evaluacion?.nombre,
+      asignatura_nombre: r.Evaluacion?.Asignatura?.nombre,
+      nota: r.nota,
+      puntaje: r.puntaje_obtenido,
+      fecha: r.Evaluacion?.fecha_evaluacion,
+      created_at: r.created_at
+    })) || []
+
+    // 5. Calcular porcentaje de asistencia
+    const { data: asistencias } = await supabaseAdmin!
+      .from('Asistencia')
+      .select('presente')
+      .eq('estudiante_id', estudianteId)
+
+    let porcentajeAsistencia = 0
+    if (asistencias && asistencias.length > 0) {
+      const presentes = asistencias.filter((a: any) => a.presente).length
+      porcentajeAsistencia = Math.round((presentes / asistencias.length) * 100)
+    }
+
+    // 6. Obtener anotaciones del estudiante
+    const { data: anotaciones } = await supabaseAdmin!
+      .from('Anotaciones')
+      .select('tipo_anotacion')
+      .eq('estudiante_id', estudianteId)
+
+    const anotacionesStats = {
+      positivas: anotaciones?.filter((a: any) => a.tipo_anotacion === 'Positiva').length || 0,
+      negativas: anotaciones?.filter((a: any) => a.tipo_anotacion === 'Negativa').length || 0,
+      neutras: anotaciones?.filter((a: any) => a.tipo_anotacion === 'Neutra').length || 0
+    }
+
+    // 7. Obtener evaluaciones próximas
+    const hoy = new Date()
+    const en30Dias = new Date()
+    en30Dias.setDate(hoy.getDate() + 30)
+
+    const { data: evaluacionesProximas } = await supabaseAdmin!
+      .from('Evaluacion')
+      .select(`
+        evaluacion_id,
+        nombre,
+        fecha_evaluacion,
+        tipo,
+        Asignatura(nombre)
+      `)
+      .in('asignatura_id', asignaturas?.map((a: any) => a.asignatura_id) || [])
+      .gte('fecha_evaluacion', hoy.toISOString().split('T')[0])
+      .lte('fecha_evaluacion', en30Dias.toISOString().split('T')[0])
+      .order('fecha_evaluacion', { ascending: true })
+      .limit(5)
+
+    // 8. Construir respuesta del dashboard
+    return {
+      estudiante: {
+        estudiante_id: estudiante.estudiante_id,
+        nombre_completo: estudiante.nombre_completo,
+        rut: estudiante.rut,
+        email: estudiante.email || estudiante.User?.email_address
+      },
+      curso: matricula ? {
+        curso_id: matricula.Curso.curso_id,
+        nombre: matricula.Curso.nombre,
+        nivel_id: matricula.Curso.nivel_id
+      } : null,
+      stats: {
+        promedio_general: Math.round(promedioGeneral * 10) / 10,
+        porcentaje_asistencia: porcentajeAsistencia,
+        total_asignaturas: asignaturas?.length || 0,
+        evaluaciones_proximas: evaluacionesProximas?.length || 0,
+        anotaciones: anotacionesStats
+      },
+      asignaturas: asignaturas?.map((asig: any) => ({
+        asignatura_id: asig.asignatura_id,
+        nombre: asig.nombre,
+        codigo: asig.codigo,
+        profesor: asig.Profesor?.nombre_completo,
+        promedio: promediosPorAsignatura[asig.nombre]?.count > 0
+          ? Math.round((promediosPorAsignatura[asig.nombre].suma / promediosPorAsignatura[asig.nombre].count) * 10) / 10
+          : null
+      })) || [],
+      notas_recientes: notasRecientes,
+      evaluaciones_proximas: evaluacionesProximas?.map((ev: any) => ({
+        evaluacion_id: ev.evaluacion_id,
+        nombre: ev.nombre,
+        asignatura: ev.Asignatura?.nombre,
+        fecha: ev.fecha_evaluacion,
+        tipo: ev.tipo
+      })) || []
+    }
+  }
 }
 
 export default new EstudianteService()

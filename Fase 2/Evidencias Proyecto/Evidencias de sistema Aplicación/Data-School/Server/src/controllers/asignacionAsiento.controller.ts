@@ -466,4 +466,116 @@ export class AsignacionAsientoController {
       })
     }
   }
+
+  /**
+   * Obtener la evolución del rendimiento académico de un estudiante por períodos de asiento
+   * Calcula el promedio de notas del estudiante durante cada período en que estuvo sentado en un asiento
+   */
+  async getStudentPerformanceBySeat(req: Request, res: Response) {
+    try {
+      const { curso_id, estudiante_id } = req.params
+
+      if (!curso_id || !estudiante_id) {
+        return res.status(400).json({
+          error: 'Los campos curso_id y estudiante_id son requeridos'
+        })
+      }
+
+      const client = supabaseAdmin || supabase
+
+      // Paso 1: Obtener el historial de asientos del estudiante (ordenado cronológicamente)
+      const { data: seatHistory, error: seatError } = await client
+        .from('AsignacionAsiento')
+        .select('asignacion_id, num_asiento, fecha_asignacion, es_actual')
+        .eq('curso_id', curso_id)
+        .eq('estudiante_id', estudiante_id)
+        .order('fecha_asignacion', { ascending: true })
+
+      if (seatError) {
+        console.error('Error obteniendo historial de asientos:', seatError)
+        return res.status(500).json({
+          error: 'Error al obtener historial de asientos',
+          details: seatError.message
+        })
+      }
+
+      if (!seatHistory || seatHistory.length === 0) {
+        return res.status(200).json({
+          message: 'No hay historial de asientos para este estudiante',
+          data: []
+        })
+      }
+
+      // Paso 2: Para cada período de asiento, calcular el rendimiento promedio
+      const performanceData = []
+
+      for (let i = 0; i < seatHistory.length; i++) {
+        const currentSeat = seatHistory[i]
+        const nextSeat = seatHistory[i + 1]
+
+        // Determinar el rango de fechas del período
+        const fechaInicio = currentSeat.fecha_asignacion
+        const fechaFin = nextSeat ? nextSeat.fecha_asignacion : new Date().toISOString()
+
+        // Obtener las notas del estudiante en este curso durante este período
+        const { data: notas, error: notasError } = await client
+          .from('Nota')
+          .select(`
+            nota_final,
+            fecha_registro,
+            Evaluacion!inner(
+              evaluacion_id,
+              nombre,
+              fecha,
+              Asignatura!inner(
+                asignatura_id,
+                nombre,
+                codigo,
+                curso_id
+              )
+            )
+          `)
+          .eq('estudiante_id', estudiante_id)
+          .eq('Evaluacion.Asignatura.curso_id', curso_id)
+          .gte('fecha_registro', fechaInicio)
+          .lte('fecha_registro', fechaFin)
+
+        if (notasError) {
+          console.error('Error obteniendo notas:', notasError)
+          // Continuar con el siguiente período en caso de error
+          continue
+        }
+
+        // Calcular el promedio de notas para este período
+        let promedio = 0
+        let totalNotas = 0
+
+        if (notas && notas.length > 0) {
+          const sumaNotas = notas.reduce((sum, nota) => sum + (nota.nota_final || 0), 0)
+          totalNotas = notas.length
+          promedio = sumaNotas / totalNotas
+        }
+
+        performanceData.push({
+          asignacion_id: currentSeat.asignacion_id,
+          num_asiento: currentSeat.num_asiento,
+          fecha_inicio: fechaInicio,
+          fecha_fin: currentSeat.es_actual ? null : fechaFin,
+          es_actual: currentSeat.es_actual,
+          promedio: parseFloat(promedio.toFixed(2)),
+          total_notas: totalNotas
+        })
+      }
+
+      return res.status(200).json({
+        message: 'Evolución de rendimiento obtenida exitosamente',
+        data: performanceData
+      })
+    } catch (error) {
+      console.error('Error en getStudentPerformanceBySeat:', error)
+      return res.status(500).json({
+        error: 'Error interno del servidor'
+      })
+    }
+  }
 }

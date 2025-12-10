@@ -411,15 +411,98 @@
         </div>
 
         <!-- Timeline de cambios -->
-        <div v-else class="p-6">
-          <div v-if="seatHistory.length === 0" class="text-center py-12">
-            <svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            <p class="text-gray-600">No hay cambios de asiento registrados</p>
+        <div v-else class="p-6 space-y-6">
+          <!-- Gráfico de Evolución del Rendimiento -->
+          <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-6 shadow-sm border border-blue-200">
+            <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              Evolución del Rendimiento
+            </h4>
+
+            <div v-if="loadingPerformance" class="text-center py-8">
+              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+              <p class="text-gray-600 mt-2 text-sm">Cargando datos...</p>
+            </div>
+
+            <div v-else-if="performanceError" class="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p class="text-red-800 text-sm">{{ performanceError }}</p>
+            </div>
+
+            <div v-else-if="performanceData.length === 0" class="text-center py-8 text-gray-500">
+              <svg class="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              <p class="text-sm">No hay datos de rendimiento disponibles</p>
+            </div>
+
+            <div v-else>
+              <canvas ref="performanceChart" class="w-full" style="max-height: 250px;"></canvas>
+
+              <!-- Resumen de métricas -->
+              <div class="mt-4 grid grid-cols-3 gap-3">
+                <div class="bg-white rounded-lg p-3 shadow-sm border border-gray-200">
+                  <p class="text-xs text-gray-600 mb-1">Promedio Actual</p>
+                  <p class="text-2xl font-bold" :class="getGradeColor(currentPerformance.promedio)">
+                    {{ currentPerformance.promedio?.toFixed(1) || 'N/A' }}
+                  </p>
+                </div>
+                <div class="bg-white rounded-lg p-3 shadow-sm border border-gray-200">
+                  <p class="text-xs text-gray-600 mb-1">Tendencia</p>
+                  <div class="flex items-center gap-1">
+                    <svg
+                      v-if="performanceTrend > 0"
+                      class="w-6 h-6 text-green-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                    <svg
+                      v-else-if="performanceTrend < 0"
+                      class="w-6 h-6 text-red-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                    </svg>
+                    <svg
+                      v-else
+                      class="w-6 h-6 text-gray-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14" />
+                    </svg>
+                    <span class="text-lg font-bold" :class="performanceTrend > 0 ? 'text-green-600' : performanceTrend < 0 ? 'text-red-600' : 'text-gray-600'">
+                      {{ performanceTrend > 0 ? '+' : '' }}{{ performanceTrend.toFixed(1) }}
+                    </span>
+                  </div>
+                </div>
+                <div class="bg-white rounded-lg p-3 shadow-sm border border-gray-200">
+                  <p class="text-xs text-gray-600 mb-1">Períodos</p>
+                  <p class="text-2xl font-bold text-gray-900">{{ performanceData.length }}</p>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div v-else class="space-y-4">
+          <!-- Historial de Asientos -->
+          <div>
+            <h4 class="text-lg font-semibold text-gray-900 mb-4">Historial de Asientos</h4>
+
+            <div v-if="seatHistory.length === 0" class="text-center py-12">
+              <svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              <p class="text-gray-600">No hay cambios de asiento registrados</p>
+            </div>
+
+            <div v-else class="space-y-4">
             <div
               v-for="(entry, index) in seatHistory"
               :key="entry.asignacion_id"
@@ -479,6 +562,7 @@
           </div>
         </div>
       </div>
+      </div>
     </transition>
   </div>
 </template>
@@ -525,6 +609,19 @@ const selectedStudentForHistory = ref<Student | null>(null);
 const seatHistory = ref<any[]>([]);
 const loadingHistory = ref(false);
 const historyError = ref<string | null>(null);
+
+// Estados para evolución de rendimiento
+const performanceData = ref<any[]>([]);
+const loadingPerformance = ref(false);
+const performanceError = ref<string | null>(null);
+const performanceChart = ref<HTMLCanvasElement | null>(null);
+const currentPerformance = ref({ promedio: 0 });
+const performanceTrend = computed(() => {
+  if (performanceData.value.length < 2) return 0;
+  const first = performanceData.value[0].promedio;
+  const last = performanceData.value[performanceData.value.length - 1].promedio;
+  return last - first;
+});
 
 // Configuración de la sala
 const rows = ref(5);
@@ -769,6 +866,9 @@ const showStudentHistory = async (student: Student) => {
     // Llamar al endpoint para obtener el historial de asientos del estudiante
     const response = await apiClient.get(`/cursos/${props.cursoId}/estudiantes/${student.estudiante_id}/historial-asientos`);
     seatHistory.value = response.data.data || [];
+
+    // Cargar también la evolución del rendimiento
+    await loadPerformanceData(student.estudiante_id);
   } catch (error: any) {
     console.error('Error cargando historial de asientos:', error);
     historyError.value = error?.response?.data?.message || 'Error al cargar el historial de asientos';
@@ -791,6 +891,195 @@ const formatDate = (dateString: string) => {
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
+  });
+};
+
+// Función auxiliar para obtener el color según la nota
+const getGradeColor = (grade: number | undefined): string => {
+  if (!grade) return 'text-gray-600';
+  if (grade >= 6.0) return 'text-green-600';
+  if (grade >= 5.0) return 'text-blue-600';
+  if (grade >= 4.0) return 'text-yellow-600';
+  return 'text-red-600';
+};
+
+// Cargar datos de evolución del rendimiento
+const loadPerformanceData = async (studentId: string) => {
+  loadingPerformance.value = true;
+  performanceError.value = null;
+  performanceData.value = [];
+
+  try {
+    console.log('🔄 Cargando evolución de rendimiento para estudiante:', studentId);
+
+    // Llamar al endpoint para obtener la evolución del rendimiento por períodos de asiento
+    const response = await apiClient.get(`/cursos/${props.cursoId}/estudiantes/${studentId}/rendimiento-por-asiento`);
+    const data = response.data.data || [];
+
+    console.log('✅ Datos de rendimiento cargados:', data);
+    performanceData.value = data;
+
+    // Calcular el rendimiento actual (último período)
+    if (data.length > 0) {
+      currentPerformance.value = data[data.length - 1];
+    } else {
+      currentPerformance.value = { promedio: 0 };
+    }
+
+    // Dibujar el gráfico si hay datos
+    if (data.length > 0 && performanceChart.value) {
+      drawPerformanceChart();
+    }
+  } catch (error: any) {
+    console.error('❌ Error cargando evolución de rendimiento:', error);
+    performanceError.value = error?.response?.data?.message || 'Error al cargar la evolución del rendimiento';
+  } finally {
+    loadingPerformance.value = false;
+  }
+};
+
+// Dibujar el gráfico de rendimiento
+const drawPerformanceChart = () => {
+  if (!performanceChart.value || performanceData.value.length === 0) return;
+
+  const canvas = performanceChart.value;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  // Configurar tamaño del canvas
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+
+  const width = rect.width;
+  const height = rect.height;
+
+  // Limpiar canvas
+  ctx.clearRect(0, 0, width, height);
+
+  // Configuración del gráfico
+  const padding = { top: 20, right: 20, bottom: 40, left: 50 };
+  const chartWidth = width - padding.left - padding.right;
+  const chartHeight = height - padding.top - padding.bottom;
+
+  // Escalas
+  const maxGrade = 7.0;
+  const minGrade = 1.0;
+  const data = performanceData.value;
+
+  // Dibujar ejes
+  ctx.strokeStyle = '#E5E7EB';
+  ctx.lineWidth = 1;
+
+  // Eje Y (notas)
+  ctx.beginPath();
+  ctx.moveTo(padding.left, padding.top);
+  ctx.lineTo(padding.left, height - padding.bottom);
+  ctx.stroke();
+
+  // Eje X (períodos)
+  ctx.beginPath();
+  ctx.moveTo(padding.left, height - padding.bottom);
+  ctx.lineTo(width - padding.right, height - padding.bottom);
+  ctx.stroke();
+
+  // Líneas de referencia horizontales (notas)
+  ctx.strokeStyle = '#F3F4F6';
+  ctx.lineWidth = 1;
+  [2, 3, 4, 5, 6, 7].forEach(grade => {
+    const y = padding.top + chartHeight - ((grade - minGrade) / (maxGrade - minGrade)) * chartHeight;
+    ctx.beginPath();
+    ctx.moveTo(padding.left, y);
+    ctx.lineTo(width - padding.right, y);
+    ctx.stroke();
+
+    // Etiquetas del eje Y
+    ctx.fillStyle = '#6B7280';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(grade.toFixed(1), padding.left - 10, y);
+  });
+
+  // Línea de aprobación (4.0)
+  const approvalY = padding.top + chartHeight - ((4.0 - minGrade) / (maxGrade - minGrade)) * chartHeight;
+  ctx.strokeStyle = '#FCD34D';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([5, 5]);
+  ctx.beginPath();
+  ctx.moveTo(padding.left, approvalY);
+  ctx.lineTo(width - padding.right, approvalY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Dibujar línea de rendimiento
+  if (data.length > 1) {
+    ctx.strokeStyle = '#3B82F6';
+    ctx.lineWidth = 3;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+
+    ctx.beginPath();
+    data.forEach((point, index) => {
+      const x = padding.left + (index / (data.length - 1)) * chartWidth;
+      const y = padding.top + chartHeight - ((point.promedio - minGrade) / (maxGrade - minGrade)) * chartHeight;
+
+      if (index === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    });
+    ctx.stroke();
+  }
+
+  // Dibujar puntos
+  data.forEach((point, index) => {
+    const x = padding.left + (index / Math.max(data.length - 1, 1)) * chartWidth;
+    const y = padding.top + chartHeight - ((point.promedio - minGrade) / (maxGrade - minGrade)) * chartHeight;
+
+    // Punto
+    ctx.fillStyle = '#3B82F6';
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Borde blanco
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Etiqueta del valor
+    ctx.fillStyle = '#1F2937';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(point.promedio.toFixed(1), x, y - 10);
+  });
+
+  // Etiquetas del eje X (períodos)
+  ctx.fillStyle = '#6B7280';
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+
+  data.forEach((point, index) => {
+    const x = padding.left + (index / Math.max(data.length - 1, 1)) * chartWidth;
+    const label = `P${index + 1}`;
+    ctx.fillText(label, x, height - padding.bottom + 5);
+
+    // Fechas en segunda línea (opcional, más pequeño)
+    if (point.fecha_inicio) {
+      const date = new Date(point.fecha_inicio);
+      const dateLabel = date.toLocaleDateString('es-CL', { month: 'short', day: 'numeric' });
+      ctx.font = '9px sans-serif';
+      ctx.fillStyle = '#9CA3AF';
+      ctx.fillText(dateLabel, x, height - padding.bottom + 18);
+      ctx.font = '10px sans-serif';
+      ctx.fillStyle = '#6B7280';
+    }
   });
 };
 

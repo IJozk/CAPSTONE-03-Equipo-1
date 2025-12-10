@@ -952,23 +952,27 @@ onMounted(async () => {
   loading.value = true;
 
   try {
-    // Si no hay asignaturas cargadas, cargarlas primero
-    if (teacherStore.subjects.length === 0) {
-      await teacherStore.fetchMySubjects();
-    }
+    console.log('🔄 SubjectDetail - Cargando datos para asignatura:', subjectId.value);
+
+    // Siempre recargar asignaturas para asegurar datos actualizados
+    console.log('🔄 SubjectDetail - Recargando asignaturas...');
+    await teacherStore.fetchMySubjects(true);
 
     // Cargar estudiantes de la asignatura
     loadingStudents.value = true;
-    await teacherStore.fetchSubjectStudents(subjectId.value);
+    console.log('🔄 SubjectDetail - Cargando estudiantes...');
+    await teacherStore.fetchSubjectStudents(subjectId.value, true);
     loadingStudents.value = false;
 
     // Cargar evaluaciones de la asignatura
     loadingEvaluations.value = true;
+    console.log('🔄 SubjectDetail - Cargando evaluaciones...');
     await teacherStore.fetchEvaluations(subjectId.value);
     loadingEvaluations.value = false;
 
+    console.log('✅ SubjectDetail - Datos cargados correctamente');
   } catch (error) {
-    console.error('Error loading subject data:', error);
+    console.error('❌ Error loading subject data:', error);
   } finally {
     loading.value = false;
   }

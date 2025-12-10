@@ -287,15 +287,19 @@ export const useTeacherStore = defineStore('teacher', {
 
     /**
      * Cargar asignaturas del profesor
+     * @param forceRefresh - Si es true, siempre recarga los datos del servidor
      */
-    async fetchMySubjects() {
+    async fetchMySubjects(forceRefresh = false) {
       this.loading = true;
       this.error = null;
       try {
+        console.log('🔄 fetchMySubjects - forceRefresh:', forceRefresh);
+        // Siempre recargar para asegurar datos actualizados
         this.subjects = await teacherToolsService.getMySubjects();
+        console.log('✅ fetchMySubjects - Asignaturas cargadas:', this.subjects.length);
       } catch (error: any) {
         this.error = error.message || 'Error al cargar asignaturas';
-        console.error('Error fetching subjects:', error);
+        console.error('❌ Error fetching subjects:', error);
       } finally {
         this.loading = false;
       }
@@ -303,15 +307,20 @@ export const useTeacherStore = defineStore('teacher', {
 
     /**
      * Cargar estudiantes de una asignatura
+     * @param subjectId - ID de la asignatura
+     * @param forceRefresh - Si es true, siempre recarga los datos del servidor
      */
-    async fetchSubjectStudents(subjectId: string) {
+    async fetchSubjectStudents(subjectId: string, forceRefresh = false) {
       this.loading = true;
       this.error = null;
       try {
+        console.log('🔄 fetchSubjectStudents - subjectId:', subjectId, 'forceRefresh:', forceRefresh);
+        // Siempre recargar para asegurar datos actualizados
         this.currentSubjectStudents = await teacherToolsService.getSubjectStudents(subjectId);
+        console.log('✅ fetchSubjectStudents - Estudiantes cargados:', this.currentSubjectStudents.length);
       } catch (error: any) {
         this.error = error.message || 'Error al cargar estudiantes';
-        console.error('Error fetching students:', error);
+        console.error('❌ Error fetching students:', error);
       } finally {
         this.loading = false;
       }

@@ -8,6 +8,7 @@ const profesorController = new ProfesorController()
 // Teacher Dashboard Routes (deben ir ANTES de las rutas con :id)
 router.get('/me/dashboard', authenticate, profesorController.getDashboard.bind(profesorController))
 router.get('/me/upcoming', authenticate, profesorController.getUpcoming.bind(profesorController))
+router.get('/me/subjects', authenticate, profesorController.getMySubjects.bind(profesorController))
 
 // CRUD Profesores
 router.post('/', profesorController.create.bind(profesorController))

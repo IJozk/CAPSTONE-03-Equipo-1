@@ -57,39 +57,13 @@ class TeacherService {
 
   /**
    * Obtiene todas las asignaturas que imparte el profesor
-   * Usa el endpoint /asignaturas con query param profesor_id
+   * GET /api/teachers/me/subjects
    */
   async getMySubjects(): Promise<Subject[]> {
-    // Primero obtener el profesor_id del usuario actual
-    const userStr = localStorage.getItem('auth_user');
-    if (!userStr) {
-      throw new Error('No hay usuario autenticado');
-    }
-
-    const user = JSON.parse(userStr);
-
-    // Obtener el profesor_id haciendo una petición al endpoint de profesores
-    // usando el user_id
-    const profesorResponse = await apiClient.get(`/profesores`);
-    const profesores = profesorResponse.data;
-
-    // Buscar el profesor que coincide con el user_id actual
-    const profesor = profesores.find((p: any) => p.user_id === user.id);
-
-    if (!profesor) {
-      throw new Error('No se encontró el perfil de profesor');
-    }
-
-    // Ahora obtener las asignaturas usando query params en lugar de ruta parametrizada
-    // Esto evita conflicto con la ruta /:id que viene antes
-    const response = await apiClient.get(`/asignaturas`, {
-      params: {
-        profesor_id: profesor.profesor_id
-      }
-    });
+    const response = await apiClient.get('/teachers/me/subjects');
 
     // Mapear la respuesta del backend al formato esperado por el frontend
-    const asignaturas = response.data.data || response.data;
+    const asignaturas = response.data;
 
     return asignaturas.map((asignatura: any) => {
       // Construir el nivel completo combinando numero, nivel y nombre del curso
@@ -141,23 +115,30 @@ class TeacherService {
       const asignaturaResponse = await apiClient.get(`/asignaturas/${subjectId}`);
       const asignatura = asignaturaResponse.data;
 
-      console.log(asignatura)
+      console.log('📚 getSubjectStudents - Asignatura obtenida:', asignatura);
 
-      if (!asignatura || !asignatura.data.Curso) {
-        console.log('No se encontró asignatura o curso_id');
+      // La respuesta puede tener la estructura asignatura.data o directamente asignatura
+      const asignaturaData = asignatura.data || asignatura;
+
+      if (!asignaturaData || !asignaturaData.curso_id) {
+        console.error('❌ No se encontró asignatura o curso_id');
+        console.log('Estructura de respuesta:', { asignatura, asignaturaData });
         return [];
       }
 
-      // Obtener matrículas del curso (sin filtrar por estado para incluir todas)
-      // Si solo quieres activas, agrega: estado_matricula_id: 1
+      const cursoId = asignaturaData.curso_id;
+      console.log('📚 Obteniendo estudiantes del curso:', cursoId);
+
+      // Obtener matrículas del curso (solo activas)
       const matriculasResponse = await apiClient.get(`/matriculas`, {
         params: {
-          curso_id: asignatura.curso_id
-          // Sin filtro de estado_matricula_id para mostrar todas las matrículas
+          curso_id: cursoId,
+          estado_matricula_id: 1  // Solo matrículas activas
         }
       });
 
       const matriculas = matriculasResponse.data || [];
+      console.log('📚 Matrículas encontradas:', matriculas.length);
 
       if (matriculas.length === 0) {
         console.log('No se encontraron matrículas activas para el curso:', asignatura.curso_id);

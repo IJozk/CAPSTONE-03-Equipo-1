@@ -205,6 +205,13 @@ export class AsignaturaController {
         })
       }
 
+      // Validar longitud del código (máximo 10 caracteres)
+      if (asignaturaData.codigo.length > 10) {
+        return res.status(400).json({
+          error: 'El código de la asignatura no puede tener más de 10 caracteres'
+        })
+      }
+
       const client = supabaseAdmin || supabase
 
       // Verificar si ya existe una asignatura con el mismo código
@@ -278,6 +285,13 @@ export class AsignaturaController {
     try {
       const { id } = req.params
       const updateData = req.body as UpdateAsignaturaDto
+
+      // Validar longitud del código si se está actualizando (máximo 10 caracteres)
+      if (updateData.codigo && updateData.codigo.length > 10) {
+        return res.status(400).json({
+          error: 'El código de la asignatura no puede tener más de 10 caracteres'
+        })
+      }
 
       const client = supabaseAdmin || supabase
 

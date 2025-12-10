@@ -65,9 +65,11 @@ const currentDate = computed(() => {
 // Cargar datos del dashboard al montar el componente
 onMounted(async () => {
   try {
+    console.log('🔄 Dashboard - Cargando datos del dashboard...');
     await teacherStore.loadDashboardData();
+    console.log('✅ Dashboard - Datos cargados correctamente');
   } catch (error) {
-    console.error('Error loading dashboard:', error);
+    console.error('❌ Error loading dashboard:', error);
   }
 });
 </script>

@@ -44,19 +44,24 @@ export const authenticate = async (
     }
 
     // Obtener información del usuario desde la tabla User
+    console.log('🔍 Auth - auth_user_id from token:', authData.user.id)
     const { data: userData, error: userError } = await supabase
       .from('User')
       .select('user_id, email_address, role, colegio_id, is_active')
       .eq('auth_user_id', authData.user.id)
       .single()
 
+    console.log('🔍 Auth - User query result:', { userData, userError })
+
     if (userError || !userData) {
+      console.log('❌ Auth - Usuario no encontrado en tabla User')
       return res.status(404).json({
         error: 'Usuario no encontrado en el sistema'
       })
     }
 
     if (!userData.is_active) {
+      console.log('❌ Auth - Usuario inactivo:', userData.user_id)
       return res.status(403).json({
         error: 'Usuario inactivo'
       })
@@ -72,6 +77,13 @@ export const authenticate = async (
 
     // También agregar userId directamente para facilitar el acceso
     ;(req as any).userId = userData.user_id
+
+    console.log('✅ Auth - Usuario autenticado:', {
+      userId: userData.user_id,
+      email: userData.email_address,
+      role: userData.role,
+      colegio_id: userData.colegio_id
+    })
 
     next()
   } catch (error) {
