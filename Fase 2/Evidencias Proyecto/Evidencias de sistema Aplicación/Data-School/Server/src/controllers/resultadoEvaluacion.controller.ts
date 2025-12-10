@@ -1,6 +1,7 @@
 import { Request, Response } from 'express'
 import resultadoEvaluacionService from '@/services/resultadoEvaluacion.service'
 import { formatErrorResponse } from '@/utils/errors'
+import { supabaseAdmin } from '@/config/supabase'
 
 export class ResultadoEvaluacionController {
   public async create(req: Request, res: Response): Promise<Response> {
@@ -49,7 +50,6 @@ export class ResultadoEvaluacionController {
 
   public async getById(req: Request, res: Response): Promise<Response> {
     try {
-      const { supabaseAdmin } = await import('@/config/supabase')
       const { data, error } = await supabaseAdmin!
         .from('ResultadoEvaluacion')
         .select(`
@@ -65,7 +65,7 @@ export class ResultadoEvaluacionController {
             Asignatura(asignatura_id, nombre, codigo, Curso(nombre, nivel))
           )
         `)
-        .eq('resultado_id', req.params.id)
+        .eq('resultado_id', Number(req.params.id))
         .single()
 
       if (error) throw error
@@ -82,7 +82,6 @@ export class ResultadoEvaluacionController {
 
   public async getByEstudiante(req: Request, res: Response): Promise<Response> {
     try {
-      const { supabaseAdmin } = await import('@/config/supabase')
       const { estudiante_id } = req.params
       const { asignatura_id, periodo } = req.query
 
@@ -127,7 +126,7 @@ export class ResultadoEvaluacionController {
 
   public async getByEvaluacion(req: Request, res: Response): Promise<Response> {
     try {
-      const { supabaseAdmin } = await import('@/config/supabase')
+
       const { evaluacion_id } = req.params
 
       const { data, error } = await supabaseAdmin!
@@ -136,7 +135,7 @@ export class ResultadoEvaluacionController {
           *,
           Estudiante(estudiante_id, nombre_completo, rut)
         `)
-        .eq('evaluacion_id', evaluacion_id)
+        .eq('evaluacion_id', Number(evaluacion_id))
         .order('nota', { ascending: false })
 
       if (error) throw error
@@ -150,13 +149,13 @@ export class ResultadoEvaluacionController {
 
   public async delete(req: Request, res: Response): Promise<Response> {
     try {
-      const { supabaseAdmin } = await import('@/config/supabase')
+
       const { id } = req.params
 
       const { error } = await supabaseAdmin!
         .from('ResultadoEvaluacion')
         .delete()
-        .eq('resultado_id', id)
+        .eq('resultado_id', Number(id))
 
       if (error) throw error
 
@@ -175,7 +174,6 @@ export class ResultadoEvaluacionController {
         return res.status(400).json({ message: 'Se requiere un array de resultados' })
       }
 
-      const { supabaseAdmin } = await import('@/config/supabase')
       const created = []
 
       for (const resultado of resultados) {

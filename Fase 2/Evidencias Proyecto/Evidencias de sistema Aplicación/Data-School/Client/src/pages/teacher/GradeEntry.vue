@@ -111,7 +111,7 @@
                 <!-- Puntaje Input -->
                 <td class="px-4 py-3">
                   <input
-                    v-model.number="gradeData[student.estudiante_id].puntaje"
+                    v-model.number="getStudentGrade(student.estudiante_id).puntaje"
                     @input="calculateGrade(student.estudiante_id)"
                     type="number"
                     :min="0"
@@ -126,19 +126,19 @@
                 <!-- Nota Calculada -->
                 <td class="px-4 py-3 text-center">
                   <span
-                    v-if="gradeData[student.estudiante_id].nota !== null"
+                    v-if="getStudentGrade(student.estudiante_id).nota !== null"
                     class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-semibold"
-                    :class="getGradeClass(gradeData[student.estudiante_id].nota)"
+                    :class="getGradeClass(getStudentGrade(student.estudiante_id).nota)"
                   >
-                    {{ gradeData[student.estudiante_id].nota?.toFixed(1) }}
+                    {{ getStudentGrade(student.estudiante_id).nota?.toFixed(1) }}
                   </span>
                   <span v-else class="text-gray-400">-</span>
                 </td>
 
                 <!-- Porcentaje -->
                 <td class="px-4 py-3 text-center text-sm text-gray-600">
-                  {{ gradeData[student.estudiante_id].porcentaje !== null
-                    ? gradeData[student.estudiante_id].porcentaje?.toFixed(1) + '%'
+                  {{ getStudentGrade(student.estudiante_id).porcentaje !== null
+                    ? getStudentGrade(student.estudiante_id).porcentaje?.toFixed(1) + '%'
                     : '-'
                   }}
                 </td>
@@ -146,7 +146,7 @@
                 <!-- Observaciones -->
                 <td class="px-4 py-3">
                   <input
-                    v-model="gradeData[student.estudiante_id].observaciones"
+                    v-model="getStudentGrade(student.estudiante_id).observaciones"
                     type="text"
                     :disabled="!canEnterGrades"
                     class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
@@ -158,10 +158,10 @@
                 <td class="px-4 py-3 text-center">
                   <button
                     @click="saveIndividualGrade(student.estudiante_id)"
-                    :disabled="!canEnterGrades || gradeData[student.estudiante_id].puntaje === null || saving"
+                    :disabled="!canEnterGrades || getStudentGrade(student.estudiante_id).puntaje === null || saving"
                     class="px-3 py-1 bg-primary-600 text-white text-xs font-medium rounded hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                   >
-                    {{ gradeData[student.estudiante_id].resultado_id ? 'Actualizar' : 'Guardar' }}
+                    {{ getStudentGrade(student.estudiante_id).resultado_id ? 'Actualizar' : 'Guardar' }}
                   </button>
                 </td>
               </tr>
@@ -302,6 +302,21 @@ const formatDate = (date: string): string => {
   });
 };
 
+// Obtener datos seguros del estudiante
+const getStudentGrade = (studentId: string): GradeData => {
+  // Asegurar que siempre existe una entrada para el estudiante
+  if (!gradeData.value[studentId]) {
+    gradeData.value[studentId] = {
+      resultado_id: null,
+      puntaje: null,
+      nota: null,
+      porcentaje: null,
+      observaciones: ''
+    };
+  }
+  return gradeData.value[studentId];
+};
+
 // Validar y calcular nota automáticamente
 const calculateGrade = (studentId: string) => {
   const data = gradeData.value[studentId];
@@ -388,7 +403,7 @@ const onEvaluationChange = async () => {
   gradeData.value = {};
 
   if (selectedEvaluationId.value && students.value.length > 0) {
-    // Inicializar datos de notas
+    // Inicializar datos de notas PRIMERO
     students.value.forEach(student => {
       gradeData.value[student.estudiante_id] = {
         resultado_id: null,
@@ -415,6 +430,18 @@ const onEvaluationChange = async () => {
       });
     } catch (error) {
       console.error('Error loading grades:', error);
+      // Asegurarse de que gradeData está inicializado incluso si hay error
+      if (Object.keys(gradeData.value).length === 0) {
+        students.value.forEach(student => {
+          gradeData.value[student.estudiante_id] = {
+            resultado_id: null,
+            puntaje: null,
+            nota: null,
+            porcentaje: null,
+            observaciones: ''
+          };
+        });
+      }
     }
   }
 };

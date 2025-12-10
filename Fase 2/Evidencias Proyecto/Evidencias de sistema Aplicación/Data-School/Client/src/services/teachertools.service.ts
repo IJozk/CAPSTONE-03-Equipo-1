@@ -49,8 +49,8 @@ class TeacherService {
    * GET /api/teachers/me/upcoming
    */
   async getUpcoming(): Promise<Upcoming> {
-    const response = await apiClient.get<{ upcoming: Upcoming }>('/teachers/me/upcoming');
-    return response.data.upcoming;
+    const response = await apiClient.get<Upcoming>('/teachers/me/upcoming');
+    return response.data;
   }
 
   // ========== ASIGNATURAS ==========

@@ -262,8 +262,12 @@ export class ProfesorController {
         const { data: horarios } = await supabaseAdmin
           .from('Horario')
           .select(`
-            *,
-            Asignatura(nombre, Curso(nombre)),
+            horario_id,
+            asignatura_id,
+            dia_semana,
+            hora_inicio,
+            hora_termino,
+            Asignatura(asignatura_id, nombre, Curso(nombre)),
             Sala(nombre)
           `)
           .in('asignatura_id', asignaturasIds)
@@ -272,6 +276,8 @@ export class ProfesorController {
           .order('hora_inicio', { ascending: true })
 
         clases_hoy = horarios?.map((h: any) => ({
+          horario_id: h.horario_id,
+          asignatura_id: h.asignatura_id,
           asignatura: h.Asignatura?.nombre || 'Sin asignatura',
           curso: h.Asignatura?.Curso?.nombre || 'Sin curso',
           sala: h.Sala?.nombre || 'Sin sala',
@@ -280,16 +286,15 @@ export class ProfesorController {
           asistencia_registrada: false // Se actualizará después
         })) || []
 
+        console.log('🔍 getUpcoming - Clases hoy before asistencia check:', clases_hoy)
+
         // Verificar si ya se registró asistencia
         for (const clase of clases_hoy) {
-          const asignatura = horarios?.find((h: any) =>
-            h.Asignatura?.nombre === clase.asignatura
-          )
-          if (asignatura) {
+          if (clase.asignatura_id) {
             const { count } = await supabaseAdmin
               .from('Asistencia')
               .select('*', { count: 'exact', head: true })
-              .eq('asignatura_id', asignatura.asignatura_id)
+              .eq('asignatura_id', clase.asignatura_id)
               .eq('fecha', fechaHoy)
 
             clase.asistencia_registrada = (count || 0) > 0
@@ -310,6 +315,7 @@ export class ProfesorController {
             nombre,
             fecha_evaluacion,
             tipo,
+            asignatura_id,
             Asignatura(nombre, Curso(nombre))
           `)
           .in('asignatura_id', asignaturasIds)
@@ -318,15 +324,51 @@ export class ProfesorController {
           .order('fecha_evaluacion', { ascending: true })
           .limit(10)
 
-        evaluaciones_proximas = evaluaciones?.map((ev: any) => ({
-          evaluacion_id: ev.evaluacion_id,
-          nombre: ev.nombre,
-          asignatura: ev.Asignatura?.nombre || 'Sin asignatura',
-          curso: ev.Asignatura?.Curso?.nombre || 'Sin curso',
-          fecha: ev.fecha_evaluacion,
-          tipo: ev.tipo
-        })) || []
+        if (supabaseAdmin) {
+          evaluaciones_proximas = await Promise.all(
+            (evaluaciones || []).map(async (ev: any) => {
+              // Calcular días restantes
+              const fechaEvaluacion = new Date(ev.fecha_evaluacion)
+              const diasRestantes = Math.ceil((fechaEvaluacion.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24))
+
+              // Determinar estado: verificar si ya se aplicó (tiene notas registradas)
+              const { count: notasCount } = await supabaseAdmin!
+                .from('ResultadoEvaluacion')
+                .select('*', { count: 'exact', head: true })
+                .eq('evaluacion_id', ev.evaluacion_id)
+
+              let estado: 'por_aplicar' | 'por_revisar' | 'completada' = 'por_aplicar'
+
+              if (notasCount && notasCount > 0) {
+                // Si tiene notas, verificar si todas tienen nota final
+                const { data: resultados } = await supabaseAdmin!
+                  .from('ResultadoEvaluacion')
+                  .select('nota')
+                  .eq('evaluacion_id', ev.evaluacion_id)
+
+                const todasCalificadas = resultados?.every(r => r.nota !== null)
+                estado = todasCalificadas ? 'completada' : 'por_revisar'
+              } else if (fechaEvaluacion <= hoy) {
+                // Si la fecha ya pasó y no hay notas, está por revisar
+                estado = 'por_revisar'
+              }
+
+              return {
+                evaluacion_id: ev.evaluacion_id,
+                nombre: ev.nombre,
+                asignatura: ev.Asignatura?.nombre || 'Sin asignatura',
+                curso: ev.Asignatura?.Curso?.nombre || 'Sin curso',
+                fecha: ev.fecha_evaluacion,
+                tipo: ev.tipo,
+                dias_restantes: diasRestantes,
+                estado: estado
+              }
+            })
+          )
+        }
       }
+
+      console.log('🔍 getUpcoming - evaluaciones_proximas:', evaluaciones_proximas)
 
       return res.status(200).json({
         clases_hoy,

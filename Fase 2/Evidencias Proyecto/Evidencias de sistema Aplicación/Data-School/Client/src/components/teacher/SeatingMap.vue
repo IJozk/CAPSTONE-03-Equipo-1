@@ -430,18 +430,28 @@
               <p class="text-red-800 text-sm">{{ performanceError }}</p>
             </div>
 
-            <div v-else-if="performanceData.length === 0" class="text-center py-8 text-gray-500">
-              <svg class="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-              <p class="text-sm">No hay datos de rendimiento disponibles</p>
-            </div>
+            <!-- Looker Studio Embed -->
+            <div v-else class="w-full">
+              <!-- Si el estudiante tiene datos de rendimiento, mostrar el embed -->
+              <div v-if="performanceData.length > 0" class="looker-embed-container">
+                <iframe
+                  :src="getLookerStudioUrl(selectedStudentForHistory?.estudiante_id)"
+                  :style="lookerEmbedStyle"
+                  allowFullScreen
+                  allow="fullscreen"
+                ></iframe>
+              </div>
 
-            <div v-else>
-              <canvas ref="performanceChart" class="w-full" style="max-height: 250px;"></canvas>
+              <!-- Fallback si no hay datos -->
+              <div v-else class="text-center py-8 text-gray-500">
+                <svg class="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <p class="text-sm">No hay datos de rendimiento disponibles</p>
+              </div>
 
-              <!-- Resumen de métricas -->
-              <div class="mt-4 grid grid-cols-3 gap-3">
+              <!-- Resumen de métricas (mantener igual) -->
+              <div v-if="performanceData.length > 0" class="mt-4 grid grid-cols-3 gap-3">
                 <div class="bg-white rounded-lg p-3 shadow-sm border border-gray-200">
                   <p class="text-xs text-gray-600 mb-1">Promedio Actual</p>
                   <p class="text-2xl font-bold" :class="getGradeColor(currentPerformance.promedio)">
@@ -595,6 +605,34 @@ interface Props {
   };
 }
 
+// Variable para el embed de Looker
+const lookerEmbedStyle = ref({
+  width: '300px',
+  height: '200px',
+  border: 'none',
+  borderRadius: '0.5rem'
+});
+
+// Función para generar la URL del Looker Studio con filtros
+const getLookerStudioUrl = (studentId: string | undefined): string => {
+  if (!studentId) return '';
+
+  const reportId = '8c6ffef1-4be7-4be3-8d62-2ffa15927c72/page/sF5hF'; // Reemplaza con tu ID
+  const baseUrl = `https://lookerstudio.google.com/embed/reporting/${reportId}`;
+
+  const filtro = {
+    "ds2.estudiante_id_param": studentId
+  }
+
+  let paramsAsString = JSON.stringify(filtro);
+  let encodedParams = encodeURIComponent(paramsAsString)
+
+  console.log(`${encodedParams}`);
+
+  // Solo enviar estudiante_id
+  return `${baseUrl}?params=${encodedParams}`;
+};
+
 const props = defineProps<Props>();
 
 // Estados
@@ -654,7 +692,7 @@ const viewModes = [
     id: 'behavior',
     label: 'Comportamiento',
     icon: h('svg', { class: 'w-4 h-4', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
-      h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' })
+      h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' })
     ])
   }
 ];

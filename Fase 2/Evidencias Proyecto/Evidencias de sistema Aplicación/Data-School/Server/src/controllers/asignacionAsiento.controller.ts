@@ -519,14 +519,16 @@ export class AsignacionAsientoController {
 
         // Obtener las notas del estudiante en este curso durante este período
         const { data: notas, error: notasError } = await client
-          .from('Nota')
+          .from('ResultadoEvaluacion')
           .select(`
-            nota_final,
-            fecha_registro,
+            nota,
+            porcentaje,
+            puntaje_obtenido,
+            fecha_evaluacion,
             Evaluacion!inner(
               evaluacion_id,
               nombre,
-              fecha,
+              tipo,
               Asignatura!inner(
                 asignatura_id,
                 nombre,
@@ -537,8 +539,8 @@ export class AsignacionAsientoController {
           `)
           .eq('estudiante_id', estudiante_id)
           .eq('Evaluacion.Asignatura.curso_id', curso_id)
-          .gte('fecha_registro', fechaInicio)
-          .lte('fecha_registro', fechaFin)
+          .gte('fecha_evaluacion', fechaInicio)
+          .lte('fecha_evaluacion', fechaFin)
 
         if (notasError) {
           console.error('Error obteniendo notas:', notasError)
@@ -551,7 +553,7 @@ export class AsignacionAsientoController {
         let totalNotas = 0
 
         if (notas && notas.length > 0) {
-          const sumaNotas = notas.reduce((sum, nota) => sum + (nota.nota_final || 0), 0)
+          const sumaNotas = notas.reduce((sum, nota) => sum + (nota.nota || 0), 0)
           totalNotas = notas.length
           promedio = sumaNotas / totalNotas
         }
