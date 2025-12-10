@@ -209,7 +209,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/store/auth.store';
 import evaluacionService from '@/services/evaluacion.service';
 import eventoService from '@/services/evento.service';
-import estudianteService from '@/services/estudiante.service';
+import studentService from '@/services/student.service';
 
 const authStore = useAuthStore();
 const loading = ref(false);
@@ -376,16 +376,17 @@ const loadCalendarData = async () => {
   try {
     console.log('📅 Cargando calendario para estudiante:', estudianteId.value);
 
-    // Primero, obtener el curso del estudiante
-    const estudianteData: any = await estudianteService.getById(estudianteId.value);
-    const cursoIdFromBackend = estudianteData.curso_actual?.curso_id ||
-                                estudianteData.curso_id ||
-                                (estudianteData as any).Estudiante_Curso?.curso_id;
+    // Obtener el curso desde el dashboard (método confiable)
+    const dashboard = await studentService.getDashboard(estudianteId.value);
+    console.log('📊 Dashboard recibido:', dashboard);
 
-    console.log('📚 Curso del estudiante:', cursoIdFromBackend);
+    // El curso_id está en dashboard.curso.curso_id
+    const cursoIdFromBackend = dashboard.curso?.curso_id;
+
+    console.log('📚 Curso del estudiante encontrado:', cursoIdFromBackend);
 
     if (!cursoIdFromBackend) {
-      console.warn('⚠️ El estudiante no tiene un curso asignado');
+      console.error('❌ No se pudo obtener el curso_id');
       error.value = 'No tienes un curso asignado. Contacta con administración.';
       return;
     }

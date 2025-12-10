@@ -109,7 +109,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/store/auth.store'
 import horarioService from '@/services/horario.service'
-import estudianteService from '@/services/estudiante.service'
+import studentService from '@/services/student.service'
 import type { HorarioSlot } from '@/services/horario.service'
 
 const authStore = useAuthStore()
@@ -185,23 +185,18 @@ const loadSchedule = async () => {
   loading.value = true
 
   try {
-    // Primero, obtener los datos del estudiante para conseguir su curso
-    console.log('📞 Llamando a estudianteService.getById para obtener curso...')
-    const estudianteData: any = await estudianteService.getById(estudianteId.value)
-    console.log('✅ Datos del estudiante recibidos:', estudianteData)
-    console.log('🔍 Valor de curso_actual:', estudianteData.curso_actual)
-    console.log('🔍 Tipo de curso_actual:', typeof estudianteData.curso_actual)
+    // Obtener el curso desde el dashboard (método confiable)
+    console.log('📞 Llamando a studentService.getDashboard para obtener curso...')
+    const dashboard = await studentService.getDashboard(estudianteId.value)
+    console.log('✅ Dashboard recibido:', dashboard)
 
-    // Verificar si el backend devuelve curso_actual o curso_id
-    const cursoIdFromBackend = estudianteData.curso_actual?.curso_id ||
-                                estudianteData.curso_id ||
-                                (estudianteData as any).Estudiante_Curso?.curso_id
+    // El curso_id está en dashboard.curso.curso_id
+    const cursoIdFromBackend = dashboard.curso?.curso_id
 
     console.log('📋 Curso ID encontrado:', cursoIdFromBackend)
 
     if (!cursoIdFromBackend) {
-      console.warn('❌ El estudiante no tiene un curso asignado')
-      console.warn('💡 Estructura recibida del backend:', Object.keys(estudianteData))
+      console.error('❌ No se pudo obtener el curso_id')
       return
     }
 
