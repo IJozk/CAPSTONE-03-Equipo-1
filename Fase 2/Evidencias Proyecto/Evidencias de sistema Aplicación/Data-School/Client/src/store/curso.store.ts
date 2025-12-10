@@ -251,6 +251,23 @@ export const useCursoStore = defineStore('curso', {
         this.loading = false
       }
     },
+async fetchOne(cursoId: string) {
+  this.loading = true
+  this.error = null
+  try {
+    const curso = await cursoService.getOne(cursoId)
+    // Actualizar el curso en el array
+    const index = this.cursos.findIndex(c => c.curso_id === cursoId)
+    if (index !== -1) {
+      this.cursos[index] = curso
+    }
+  } catch (error: any) {
+    this.error = error.message
+    throw error
+  } finally {
+    this.loading = false
+  }
+},
 
     /**
      * Obtener cursos donde el profesor autenticado es profesor jefe

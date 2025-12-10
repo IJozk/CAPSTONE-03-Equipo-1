@@ -100,28 +100,28 @@ export class AlertaController {
                     resuelto_por_user:User!Alerta_resuelto_por_fkey(user_id, email_address)
                 `)
 
-            if (estado) {
-                query = query.eq('estado', estado)
+            if (estado && typeof estado === 'string') {
+                query = query.eq('estado', estado as 'PENDIENTE' | 'VISTA' | 'RESUELTA' | 'ARCHIVADA')
             }
 
             if (tipo_alerta_id) {
-                query = query.eq('tipo_alerta_id', tipo_alerta_id)
+                query = query.eq('tipo_alerta_id', Number(tipo_alerta_id))
             }
 
             if (estudiante_id) {
-                query = query.eq('estudiante_id', estudiante_id)
+                query = query.eq('estudiante_id', estudiante_id as string)
             }
 
             if (profesor_id) {
-                query = query.eq('profesor_id', profesor_id)
+                query = query.eq('profesor_id', profesor_id as string)
             }
 
             if (administrativo_id) {
-                query = query.eq('administrativo_id', administrativo_id)
+                query = query.eq('administrativo_id', administrativo_id as string)
             }
 
             if (prioridad) {
-                query = query.eq('prioridad', prioridad)
+                query = query.eq('prioridad', Number(prioridad))
             }
 
             if (fecha_inicio) {
@@ -163,7 +163,7 @@ export class AlertaController {
                     creado_por_user:User!Alerta_creado_por_fkey(user_id, email_address),
                     resuelto_por_user:User!Alerta_resuelto_por_fkey(user_id, email_address)
                 `)
-                .eq('alerta_id', id)
+                .eq('alerta_id', Number(id))
                 .single()
 
             if (error) throw error
@@ -194,7 +194,7 @@ export class AlertaController {
                 .eq('estudiante_id', estudiante_id)
 
             if (estado) {
-                query = query.eq('estado', estado)
+                query = query.eq('estado', estado as 'PENDIENTE' | 'VISTA' | 'RESUELTA' | 'ARCHIVADA')
             }
 
             query = query.order('prioridad', { ascending: false })
@@ -280,7 +280,7 @@ export class AlertaController {
             const { data, error } = await supabaseAdmin!
                 .from('Alerta')
                 .update(updateData)
-                .eq('alerta_id', id)
+                .eq('alerta_id', Number(id))
                 .select()
                 .single()
 
@@ -305,7 +305,7 @@ export class AlertaController {
             const { data, error } = await supabaseAdmin!
                 .from('Alerta')
                 .update({ estado: 'VISTA' })
-                .eq('alerta_id', id)
+                .eq('alerta_id', Number(id))
                 .select()
                 .single()
 
@@ -336,7 +336,7 @@ export class AlertaController {
                     resuelto_por,
                     fecha_resolucion: new Date().toISOString()
                 })
-                .eq('alerta_id', id)
+                .eq('alerta_id', Number(id))
                 .select()
                 .single()
 
@@ -361,7 +361,7 @@ export class AlertaController {
             const { data, error } = await supabaseAdmin!
                 .from('Alerta')
                 .update({ estado: 'ARCHIVADA' })
-                .eq('alerta_id', id)
+                .eq('alerta_id', Number(id))
                 .select()
                 .single()
 
@@ -386,7 +386,7 @@ export class AlertaController {
             const { error } = await supabaseAdmin!
                 .from('Alerta')
                 .delete()
-                .eq('alerta_id', id)
+                .eq('alerta_id', Number(id))
 
             if (error) throw error
 

@@ -49,67 +49,43 @@ class TeacherService {
    * GET /api/teachers/me/upcoming
    */
   async getUpcoming(): Promise<Upcoming> {
-    const response = await apiClient.get<{ upcoming: Upcoming }>('/teachers/me/upcoming');
-    return response.data.upcoming;
+    const response = await apiClient.get<Upcoming>('/teachers/me/upcoming');
+    return response.data;
   }
 
   // ========== ASIGNATURAS ==========
 
   /**
    * Obtiene todas las asignaturas que imparte el profesor
-   * Usa el endpoint /asignaturas con query param profesor_id
+   * GET /api/teachers/me/subjects
    */
   async getMySubjects(): Promise<Subject[]> {
-    // Primero obtener el profesor_id del usuario actual
-    const userStr = localStorage.getItem('auth_user');
-    if (!userStr) {
-      throw new Error('No hay usuario autenticado');
-    }
-
-    const user = JSON.parse(userStr);
-
-    // Obtener el profesor_id haciendo una petición al endpoint de profesores
-    // usando el user_id
-    const profesorResponse = await apiClient.get(`/profesores`);
-    const profesores = profesorResponse.data;
-
-    // Buscar el profesor que coincide con el user_id actual
-    const profesor = profesores.find((p: any) => p.user_id === user.id);
-
-    if (!profesor) {
-      throw new Error('No se encontró el perfil de profesor');
-    }
-
-    // Ahora obtener las asignaturas usando query params en lugar de ruta parametrizada
-    // Esto evita conflicto con la ruta /:id que viene antes
-    const response = await apiClient.get(`/asignaturas`, {
-      params: {
-        profesor_id: profesor.profesor_id
-      }
-    });
+    const response = await apiClient.get('/teachers/me/subjects');
 
     // Mapear la respuesta del backend al formato esperado por el frontend
-    const asignaturas = response.data.data || response.data;
-
-    // Mapeo de nivel_id a nombre del nivel
-    const nivelMap: Record<number, string> = {
-      1: 'Primero Básico',
-      2: 'Segundo Básico',
-      3: 'Tercero Básico',
-      4: 'Cuarto Básico',
-      5: 'Quinto Básico',
-      6: 'Sexto Básico',
-      7: 'Séptimo Básico',
-      8: 'Octavo Básico',
-      9: 'Primero Medio',
-      10: 'Segundo Medio',
-      11: 'Tercero Medio',
-      12: 'Cuarto Medio'
-    };
+    const asignaturas = response.data;
 
     return asignaturas.map((asignatura: any) => {
-      const nivelId = asignatura.Curso?.nivel_id;
-      const nivelNombre = nivelId ? nivelMap[nivelId] || `Nivel ${nivelId}` : 'Sin nivel';
+      // Construir el nivel completo combinando numero, nivel y nombre del curso
+      // Por ejemplo: numero=7, nivel="Básico", nombre="A" -> "Séptimo Básico A"
+      const nivelCurso = asignatura.Curso?.NivelCurso;
+      const nombreCurso = asignatura.Curso?.nombre;
+      let nivelCompleto = 'Sin nivel';
+
+      if (nivelCurso?.numero && nivelCurso?.nivel) {
+        const numerosEnPalabras: Record<number, string> = {
+          1: 'Primero', 2: 'Segundo', 3: 'Tercero', 4: 'Cuarto',
+          5: 'Quinto', 6: 'Sexto', 7: 'Séptimo', 8: 'Octavo',
+          9: 'Primero', 10: 'Segundo', 11: 'Tercero', 12: 'Cuarto'
+        };
+        const numeroEnPalabra = numerosEnPalabras[nivelCurso.numero] || nivelCurso.numero.toString();
+        nivelCompleto = `${numeroEnPalabra} ${nivelCurso.nivel}`;
+
+        // Agregar el nombre del curso (A, B, C, etc.) si existe
+        if (nombreCurso) {
+          nivelCompleto = `${nivelCompleto} ${nombreCurso}`;
+        }
+      }
 
       return {
         asignatura_id: asignatura.asignatura_id,
@@ -117,12 +93,13 @@ class TeacherService {
         codigo: asignatura.codigo,
         curso: {
           curso_id: asignatura.Curso?.curso_id || asignatura.curso_id,
-          nombre: asignatura.Curso?.nombre || 'Sin curso',
-          nivel: nivelNombre
+          nombre: nombreCurso || 'Sin curso',
+          nivel: nivelCompleto
         },
-        total_estudiantes: 0, // No se muestra en la UI
+        total_estudiantes: asignatura.total_estudiantes || 0,
+        total_evaluaciones: asignatura.total_evaluaciones || 0,
         horas_semanales: asignatura.horas_semanales || 0,
-        sala: asignatura.Curso?.sala_id || 'Sin sala',
+        sala: asignatura.Sala?.nombre || asignatura.Curso?.sala_id || 'Sin sala',
         periodo: asignatura.periodo || 'N/A'
       };
     });
@@ -138,23 +115,30 @@ class TeacherService {
       const asignaturaResponse = await apiClient.get(`/asignaturas/${subjectId}`);
       const asignatura = asignaturaResponse.data;
 
-      console.log(asignatura)
+      console.log('📚 getSubjectStudents - Asignatura obtenida:', asignatura);
 
-      if (!asignatura || !asignatura.data.Curso) {
-        console.log('No se encontró asignatura o curso_id');
+      // La respuesta puede tener la estructura asignatura.data o directamente asignatura
+      const asignaturaData = asignatura.data || asignatura;
+
+      if (!asignaturaData || !asignaturaData.curso_id) {
+        console.error('❌ No se encontró asignatura o curso_id');
+        console.log('Estructura de respuesta:', { asignatura, asignaturaData });
         return [];
       }
 
-      // Obtener matrículas del curso (sin filtrar por estado para incluir todas)
-      // Si solo quieres activas, agrega: estado_matricula_id: 1
+      const cursoId = asignaturaData.curso_id;
+      console.log('📚 Obteniendo estudiantes del curso:', cursoId);
+
+      // Obtener matrículas del curso (solo activas)
       const matriculasResponse = await apiClient.get(`/matriculas`, {
         params: {
-          curso_id: asignatura.curso_id
-          // Sin filtro de estado_matricula_id para mostrar todas las matrículas
+          curso_id: cursoId,
+          estado_matricula_id: 1  // Solo matrículas activas
         }
       });
 
       const matriculas = matriculasResponse.data || [];
+      console.log('📚 Matrículas encontradas:', matriculas.length);
 
       if (matriculas.length === 0) {
         console.log('No se encontraron matrículas activas para el curso:', asignatura.curso_id);
@@ -590,11 +574,11 @@ class TeacherService {
 
   /**
    * Genera reporte de asistencia para una asignatura
-   * GET /api/teachers/subjects/:subjectId/attendance-report?start_date=:startDate&end_date=:endDate
+   * GET /api/asignaturas/:subjectId/attendance-report?start_date=:startDate&end_date=:endDate
    */
   async getAttendanceReport(subjectId: string, startDate: string, endDate: string): Promise<AttendanceReport> {
     const response = await apiClient.get<{ report: AttendanceReport }>(
-      `/teachers/subjects/${subjectId}/attendance-report`,
+      `/asignaturas/${subjectId}/attendance-report`,
       {
         params: {
           start_date: startDate,

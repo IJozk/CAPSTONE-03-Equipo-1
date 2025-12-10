@@ -401,11 +401,87 @@ export class CursoController {
         .eq('curso_id', id)
         .eq('estado_activo', true)
 
-      // Contar estudiantes
+      // Contar estudiantes con matrícula activa
       const { count: estudiantesCount } = await client
-        .from('Estudiante_Curso')
+        .from('Matricula')
         .select('*', { count: 'exact', head: true })
         .eq('curso_id', id)
+        .eq('estado_matricula_id', 1) // Solo matrículas activas
+
+      // Calcular promedio de asistencia del curso
+      let promedioAsistencia = 0
+      const { data: estudiantesCurso } = await client
+        .from('Matricula')
+        .select('estudiante_id')
+        .eq('curso_id', id)
+        .eq('estado_matricula_id', 1) // Solo matrículas activas
+
+      if (estudiantesCurso && estudiantesCurso.length > 0) {
+        const estudianteIds = estudiantesCurso.map(ec => ec.estudiante_id)
+
+        // Obtener asignaturas del curso
+        const { data: asignaturas } = await client
+          .from('Asignatura')
+          .select('asignatura_id')
+          .eq('curso_id', id)
+          .eq('estado_activo', true)
+
+        if (asignaturas && asignaturas.length > 0) {
+          const asignaturaIds = asignaturas.map(a => a.asignatura_id)
+
+          // Obtener todas las asistencias del curso
+          const { data: asistencias } = await client
+            .from('Asistencia')
+            .select('presente')
+            .in('estudiante_id', estudianteIds)
+            .in('asignatura_id', asignaturaIds)
+
+          if (asistencias && asistencias.length > 0) {
+            const totalPresentes = asistencias.filter(a => a.presente).length
+            promedioAsistencia = (totalPresentes / asistencias.length) * 100
+          }
+        }
+      }
+
+      // Calcular promedio de calificaciones del curso
+      let promedioCalificaciones = 0
+      if (estudiantesCurso && estudiantesCurso.length > 0) {
+        const estudianteIds = estudiantesCurso.map(ec => ec.estudiante_id)
+
+        // Obtener asignaturas del curso
+        const { data: asignaturas } = await client
+          .from('Asignatura')
+          .select('asignatura_id')
+          .eq('curso_id', id)
+          .eq('estado_activo', true)
+
+        if (asignaturas && asignaturas.length > 0) {
+          const asignaturaIds = asignaturas.map(a => a.asignatura_id)
+
+          // Obtener todas las evaluaciones del curso
+          const { data: evaluaciones } = await client
+            .from('Evaluacion')
+            .select('evaluacion_id')
+            .in('asignatura_id', asignaturaIds)
+
+          if (evaluaciones && evaluaciones.length > 0) {
+            const evaluacionIds = evaluaciones.map(e => e.evaluacion_id)
+
+            // Obtener resultados de evaluaciones
+            const { data: resultados } = await client
+              .from('ResultadoEvaluacion')
+              .select('nota')
+              .in('evaluacion_id', evaluacionIds)
+              .in('estudiante_id', estudianteIds)
+              .not('nota', 'is', null)
+
+            if (resultados && resultados.length > 0) {
+              const sumaNotas = resultados.reduce((sum, r) => sum + (r.nota || 0), 0)
+              promedioCalificaciones = sumaNotas / resultados.length
+            }
+          }
+        }
+      }
 
       return res.status(200).json({
         message: 'Estadísticas del curso obtenidas exitosamente',
@@ -415,7 +491,9 @@ export class CursoController {
           total_estudiantes: estudiantesCount || 0,
           capacidad_disponible: curso.capacidad_maxima
             ? curso.capacidad_maxima - (estudiantesCount || 0)
-            : null
+            : null,
+          promedio_asistencia: promedioAsistencia,
+          promedio_calificaciones: promedioCalificaciones > 0 ? promedioCalificaciones : undefined
         }
       })
     } catch (error) {
@@ -442,10 +520,10 @@ export class CursoController {
 
       const client = supabaseAdmin || supabase
 
-      // Verificar que el curso existe
+      // Verificar que el curso existe y obtener su año académico
       const { data: curso, error: cursoError } = await client
         .from('Curso')
-        .select('curso_id')
+        .select('curso_id, anio_academico, profesor_jefe_id')
         .eq('curso_id', id)
         .single()
 
@@ -466,6 +544,35 @@ export class CursoController {
         if (profesorError || !profesor) {
           return res.status(404).json({
             error: 'Profesor no encontrado'
+          })
+        }
+
+        // Validar que el profesor no sea jefe de otro curso en el mismo período académico
+        const { data: cursosExistentes, error: cursosError } = await client
+          .from('Curso')
+          .select('curso_id, nombre, anio_academico')
+          .eq('profesor_jefe_id', profesor_jefe_id)
+          .eq('anio_academico', curso.anio_academico)
+          .neq('curso_id', id)
+
+        if (cursosError) {
+          console.error('Error verificando cursos existentes:', cursosError)
+          return res.status(500).json({
+            error: 'Error al validar asignación de profesor jefe',
+            details: cursosError.message
+          })
+        }
+
+        if (cursosExistentes && cursosExistentes.length > 0) {
+          const cursoExistente = cursosExistentes[0]
+          return res.status(400).json({
+            error: 'El profesor ya está asignado como profesor jefe de otro curso',
+            details: `El profesor ya es jefe del curso "${cursoExistente.nombre}" en el año académico ${cursoExistente.anio_academico}. Debe remover esa asignación antes de asignar al profesor a este curso.`,
+            curso_existente: {
+              curso_id: cursoExistente.curso_id,
+              nombre: cursoExistente.nombre,
+              anio_academico: cursoExistente.anio_academico
+            }
           })
         }
       }
@@ -531,11 +638,14 @@ export class CursoController {
         })
       }
 
-      // Ahora obtener los cursos donde es profesor jefe
+      // Ahora obtener los cursos donde es profesor jefe en el año académico actual
+      const currentYear = new Date().getFullYear()
+
       const { data: cursos, error: cursosError } = await client
         .from('Curso')
-        .select('*')
+        .select('*, NivelCurso(id, nivel, numero)')
         .eq('profesor_jefe_id', profesor.profesor_id)
+        .eq('anio_academico', currentYear)
         .order('nivel_id', { ascending: true })
 
       if (cursosError) {
@@ -546,26 +656,10 @@ export class CursoController {
         })
       }
 
-      // Para cada curso, obtener la información del nivel
-      const cursosConNivel = await Promise.all(
-        (cursos || []).map(async (curso) => {
-          const { data: nivel } = await client
-            .from('NivelCurso')
-            .select('id, nombre, nivel, numero')
-            .eq('id', curso.nivel_id)
-            .single()
-
-          return {
-            ...curso,
-            nivel_obj: nivel || null
-          }
-        })
-      )
-
       return res.status(200).json({
         message: 'Cursos como profesor jefe obtenidos exitosamente',
-        data: cursosConNivel || [],
-        count: cursosConNivel?.length || 0
+        data: cursos || [],
+        count: cursos?.length || 0
       })
     } catch (error) {
       console.error('Error en getMisCursosComoProfesorJefe:', error)

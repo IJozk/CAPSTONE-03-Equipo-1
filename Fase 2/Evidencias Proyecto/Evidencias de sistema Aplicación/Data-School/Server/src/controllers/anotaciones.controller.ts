@@ -210,7 +210,7 @@ export const updateAnotacion = async (req: Request, res: Response) => {
     const { data, error } = await supabaseAdmin
       .from('Anotaciones')
       .update(updates)
-      .eq('id', id)
+      .eq('id', Number(id))
       .select(`
         *,
         estudiante:Estudiante(estudiante_id, nombre_completo, rut),
@@ -245,7 +245,7 @@ export const deleteAnotacion = async (req: Request, res: Response) => {
     const { error } = await supabaseAdmin
       .from('Anotaciones')
       .delete()
-      .eq('id', id);
+      .eq('id', Number(id));
 
     if (error) throw error;
 

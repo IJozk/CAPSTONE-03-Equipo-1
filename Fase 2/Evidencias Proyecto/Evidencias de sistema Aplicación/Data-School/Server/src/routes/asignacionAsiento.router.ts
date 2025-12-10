@@ -43,6 +43,17 @@ router.get(
 )
 
 /**
+ * GET /cursos/:curso_id/estudiantes/:estudiante_id/rendimiento-por-asiento
+ * Obtener la evolución del rendimiento académico de un estudiante por períodos de asiento
+ * Acceso: PROFESOR, ADMINISTRADOR, DIRECTOR, ADMINISTRATIVO
+ */
+router.get(
+  '/cursos/:curso_id/estudiantes/:estudiante_id/rendimiento-por-asiento',
+  authorize(ROLES.PROFESOR, ROLES.ADMINISTRADOR, ROLES.DIRECTOR, ROLES.ADMINISTRATIVO),
+  asignacionAsientoController.getStudentPerformanceBySeat.bind(asignacionAsientoController)
+)
+
+/**
  * POST /cursos/:curso_id/asientos
  * Guardar/actualizar la distribución completa de asientos de un curso
  * Body: { asientos: Array<{ position: number, estudiante_id: string | null }>, sala_id?: string }

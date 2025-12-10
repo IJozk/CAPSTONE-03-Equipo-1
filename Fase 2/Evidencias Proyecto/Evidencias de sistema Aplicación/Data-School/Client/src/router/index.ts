@@ -410,7 +410,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'reports/grades',
         name: 'TeacherGradesReport',
-        component: () => import('@/pages/teacher/AttendanceReport.vue'),
+        component: () => import('@/pages/teacher/GradesReport.vue'),
         meta: {
           requiresAuth: true,
           requiresRole: ['PROFESOR', 'ADMINISTRADOR'],

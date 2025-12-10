@@ -91,6 +91,15 @@ class CursoService {
       throw new Error(error.response?.data?.error || 'Error al actualizar curso')
     }
   }
+  
+async getOne(cursoId: string): Promise<Curso> {
+  try {
+    const response = await apiClient.get<CursoResponse>(`/cursos/${cursoId}`)
+    return response.data.data as Curso
+  } catch (error: any) {
+    throw new Error(error.response?.data?.error || 'Error al obtener curso')
+  }
+}
 
   /**
    * Eliminar un curso

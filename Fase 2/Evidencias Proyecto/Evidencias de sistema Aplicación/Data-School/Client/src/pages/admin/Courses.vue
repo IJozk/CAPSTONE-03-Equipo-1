@@ -7,15 +7,38 @@
           <h1 class="text-3xl font-bold text-gray-900">Gestión de Cursos</h1>
           <p class="text-gray-600 mt-1">Administra todos los cursos del colegio</p>
         </div>
-        <button
-          @click="openCreateModal"
-          class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
-          Nuevo Curso
-        </button>
+        <div class="flex gap-2">
+          <!-- Botones de exportación -->
+          <button
+            @click="exportToCSV"
+            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+            title="Exportar a CSV"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            CSV
+          </button>
+          <button
+            @click="exportToPDF"
+            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+            title="Exportar a PDF"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+            PDF
+          </button>
+          <button
+            @click="openCreateModal"
+            class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Nuevo Curso
+          </button>
+        </div>
       </div>
 
       <!-- Filtros -->
@@ -234,6 +257,8 @@
                     type="number"
                     required
                     placeholder="Ej: 2024"
+                    step="1"
+                    @keypress="onlyNumbers"
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                 </div>
@@ -247,6 +272,7 @@
                     type="number"
                     required
                     placeholder="Ej: 2024"
+                    step="1"
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                 </div>
@@ -260,6 +286,7 @@
                   type="number"
                   min="1"
                   placeholder="Dejar vacío para sin límite"
+                  @keypress="onlyNumbers"
                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
@@ -1163,6 +1190,13 @@ const loadProfesores = async () => {
   }
 }
 
+const onlyNumbers = (event: KeyboardEvent) => {
+  const key = event.key
+  if (!/^\d$/.test(key) && !['Backspace', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'Delete'].includes(key)) {
+    event.preventDefault()
+  }
+}
+
 const openProfesorJefeModal = async (curso: Curso) => {
   selectedCursoForProfesor.value = curso
   selectedProfesorJefeId.value = curso.profesor_jefe_id || null
@@ -1185,18 +1219,214 @@ const handleAsignarProfesorJefe = async () => {
 
   submitting.value = true
   try {
+    // Asignar el profesor jefe
     await cursoStore.asignarProfesorJefe(selectedCursoForProfesor.value.curso_id, {
       profesor_jefe_id: selectedProfesorJefeId.value
     })
 
+    // Obtener los datos actualizados del curso específico
+    await cursoStore.fetchOne(selectedCursoForProfesor.value.curso_id)
+
     alert(selectedProfesorJefeId.value ? 'Profesor jefe asignado exitosamente' : 'Profesor jefe removido exitosamente')
     closeProfesorJefeModal()
-    await loadCursos() // Recargar cursos para actualizar la vista
   } catch (error: any) {
     console.error('Error asignando profesor jefe:', error)
-    alert(`Error: ${error.message}`)
+
+    // Mostrar mensaje detallado si hay información del curso existente
+    const errorData = error.response?.data
+    if (errorData?.details) {
+      alert(`Error: ${errorData.details}`)
+    } else {
+      alert(`Error: ${error.message}`)
+    }
   } finally {
     submitting.value = false
+  }
+}
+
+// Funciones de exportación
+const exportToCSV = () => {
+  try {
+    // Preparar los datos
+    const data = cursoStore.cursos.map(curso => ({
+      'Nivel': getNivelDisplay(curso.nivel_id),
+      'Letra': curso.nombre,
+      'Año Académico': curso.anio_academico,
+      'Generación': curso.generacion,
+      'Profesor Jefe': curso.profesor_jefe?.nombre_completo || 'Sin asignar',
+      'Capacidad': curso.capacidad_maxima || 'Sin límite',
+      'RUT Profesor': curso.profesor_jefe?.rut || '-'
+    }))
+
+    if (data.length === 0) {
+      alert('No hay datos para exportar')
+      return
+    }
+
+    // Crear CSV
+    const headers = Object.keys(data[0])
+    const csvContent = [
+      headers.join(','),
+      ...data.map(row => headers.map(header => {
+        const value = row[header as keyof typeof row]
+        // Escapar comillas y envolver en comillas si contiene comas
+        const stringValue = String(value)
+        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+          return `"${stringValue.replace(/"/g, '""')}"`
+        }
+        return stringValue
+      }).join(','))
+    ].join('\n')
+
+    // Crear BOM para UTF-8
+    const BOM = '\uFEFF'
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+
+    link.setAttribute('href', url)
+    link.setAttribute('download', `cursos_${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
+    console.log('✅ CSV exportado exitosamente')
+  } catch (error) {
+    console.error('Error exportando CSV:', error)
+    alert('Error al exportar CSV')
+  }
+}
+
+const exportToPDF = () => {
+  try {
+    const data = cursoStore.cursos.map(curso => ({
+      nivel: getNivelDisplay(curso.nivel_id),
+      letra: curso.nombre,
+      anio: curso.anio_academico,
+      generacion: curso.generacion,
+      profesor: curso.profesor_jefe?.nombre_completo || 'Sin asignar',
+      capacidad: curso.capacidad_maxima || 'Sin límite'
+    }))
+
+    if (data.length === 0) {
+      alert('No hay datos para exportar')
+      return
+    }
+
+    // Crear contenido HTML para el PDF
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Reporte de Cursos</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            color: #333;
+          }
+          h1 {
+            color: #2563eb;
+            text-align: center;
+            margin-bottom: 10px;
+          }
+          .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+          }
+          th {
+            background-color: #2563eb;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+          }
+          td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+          }
+          tr:nth-child(even) {
+            background-color: #f9fafb;
+          }
+          tr:hover {
+            background-color: #f3f4f6;
+          }
+          .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+          }
+        </style>
+      </head>
+      <body>
+        <h1>Reporte de Cursos</h1>
+        <div class="subtitle">Generado el ${new Date().toLocaleDateString('es-CL', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        })}</div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Nivel</th>
+              <th>Letra</th>
+              <th>Año Académico</th>
+              <th>Generación</th>
+              <th>Profesor Jefe</th>
+              <th>Capacidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.map(curso => `
+              <tr>
+                <td>${curso.nivel}</td>
+                <td>${curso.letra}</td>
+                <td>${curso.anio}</td>
+                <td>${curso.generacion}</td>
+                <td>${curso.profesor}</td>
+                <td>${curso.capacidad}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <div class="footer">
+          <p>Total de cursos: ${data.length}</p>
+          <p>Data-School - Sistema de Gestión Escolar</p>
+        </div>
+      </body>
+      </html>
+    `
+
+    // Crear ventana de impresión
+    const printWindow = window.open('', '_blank')
+    if (printWindow) {
+      printWindow.document.write(htmlContent)
+      printWindow.document.close()
+
+      // Esperar a que se cargue el contenido antes de imprimir
+      printWindow.onload = () => {
+        printWindow.print()
+      }
+    } else {
+      alert('Por favor, permite ventanas emergentes para exportar a PDF')
+    }
+
+    console.log('✅ PDF generado exitosamente')
+  } catch (error) {
+    console.error('Error exportando PDF:', error)
+    alert('Error al exportar PDF')
   }
 }
 </script>
