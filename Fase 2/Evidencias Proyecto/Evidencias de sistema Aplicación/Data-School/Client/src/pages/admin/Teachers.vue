@@ -7,15 +7,37 @@
           <h1 class="text-3xl font-bold text-gray-900">Gestión de Profesores</h1>
           <p class="text-gray-600 mt-1">Administra el personal docente</p>
         </div>
-        <router-link
-          to="/register"
-          class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
-          Nuevo Profesor
-        </router-link>
+        <div class="flex gap-2">
+          <button
+            @click="exportToCSV"
+            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+            title="Exportar a CSV"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            CSV
+          </button>
+          <button
+            @click="exportToPDF"
+            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+            title="Exportar a PDF"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+            PDF
+          </button>
+          <router-link
+            to="/register"
+            class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Nuevo Profesor
+          </router-link>
+        </div>
       </div>
 
       <!-- Filters and Search -->
@@ -1127,6 +1149,200 @@ onMounted(async () => {
     console.error('Error loading teachers:', error);
   }
 });
+
+// Funciones de exportación
+const exportToCSV = () => {
+  try {
+    // Preparar los datos
+    const data = teacherStore.profesores.map(profesor => ({
+      'Nombre Completo': profesor.nombre_completo,
+      'RUT': profesor.rut,
+      'Email': profesor.email || '-',
+      'Teléfono': profesor.telefono || '-',
+      'Profesión': profesor.contrato?.Profesion?.nombre || 'Sin profesión',
+      'Especialidad': profesor.especialidades && profesor.especialidades.length > 0
+        ? profesor.especialidades.map(e => e.Especialidad?.nombre_especialidad).join('; ')
+        : 'Sin especialidades',
+      'Estado': profesor.estado_activo ? 'Activo' : 'Inactivo'
+    }))
+
+    if (data.length === 0) {
+      alert('No hay datos para exportar')
+      return
+    }
+
+    // Crear CSV
+    const headers = Object.keys(data[0])
+    const csvContent = [
+      headers.join(','),
+      ...data.map(row => headers.map(header => {
+        const value = row[header as keyof typeof row]
+        // Escapar comillas y envolver en comillas si contiene comas
+        const stringValue = String(value)
+        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+          return `"${stringValue.replace(/"/g, '""')}"`
+        }
+        return stringValue
+      }).join(','))
+    ].join('\n')
+
+    // Crear BOM para UTF-8
+    const BOM = '\uFEFF'
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+
+    link.setAttribute('href', url)
+    link.setAttribute('download', `profesores_${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
+    console.log('✅ CSV exportado exitosamente')
+  } catch (error) {
+    console.error('Error exportando CSV:', error)
+    alert('Error al exportar CSV')
+  }
+}
+
+const exportToPDF = () => {
+  try {
+    const data = teacherStore.profesores.map(profesor => ({
+      nombre: profesor.nombre_completo,
+      rut: profesor.rut,
+      email: profesor.email || '-',
+      telefono: profesor.telefono || '-',
+      profesion: profesor.contrato?.Profesion?.nombre || 'Sin profesión',
+      especialidad: profesor.especialidades && profesor.especialidades.length > 0
+        ? profesor.especialidades.map(e => e.Especialidad?.nombre_especialidad).join(', ')
+        : 'Sin especialidades',
+      estado: profesor.estado_activo ? 'Activo' : 'Inactivo'
+    }))
+
+    if (data.length === 0) {
+      alert('No hay datos para exportar')
+      return
+    }
+
+    // Crear contenido HTML para el PDF
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Reporte de Profesores</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            color: #333;
+          }
+          h1 {
+            color: #2563eb;
+            text-align: center;
+            margin-bottom: 10px;
+          }
+          .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 12px;
+          }
+          th {
+            background-color: #2563eb;
+            color: white;
+            padding: 10px 8px;
+            text-align: left;
+            font-weight: bold;
+          }
+          td {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+          }
+          tr:nth-child(even) {
+            background-color: #f9fafb;
+          }
+          tr:hover {
+            background-color: #f3f4f6;
+          }
+          .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+          }
+        </style>
+      </head>
+      <body>
+        <h1>Reporte de Profesores</h1>
+        <div class="subtitle">Generado el ${new Date().toLocaleDateString('es-CL', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        })}</div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre Completo</th>
+              <th>RUT</th>
+              <th>Email</th>
+              <th>Teléfono</th>
+              <th>Profesión</th>
+              <th>Especialidad</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.map(profesor => `
+              <tr>
+                <td>${profesor.nombre}</td>
+                <td>${profesor.rut}</td>
+                <td>${profesor.email}</td>
+                <td>${profesor.telefono}</td>
+                <td>${profesor.profesion}</td>
+                <td>${profesor.especialidad}</td>
+                <td>${profesor.estado}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <div class="footer">
+          <p>Total de profesores: ${data.length}</p>
+          <p>Data-School - Sistema de Gestión Escolar</p>
+        </div>
+      </body>
+      </html>
+    `
+
+    // Crear ventana de impresión
+    const printWindow = window.open('', '_blank')
+    if (printWindow) {
+      printWindow.document.write(htmlContent)
+      printWindow.document.close()
+
+      // Esperar a que se cargue el contenido antes de imprimir
+      printWindow.onload = () => {
+        printWindow.print()
+      }
+    } else {
+      alert('Por favor, permite ventanas emergentes para exportar a PDF')
+    }
+
+    console.log('✅ PDF generado exitosamente')
+  } catch (error) {
+    console.error('Error exportando PDF:', error)
+    alert('Error al exportar PDF')
+  }
+}
 </script>
 
 <style scoped>

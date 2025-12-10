@@ -21,6 +21,17 @@ router.get(
 )
 
 /**
+ * GET /asignaturas/:id/attendance-report
+ * Obtener reporte de asistencia de una asignatura
+ * Query params: start_date, end_date
+ * Acceso: Todos los roles autenticados
+ */
+router.get(
+  '/:id/attendance-report',
+  asignaturaController.getAttendanceReport.bind(asignaturaController)
+)
+
+/**
  * GET /asignaturas/:id
  * Obtener una asignatura por ID
  * Acceso: Todos los roles autenticados

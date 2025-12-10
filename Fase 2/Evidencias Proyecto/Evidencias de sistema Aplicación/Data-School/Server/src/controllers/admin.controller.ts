@@ -135,8 +135,9 @@ export class AdminController {
             tipo_alerta_id,
             nombre,
             descripcion,
-            color,
-            prioridad
+            color_hex,
+            nivel_prioridad,
+            estado_activo
           )
         `)
         .order('fecha_alerta', { ascending: false })
@@ -155,11 +156,11 @@ export class AdminController {
       const alerts = (alertas || []).map(a => ({
         alerta_id: a.alerta_id,
         tipo: a.TipoAlerta?.nombre || 'Sin tipo',
-        descripcion: a.descripcion,
-        prioridad: a.TipoAlerta?.prioridad || 1,
-        color: a.TipoAlerta?.color || '#gray',
-        fecha: a.fecha_alerta,
-        estado: a.resuelta ? 'RESUELTA' : 'PENDIENTE',
+        titulo: a.titulo,
+        prioridad: a.TipoAlerta?.nivel_prioridad || 1,
+        color: a.TipoAlerta?.color_hex || '#gray',
+        fecha_vencimiento: a.fecha_vencimiento,
+        estado: a.estado ? 'RESUELTA' : 'PENDIENTE',
         estudiante: a.Estudiante ? {
           id: a.Estudiante.estudiante_id,
           nombre: a.Estudiante.nombre_completo
@@ -252,8 +253,8 @@ export class AdminController {
             nombre: curso.nombre,
             nivel: curso.NivelCurso ? `${curso.NivelCurso.numero}° ${curso.NivelCurso.nivel}` : 'Sin nivel',
             total_estudiantes: count || 0,
-            capacidad_maxima: curso.capacidad_maxima,
-            porcentaje_ocupacion: Math.round(((count || 0) / curso.capacidad_maxima) * 100),
+            capacidad_maxima: curso.capacidad_maxima || 0,
+            porcentaje_ocupacion: Math.round(((count || 0) / (curso.capacidad_maxima || 0) ) * 100),
             promedio_curso: Math.round(promedioCurso * 10) / 10,
             asistencia_promedio: Math.round(asistenciaPromedio * 10) / 10
           }
@@ -327,7 +328,7 @@ export class AdminController {
           resuelta: true,
           fecha_resolucion: new Date().toISOString()
         })
-        .eq('alerta_id', id)
+        .eq('alerta_id', Number(id))
 
       if (error) throw error
 
@@ -352,7 +353,7 @@ export class AdminController {
           resuelta: true,
           fecha_resolucion: new Date().toISOString()
         })
-        .eq('alerta_id', id)
+        .eq('alerta_id', Number(id))
 
       if (error) throw error
 

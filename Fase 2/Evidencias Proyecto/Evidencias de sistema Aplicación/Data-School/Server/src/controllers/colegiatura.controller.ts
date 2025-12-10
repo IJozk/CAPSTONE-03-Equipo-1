@@ -30,10 +30,10 @@ export class ColegiaturaController {
         .order('fecha_vencimiento', { ascending: false })
 
       // Aplicar filtros
-      if (estado) query = query.eq('estado', estado)
+      if (estado) query = query.eq('estado', estado as "PENDIENTE" | "PAGADO" | "VENCIDO" | "CONDONADO")
       if (anio) query = query.eq('anio', Number(anio))
       if (mes) query = query.eq('mes', Number(mes))
-      if (matricula_id) query = query.eq('matricula_id', matricula_id)
+      if (matricula_id) query = query.eq('matricula_id', matricula_id as string)
 
       const { data, error } = await query
 
@@ -322,7 +322,7 @@ export class ColegiaturaController {
         anio,
         monto: m.monto,
         fecha_vencimiento: m.fecha_vencimiento,
-        estado: 'PENDIENTE'
+        estado: 'PENDIENTE' as 'PENDIENTE'|'PAGADO'|'VENCIDO'|'CONDONADO'
       }))
 
       // Insertar colegiaturas

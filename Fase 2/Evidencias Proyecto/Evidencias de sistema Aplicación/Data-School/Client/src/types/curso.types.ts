@@ -72,6 +72,8 @@ export interface CursoStats {
   total_asignaturas: number
   total_estudiantes: number
   capacidad_disponible: number | null
+  promedio_asistencia?: number
+  promedio_calificaciones?: number
 }
 
 // Estado del store

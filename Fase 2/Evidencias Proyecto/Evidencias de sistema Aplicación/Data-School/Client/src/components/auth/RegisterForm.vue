@@ -406,7 +406,7 @@
     <!-- Link para volver -->
     <div class="text-center">
       <router-link
-        to="/dashboard"
+        :to="dashboardRoute"
         class="text-sm text-primary-600 hover:text-primary-700 hover:underline"
       >
         ← Volver al Dashboard
@@ -427,7 +427,8 @@ import {
   validatePasswordMatch,
   validateRole,
   validateTelefono,
-  validateFechaNacimiento
+  validateFechaNacimiento,
+  validateFechaContratacion
 } from '@/utils/validators';
 import type { RegisterDTO, RegisterValidationErrors, RoleOption } from '@/types/auth.types';
 import { UserRole } from '@/types/auth.types';
@@ -641,9 +642,16 @@ const validateField = (field: keyof RegisterDTO) => {
       break;
     }
     case 'fecha_contratacion': {
-      if ( formData.value.role === UserRole.ADMINISTRADOR || formData.value.role === UserRole.ADMINISTRATIVO) {
-        if (!formData.value.fecha_contratacion) errors.value.fecha_contratacion = 'Fecha de contratación requerida';
-        else delete errors.value.fecha_contratacion;
+      if (formData.value.role === UserRole.ADMINISTRADOR || formData.value.role === UserRole.ADMINISTRATIVO) {
+        
+        if (!formData.value.fecha_contratacion) {
+          errors.value.fecha_contratacion = 'Fecha de contratación requerida';
+        } else {
+          const error = validateFechaContratacion(formData.value.fecha_contratacion);
+          if (error) errors.value.fecha_contratacion = error;
+          else delete errors.value.fecha_contratacion;
+        }
+
       }
       break;
     }
@@ -819,6 +827,9 @@ const handleSubmit = async () => {
 
 // Resetear formulario
 const resetForm = () => {
+  // Guardar el colegio_id antes de resetear
+  const currentColegioId = formData.value.colegio_id;
+
   formData.value = {
     email: '',
     password: '',
@@ -826,9 +837,8 @@ const resetForm = () => {
     role: '' as UserRole,
     nombre_completo: '',
     rut: '',
-    colegio_id: '',
-    telefono: ''
-  ,
+    colegio_id: currentColegioId, // Mantener el colegio_id
+    telefono: '',
     fecha_contratacion: undefined,
     fecha_nacimiento: undefined,
     direccion: undefined,
@@ -839,6 +849,9 @@ const resetForm = () => {
   };
   errors.value = {};
   passwordStrength.value = 'weak';
+  showPassword.value = false;
+  showConfirmPassword.value = false;
+  regionSelected.value = '';
   authStore.clearRegisterState();
 };
 
@@ -862,4 +875,26 @@ onBeforeMount(() => {
 
 // Filtrar opciones (mostrar en el orden solicitado por el usuario)
 const filteredRoleOptions = roleOptions;
+
+// Computed property para obtener la ruta del dashboard según el rol del usuario autenticado
+const dashboardRoute = computed(() => {
+  const userRole = authStore.userRole;
+
+  console.log('🔍 Dashboard route - userRole:', userRole);
+
+  switch(userRole) {
+    case UserRole.ADMINISTRADOR:
+      return '/admin/dashboard';
+    case UserRole.PROFESOR:
+      return '/teacher/dashboard';
+    case UserRole.ESTUDIANTE_APODERADO:
+      return '/student/dashboard';
+    case 'ADMINISTRATIVO':
+      return '/administrativo/dashboard';
+    case 'DIRECTOR':
+      return '/director/dashboard';
+    default:
+      return '/dashboard';
+  }
+});
 </script>

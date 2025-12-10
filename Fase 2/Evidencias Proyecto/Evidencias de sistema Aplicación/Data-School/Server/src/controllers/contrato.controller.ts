@@ -168,7 +168,7 @@ export class ContratoController {
             const { data, error } = await supabaseAdmin!
                 .from('Contrato')
                 .update(updateData)
-                .eq('id_contrato', id)
+                .eq('id_contrato', Number(id))
                 .select(`
                     *,
                     Profesion(id_profesion, nombre, descripcion)
@@ -201,7 +201,7 @@ export class ContratoController {
             const { data, error } = await supabaseAdmin!
                 .from('Contrato')
                 .update({ termino_contrato })
-                .eq('id_contrato', id)
+                .eq('id_contrato', Number(id))
                 .select(`
                     *,
                     Profesion(id_profesion, nombre, descripcion)
@@ -229,7 +229,7 @@ export class ContratoController {
             const { error } = await supabaseAdmin!
                 .from('Contrato')
                 .delete()
-                .eq('id_contrato', id)
+                .eq('id_contrato', Number(id))
 
             if (error) throw error
 
