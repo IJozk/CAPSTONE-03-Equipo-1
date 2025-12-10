@@ -566,7 +566,11 @@ const filteredEvaluations = computed(() => {
 // Methods
 const applyFilters = async () => {
   if (filters.value.asignatura_id) {
+    // Fetch evaluations for specific subject
     await teacherStore.fetchEvaluations(filters.value.asignatura_id);
+  } else {
+    // Fetch all evaluations for all teacher's subjects
+    await teacherStore.fetchAllMyEvaluations();
   }
 };
 
@@ -751,5 +755,7 @@ onMounted(async () => {
   if (teacherStore.subjects.length === 0) {
     await teacherStore.fetchMySubjects();
   }
+  // Load all evaluations by default (all subjects)
+  await teacherStore.fetchAllMyEvaluations();
 });
 </script>

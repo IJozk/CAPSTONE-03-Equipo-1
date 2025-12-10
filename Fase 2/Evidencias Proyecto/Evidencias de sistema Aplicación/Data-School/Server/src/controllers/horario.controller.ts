@@ -142,19 +142,19 @@ export class HorarioController {
                 `)
 
             if (asignatura_id) {
-                query = query.eq('asignatura_id', asignatura_id)
+                query = query.eq('asignatura_id', asignatura_id as string)
             }
 
             if (dia_semana) {
-                query = query.eq('dia_semana', dia_semana)
+                query = query.eq('dia_semana', Number(dia_semana))
             }
 
             if (periodo) {
-                query = query.eq('periodo', periodo)
+                query = query.eq('periodo', periodo as string)
             }
 
             if (sala_id) {
-                query = query.eq('sala_id', sala_id)
+                query = query.eq('sala_id', sala_id as string)
             }
 
             if (estado_activo !== undefined) {
@@ -193,7 +193,7 @@ export class HorarioController {
                     ),
                     Sala(sala_id, nombre, capacidad, zona_id)
                 `)
-                .eq('horario_id', id)
+                .eq('horario_id', Number(id))
                 .single()
 
             if (error) throw error
@@ -259,7 +259,7 @@ export class HorarioController {
                 .eq('estado_activo', true)
 
             if (periodo) {
-                query = query.eq('periodo', periodo)
+                query = query.eq('periodo', periodo as string)
             }
 
             query = query.order('dia_semana', { ascending: true })
@@ -306,7 +306,7 @@ export class HorarioController {
                 .eq('estado_activo', true)
 
             if (periodo) {
-                query = query.eq('periodo', periodo)
+                query = query.eq('periodo', periodo as string)
             }
 
             query = query.order('dia_semana', { ascending: true })
@@ -348,7 +348,7 @@ export class HorarioController {
                 .eq('estado_activo', true)
 
             if (periodo) {
-                query = query.eq('periodo', periodo)
+                query = query.eq('periodo', periodo as string)
             }
 
             query = query.order('dia_semana', { ascending: true })
@@ -387,7 +387,7 @@ export class HorarioController {
             const { data, error } = await supabaseAdmin!
                 .from('Horario')
                 .update(updateData)
-                .eq('horario_id', id)
+                .eq('horario_id', Number(id))
                 .select()
                 .single()
 
@@ -412,7 +412,7 @@ export class HorarioController {
             const { data, error } = await supabaseAdmin!
                 .from('Horario')
                 .update({ estado_activo: false })
-                .eq('horario_id', id)
+                .eq('horario_id', Number(id))
                 .select()
                 .single()
 
@@ -437,7 +437,7 @@ export class HorarioController {
             const { error } = await supabaseAdmin!
                 .from('Horario')
                 .delete()
-                .eq('horario_id', id)
+                .eq('horario_id', Number(id))
 
             if (error) throw error
 

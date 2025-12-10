@@ -125,7 +125,7 @@ const todayClasses = computed(() => {
   const now = new Date();
   const currentTime = now.getHours() * 60 + now.getMinutes(); // Minutos desde medianoche
 
-  return teacherStore.todayClasses.map(clase => {
+  return (teacherStore.todayClasses || []).map(clase => {
     const [startHour, startMin] = clase.hora_inicio.split(':').map(Number);
     const [endHour, endMin] = clase.hora_termino.split(':').map(Number);
 
@@ -149,7 +149,9 @@ const todayClasses = computed(() => {
 });
 
 onMounted(async () => {
-  if (!teacherStore.upcoming) {
+  // El Dashboard ya carga los datos con loadDashboardData(),
+  // pero si por alguna razón no están, cargarlos aquí
+  if (!teacherStore.todayClasses || teacherStore.todayClasses.length === 0) {
     await teacherStore.fetchUpcoming();
   }
 });

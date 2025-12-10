@@ -21,12 +21,12 @@ export class ConfiguracionColegioController {
 
       // Filtrar por colegio si se proporciona
       if (colegio_id) {
-        query = query.eq('colegio_id', colegio_id)
+        query = query.eq('colegio_id', colegio_id as string)
       }
 
       // Filtrar por tipo si se proporciona
       if (tipo) {
-        query = query.eq('tipo', tipo)
+        query = query.eq('tipo', tipo as string)
       }
 
       const { data, error } = await query.order('clave', { ascending: true })
@@ -86,7 +86,7 @@ export class ConfiguracionColegioController {
         .from('ConfiguracionColegio')
         .select('*')
         .eq('clave', clave)
-        .eq('colegio_id', colegio_id)
+        .eq('colegio_id', colegio_id as string)
         .single()
 
       if (error || !data) {
@@ -277,7 +277,7 @@ export class ConfiguracionColegioController {
       const { data, error } = await supabaseAdmin!
         .from('ConfiguracionColegio')
         .select('*')
-        .eq('colegio_id', colegio_id)
+        .eq('colegio_id', colegio_id as string)
         .order('tipo', { ascending: true })
         .order('clave', { ascending: true })
 

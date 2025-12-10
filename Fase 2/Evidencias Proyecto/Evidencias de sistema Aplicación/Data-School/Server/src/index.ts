@@ -17,6 +17,7 @@ app.get('/', (_req, res) => {
   res.send('Data School Backend running');
 });
 
+
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });

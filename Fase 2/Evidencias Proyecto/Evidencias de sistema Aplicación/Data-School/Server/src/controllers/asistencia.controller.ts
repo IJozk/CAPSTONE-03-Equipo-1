@@ -1,290 +1,202 @@
 import { Request, Response } from 'express'
+import asistenciaService from '@/services/asistencia.service'
+import { formatErrorResponse } from '@/utils/errors'
 import { supabaseAdmin } from '@/config/supabase'
 
 export class AsistenciaController {
-
-    // Registrar asistencia de un estudiante
-    public async create(req: Request, res: Response): Promise<Response> {
-        try {
-            const {
-                estudiante_id,
-                asignatura_id,
-                fecha,
-                presente,
-                justificado,
-                retraso_minutos,
-                retiro_anticipado_minutos,
-                observaciones,
-                registrado_por
-            } = req.body
-
-            // Validar campos requeridos
-            if (!estudiante_id || !asignatura_id || !fecha || presente === undefined) {
-                return res.status(400).json({
-                    message: 'estudiante_id, asignatura_id, fecha y presente son requeridos'
-                })
-            }
-
-            // Verificar que no exista ya un registro de asistencia para ese día
-            const { data: existente, error: existenteError } = await supabaseAdmin!
-                .from('Asistencia')
-                .select('asistencia_id')
-                .eq('estudiante_id', estudiante_id)
-                .eq('asignatura_id', asignatura_id)
-                .eq('fecha', fecha)
-                .maybeSingle()
-
-            if (existente) {
-                return res.status(400).json({
-                    message: 'Ya existe un registro de asistencia para este estudiante, asignatura y fecha'
-                })
-            }
-
-            // Crear registro de asistencia
-            const { data, error } = await supabaseAdmin!
-                .from('Asistencia')
-                .insert({
-                    estudiante_id,
-                    asignatura_id,
-                    fecha,
-                    presente,
-                    justificado: justificado || false,
-                    retraso_minutos,
-                    retiro_anticipado_minutos,
-                    observaciones,
-                    registrado_por
-                })
-                .select()
-                .single()
-
-            if (error) throw error
-
-            return res.status(201).json(data)
-
-        } catch (error: any) {
-            return res.status(500).json({ message: error.message })
-        }
+  public async create(req: Request, res: Response): Promise<Response> {
+    try {
+      const data = await asistenciaService.create(req.body)
+      return res.status(201).json(data)
+    } catch (error: any) {
+      const errorResponse = formatErrorResponse(error)
+      return res.status(errorResponse.statusCode || 500).json(errorResponse)
     }
+  }
 
-    // Registrar asistencia masiva (para toda una clase)
-    public async createBulk(req: Request, res: Response): Promise<Response> {
-        try {
-            const { asistencias } = req.body
-
-            if (!Array.isArray(asistencias) || asistencias.length === 0) {
-                return res.status(400).json({ message: 'Se requiere un array de asistencias' })
-            }
-
-            // Validar que todos tengan los campos requeridos
-            for (const asist of asistencias) {
-                if (!asist.estudiante_id || !asist.asignatura_id || !asist.fecha || asist.presente === undefined) {
-                    return res.status(400).json({
-                        message: 'Cada asistencia debe tener estudiante_id, asignatura_id, fecha y presente'
-                    })
-                }
-            }
-
-            const { data, error } = await supabaseAdmin!
-                .from('Asistencia')
-                .insert(asistencias)
-                .select()
-
-            if (error) throw error
-
-            return res.status(201).json(data)
-
-        } catch (error: any) {
-            return res.status(500).json({ message: error.message })
-        }
+  public async update(req: Request, res: Response): Promise<Response> {
+    try {
+      const data = await asistenciaService.update(req.params.id, req.body)
+      return res.status(200).json(data)
+    } catch (error: any) {
+      const errorResponse = formatErrorResponse(error)
+      return res.status(errorResponse.statusCode || 500).json(errorResponse)
     }
+  }
 
-    // Obtener asistencias con filtros
-    public async getAll(req: Request, res: Response): Promise<Response> {
+  public async createBulk(req: Request, res: Response): Promise<Response> {
+    try {
+      const { asistencias } = req.body
+
+      if (!Array.isArray(asistencias) || asistencias.length === 0) {
+        return res.status(400).json({ message: 'Se requiere un array de asistencias' })
+      }
+
+      const created = []
+
+      for (const asistencia of asistencias) {
         try {
-            const {
-                estudiante_id,
-                asignatura_id,
-                fecha_inicio,
-                fecha_fin,
-                presente
-            } = req.query
-
-            let query = supabaseAdmin!
-                .from('Asistencia')
-                .select(`
-                    *,
-                    Estudiante(estudiante_id, nombre_completo, rut),
-                    Asignatura(asignatura_id, nombre, codigo),
-                    User(user_id, email_address)
-                `)
-
-            if (estudiante_id) {
-                query = query.eq('estudiante_id', String(estudiante_id))
-            }
-
-            if (asignatura_id) {
-                query = query.eq('asignatura_id', String(asignatura_id))
-            }
-
-            if (fecha_inicio) {
-                query = query.gte('fecha', fecha_inicio)
-            }
-
-            if (fecha_fin) {
-                query = query.lte('fecha', fecha_fin)
-            }
-
-            if (presente !== undefined) {
-                query = query.eq('presente', presente === 'true')
-            }
-
-            query = query.order('fecha', { ascending: false })
-
-            const { data, error } = await query
-
-            if (error) throw error
-
-            return res.status(200).json(data || [])
-
+          const data = await asistenciaService.create(asistencia)
+          created.push(data)
         } catch (error: any) {
-            return res.status(500).json({ message: error.message })
+          const errorResponse = formatErrorResponse(error)
+          return res.status(errorResponse.statusCode || 500).json({
+            message: `Error en asistencia para estudiante ${asistencia.estudiante_id}`,
+            error: errorResponse
+          })
         }
+      }
+
+      return res.status(201).json(created)
+    } catch (error: any) {
+      const errorResponse = formatErrorResponse(error)
+      return res.status(errorResponse.statusCode || 500).json(errorResponse)
     }
+  }
 
-    // Obtener asistencia por ID
-    public async getById(req: Request, res: Response): Promise<Response> {
-        try {
-            const { id } = req.params
+  public async getAll(req: Request, res: Response): Promise<Response> {
+    try {
+      const {
+        estudiante_id,
+        asignatura_id,
+        fecha_inicio,
+        fecha_fin,
+        presente
+      } = req.query
 
-            const { data, error } = await supabaseAdmin!
-                .from('Asistencia')
-                .select(`
-                    *,
-                    Estudiante(estudiante_id, nombre_completo, rut),
-                    Asignatura(asignatura_id, nombre, codigo, Curso(nombre, nivel)),
-                    User(user_id, email_address)
-                `)
-                .eq('asistencia_id', Number(id))
-                .single()
+      let query = supabaseAdmin!
+        .from('Asistencia')
+        .select(`
+          *,
+          Estudiante(estudiante_id, nombre_completo, rut),
+          Asignatura(asignatura_id, nombre, codigo),
+          User(user_id, email_address)
+        `)
 
-            if (error) throw error
+      if (estudiante_id) {
+        query = query.eq('estudiante_id', String(estudiante_id))
+      }
 
-            if (!data) {
-                return res.status(404).json({ message: 'Asistencia no encontrada' })
-            }
+      if (asignatura_id) {
+        query = query.eq('asignatura_id', String(asignatura_id))
+      }
 
-            return res.status(200).json(data)
+      if (fecha_inicio) {
+        query = query.gte('fecha', fecha_inicio)
+      }
 
-        } catch (error: any) {
-            return res.status(500).json({ message: error.message })
-        }
+      if (fecha_fin) {
+        query = query.lte('fecha', fecha_fin)
+      }
+
+      if (presente !== undefined) {
+        query = query.eq('presente', presente === 'true')
+      }
+
+      query = query.order('fecha', { ascending: false })
+
+      const { data, error } = await query
+
+      if (error) throw error
+
+      return res.status(200).json(data || [])
+    } catch (error: any) {
+      const errorResponse = formatErrorResponse(error)
+      return res.status(errorResponse.statusCode || 500).json(errorResponse)
     }
+  }
 
-    // Obtener resumen de asistencia de un estudiante
-    public async getResumenEstudiante(req: Request, res: Response): Promise<Response> {
-        try {
-            const { estudiante_id } = req.params
-            const { asignatura_id, fecha_inicio, fecha_fin } = req.query
+  public async getById(req: Request, res: Response): Promise<Response> {
+    try {
+      const { id } = req.params
 
-            let query = supabaseAdmin!
-                .from('Asistencia')
-                .select('*')
-                .eq('estudiante_id', estudiante_id)
+      const { data, error } = await supabaseAdmin!
+        .from('Asistencia')
+        .select(`
+          *,
+          Estudiante(estudiante_id, nombre_completo, rut),
+          Asignatura(asignatura_id, nombre, codigo, Curso(nombre, nivel)),
+          User(user_id, email_address)
+        `)
+        .eq('asistencia_id', Number(id))
+        .single()
 
-            if (asignatura_id) {
-                query = query.eq('asignatura_id', String(asignatura_id))
-            }
+      if (error) throw error
 
-            if (fecha_inicio) {
-                query = query.gte('fecha', fecha_inicio)
-            }
+      if (!data) {
+        return res.status(404).json({ message: 'Asistencia no encontrada' })
+      }
 
-            if (fecha_fin) {
-                query = query.lte('fecha', fecha_fin)
-            }
-
-            const { data, error } = await query
-
-            if (error) throw error
-
-            // Calcular estadísticas
-            const total = data?.length || 0
-            const presentes = data?.filter(a => a.presente).length || 0
-            const ausentes = total - presentes
-            const justificadas = data?.filter(a => !a.presente && a.justificado).length || 0
-            const retrasos = data?.filter(a => a.retraso_minutos && a.retraso_minutos > 0).length || 0
-            const porcentaje = total > 0 ? (presentes / total) * 100 : 0
-
-            return res.status(200).json({
-                total,
-                presentes,
-                ausentes,
-                justificadas,
-                retrasos,
-                porcentaje_asistencia: parseFloat(porcentaje.toFixed(2)),
-                detalle: data || []
-            })
-
-        } catch (error: any) {
-            return res.status(500).json({ message: error.message })
-        }
+      return res.status(200).json(data)
+    } catch (error: any) {
+      const errorResponse = formatErrorResponse(error)
+      return res.status(errorResponse.statusCode || 500).json(errorResponse)
     }
+  }
 
-    // Actualizar registro de asistencia
-    public async update(req: Request, res: Response): Promise<Response> {
-        try {
-            const { id } = req.params
-            const {
-                presente,
-                justificado,
-                retraso_minutos,
-                retiro_anticipado_minutos,
-                observaciones
-            } = req.body
+  public async getResumenEstudiante(req: Request, res: Response): Promise<Response> {
+    try {
+      const { estudiante_id } = req.params
+      const { asignatura_id, fecha_inicio, fecha_fin } = req.query
 
-            const updateData: any = {}
-            if (presente !== undefined) updateData.presente = presente
-            if (justificado !== undefined) updateData.justificado = justificado
-            if (retraso_minutos !== undefined) updateData.retraso_minutos = retraso_minutos
-            if (retiro_anticipado_minutos !== undefined) updateData.retiro_anticipado_minutos = retiro_anticipado_minutos
-            if (observaciones !== undefined) updateData.observaciones = observaciones
+      let query = supabaseAdmin!
+        .from('Asistencia')
+        .select('*')
+        .eq('estudiante_id', estudiante_id)
 
-            const { data, error } = await supabaseAdmin!
-                .from('Asistencia')
-                .update(updateData)
-                .eq('asistencia_id', Number(id))
-                .select()
-                .single()
+      if (asignatura_id) {
+        query = query.eq('asignatura_id', String(asignatura_id))
+      }
 
-            if (error) throw error
+      if (fecha_inicio) {
+        query = query.gte('fecha', fecha_inicio)
+      }
 
-            if (!data) {
-                return res.status(404).json({ message: 'Asistencia no encontrada' })
-            }
+      if (fecha_fin) {
+        query = query.lte('fecha', fecha_fin)
+      }
 
-            return res.status(200).json(data)
+      const { data, error } = await query
 
-        } catch (error: any) {
-            return res.status(500).json({ message: error.message })
-        }
+      if (error) throw error
+
+      const total = data?.length || 0
+      const presentes = data?.filter(a => a.presente).length || 0
+      const ausentes = total - presentes
+      const justificadas = data?.filter(a => !a.presente && a.justificado).length || 0
+      const retrasos = data?.filter(a => a.retraso_minutos && a.retraso_minutos > 0).length || 0
+      const porcentaje = total > 0 ? (presentes / total) * 100 : 0
+
+      return res.status(200).json({
+        total,
+        presentes,
+        ausentes,
+        justificadas,
+        retrasos,
+        porcentaje_asistencia: parseFloat(porcentaje.toFixed(2)),
+        detalle: data || []
+      })
+    } catch (error: any) {
+      const errorResponse = formatErrorResponse(error)
+      return res.status(errorResponse.statusCode || 500).json(errorResponse)
     }
+  }
 
-    // Eliminar registro de asistencia
-    public async delete(req: Request, res: Response): Promise<Response> {
-        try {
-            const { id } = req.params
+  public async delete(req: Request, res: Response): Promise<Response> {
+    try {
+      const { id } = req.params
 
-            const { error } = await supabaseAdmin!
-                .from('Asistencia')
-                .delete()
-                .eq('asistencia_id', Number(id))
+      const { error } = await supabaseAdmin!
+        .from('Asistencia')
+        .delete()
+        .eq('asistencia_id', Number(id))
 
-            if (error) throw error
+      if (error) throw error
 
-            return res.status(200).json({ message: 'Asistencia eliminada correctamente' })
-
-        } catch (error: any) {
-            return res.status(500).json({ message: error.message })
-        }
+      return res.status(200).json({ message: 'Asistencia eliminada correctamente' })
+    } catch (error: any) {
+      const errorResponse = formatErrorResponse(error)
+      return res.status(errorResponse.statusCode || 500).json(errorResponse)
     }
+  }
 }

@@ -11,22 +11,30 @@
         </p>
       </div>
 
-      <!-- Stats Overview -->
-      <StatsOverview />
-
-      <!-- Main Content Grid -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Left Column: Today's Classes (2/3) -->
-        <div class="lg:col-span-2 space-y-6">
-          <TodayClasses />
-          <QuickActions />
-        </div>
-
-        <!-- Right Column: Upcoming Evaluations (1/3) -->
-        <div class="lg:col-span-1">
-          <UpcomingEvaluations />
-        </div>
+      <!-- Loading State -->
+      <div v-if="teacherStore.loading" class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        <p class="mt-3 text-gray-600">Cargando datos del dashboard...</p>
       </div>
+
+      <template v-else>
+        <!-- Stats Overview -->
+        <StatsOverview />
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Left Column: Today's Classes (2/3) -->
+          <div class="lg:col-span-2 space-y-6">
+            <TodayClasses />
+            <QuickActions />
+          </div>
+
+          <!-- Right Column: Upcoming Evaluations (1/3) -->
+          <div class="lg:col-span-1">
+            <UpcomingEvaluations />
+          </div>
+        </div>
+      </template>
 
       <!-- Error Display -->
       <div v-if="teacherStore.error" class="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -65,9 +73,16 @@ const currentDate = computed(() => {
 // Cargar datos del dashboard al montar el componente
 onMounted(async () => {
   try {
+    console.log('🔄 Dashboard - Iniciando carga de datos...');
+    
+    // Asegurar que el store tenga los datos necesarios
     await teacherStore.loadDashboardData();
+
+    console.log('✅ Dashboard - Datos cargados correctamente');
+    console.log('📊 Clases hoy:', teacherStore.todayClasses?.length);
+    console.log('📋 Evaluaciones próximas:', teacherStore.upcomingEvaluations?.length);
   } catch (error) {
-    console.error('Error loading dashboard:', error);
+    console.error('❌ Error loading dashboard:', error);
   }
 });
 </script>

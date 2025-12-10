@@ -130,10 +130,12 @@ import type { UpcomingEvaluation, EvaluationStatus } from '@/types/teacher.types
 const teacherStore = useTeacherStore();
 const router = useRouter();
 
-const upcomingEvaluations = computed(() => teacherStore.upcomingEvaluations);
+const upcomingEvaluations = computed(() => teacherStore.upcomingEvaluations || []);
 
 onMounted(async () => {
-  if (!teacherStore.upcoming) {
+  // El Dashboard ya carga los datos con loadDashboardData(),
+  // pero si por alguna razón no están, cargarlos aquí
+  if (!teacherStore.upcomingEvaluations || teacherStore.upcomingEvaluations.length === 0) {
     await teacherStore.fetchUpcoming();
   }
 });

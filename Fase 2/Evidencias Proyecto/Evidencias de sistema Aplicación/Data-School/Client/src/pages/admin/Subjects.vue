@@ -7,15 +7,37 @@
           <h1 class="text-3xl font-bold text-gray-900">Gestión de Asignaturas</h1>
           <p class="text-gray-600 mt-1">Administra todas las asignaturas del colegio</p>
         </div>
-        <button
-          @click="openCreateModal"
-          class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
-          Nueva Asignatura
-        </button>
+        <div class="flex gap-2">
+          <button
+            @click="exportToCSV"
+            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+            title="Exportar a CSV"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            CSV
+          </button>
+          <button
+            @click="exportToPDF"
+            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+            title="Exportar a PDF"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+            PDF
+          </button>
+          <button
+            @click="openCreateModal"
+            class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Nueva Asignatura
+          </button>
+        </div>
       </div>
 
       <!-- Filtros -->
@@ -281,6 +303,7 @@
                     type="number"
                     min="0"
                     placeholder="Ej: 4"
+                    @keypress="onlyNumbers"
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                 </div>
@@ -544,6 +567,13 @@ const handleDelete = async () => {
   }
 }
 
+const onlyNumbers = (event: KeyboardEvent) => {
+  const key = event.key
+  if (!/^\d$/.test(key) && !['Backspace', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'Delete'].includes(key)) {
+    event.preventDefault()
+  }
+}
+
 const confirmActivate = (asignatura: Asignatura) => {
   asignaturaToActivate.value = asignatura
   showActivateModal.value = true
@@ -562,6 +592,142 @@ const handleActivate = async () => {
     alert(`Error: ${error.message}`)
   } finally {
     submitting.value = false
+  }
+}
+
+// Funciones de exportación
+const exportToCSV = () => {
+  try {
+    const data = asignaturaStore.asignaturas.map(asig => ({
+      'Código': asig.codigo || '-',
+      'Asignatura': asig.nombre,
+      'Curso': asig.curso?.nombre || '-',
+      'Nivel': asig.curso?.nivel_obj?.display || '-',
+      'Profesor': asig.profesor?.nombre_completo || 'Sin asignar',
+      'Periodo': asig.periodo,
+      'Horas Semanales': asig.horas_semanales || 0,
+      'Estado': asig.estado_activo ? 'Activo' : 'Inactivo'
+    }))
+
+    if (data.length === 0) {
+      alert('No hay datos para exportar')
+      return
+    }
+
+    const headers = Object.keys(data[0])
+    const csvContent = [
+      headers.join(','),
+      ...data.map(row => headers.map(header => {
+        const value = row[header as keyof typeof row]
+        const stringValue = String(value)
+        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+          return `"${stringValue.replace(/"/g, '""')}"`
+        }
+        return stringValue
+      }).join(','))
+    ].join('\n')
+
+    const BOM = '\uFEFF'
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `asignaturas_${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  } catch (error) {
+    console.error('Error exportando CSV:', error)
+    alert('Error al exportar CSV')
+  }
+}
+
+const exportToPDF = () => {
+  try {
+    const data = asignaturaStore.asignaturas.map(asig => ({
+      codigo: asig.codigo || '-',
+      nombre: asig.nombre,
+      curso: asig.curso?.nombre || '-',
+      profesor: asig.profesor?.nombre_completo || 'Sin asignar',
+      periodo: asig.periodo,
+      horas: asig.horas_semanales || 0,
+      estado: asig.estado_activo ? 'Activo' : 'Inactivo'
+    }))
+
+    if (data.length === 0) {
+      alert('No hay datos para exportar')
+      return
+    }
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Reporte de Asignaturas</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
+          h1 { color: #2563eb; text-align: center; margin-bottom: 10px; }
+          .subtitle { text-align: center; color: #666; margin-bottom: 30px; font-size: 14px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th { background-color: #2563eb; color: white; padding: 12px; text-align: left; font-weight: bold; }
+          td { padding: 10px; border-bottom: 1px solid #ddd; }
+          tr:nth-child(even) { background-color: #f9fafb; }
+          tr:hover { background-color: #f3f4f6; }
+          .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; }
+        </style>
+      </head>
+      <body>
+        <h1>Reporte de Asignaturas</h1>
+        <div class="subtitle">Generado el ${new Date().toLocaleDateString('es-CL', {
+          year: 'numeric', month: 'long', day: 'numeric'
+        })}</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Asignatura</th>
+              <th>Curso</th>
+              <th>Profesor</th>
+              <th>Periodo</th>
+              <th>Horas/Sem</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.map(asig => `
+              <tr>
+                <td>${asig.codigo}</td>
+                <td>${asig.nombre}</td>
+                <td>${asig.curso}</td>
+                <td>${asig.profesor}</td>
+                <td>${asig.periodo}</td>
+                <td>${asig.horas}</td>
+                <td>${asig.estado}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <div class="footer">
+          <p>Total de asignaturas: ${data.length}</p>
+          <p>Data-School - Sistema de Gestión Escolar</p>
+        </div>
+      </body>
+      </html>
+    `
+
+    const printWindow = window.open('', '_blank')
+    if (printWindow) {
+      printWindow.document.write(htmlContent)
+      printWindow.document.close()
+      printWindow.onload = () => printWindow.print()
+    } else {
+      alert('Por favor, permite ventanas emergentes para exportar a PDF')
+    }
+  } catch (error) {
+    console.error('Error exportando PDF:', error)
+    alert('Error al exportar PDF')
   }
 }
 </script>

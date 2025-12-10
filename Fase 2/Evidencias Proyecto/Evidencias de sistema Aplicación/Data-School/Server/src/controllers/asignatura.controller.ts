@@ -31,7 +31,12 @@ export class AsignaturaController {
             curso_id,
             nombre,
             nivel_id,
-            sala_id
+            sala_id,
+            NivelCurso:nivel_id (
+              id,
+              nivel,
+              numero
+            )
           ),
           Profesor:profesor_id (
             profesor_id,
@@ -81,9 +86,33 @@ export class AsignaturaController {
         })
       }
 
+      // Agregar conteos de estudiantes y evaluaciones para cada asignatura
+      const asignaturasConConteos = await Promise.all(
+        (data || []).map(async (asignatura: any) => {
+          // Contar estudiantes matriculados en la asignatura
+          const { count: totalEstudiantes } = await client
+            .from('Matricula')
+            .select('*', { count: 'exact', head: true })
+            .eq('asignatura_id', asignatura.asignatura_id)
+            .eq('estado_matricula_id', 1) // Solo activos
+
+          // Contar evaluaciones de la asignatura
+          const { count: totalEvaluaciones } = await client
+            .from('Evaluacion')
+            .select('*', { count: 'exact', head: true })
+            .eq('asignatura_id', asignatura.asignatura_id)
+
+          return {
+            ...asignatura,
+            total_estudiantes: totalEstudiantes || 0,
+            total_evaluaciones: totalEvaluaciones || 0
+          }
+        })
+      )
+
       return res.status(200).json({
         message: 'Asignaturas obtenidas exitosamente',
-        data: data || []
+        data: asignaturasConConteos
       })
     } catch (error) {
       console.error('Error en getAll asignaturas:', error)
@@ -176,6 +205,13 @@ export class AsignaturaController {
         })
       }
 
+      // Validar longitud del código (máximo 10 caracteres)
+      if (asignaturaData.codigo.length > 10) {
+        return res.status(400).json({
+          error: 'El código de la asignatura no puede tener más de 10 caracteres'
+        })
+      }
+
       const client = supabaseAdmin || supabase
 
       // Verificar si ya existe una asignatura con el mismo código
@@ -249,6 +285,13 @@ export class AsignaturaController {
     try {
       const { id } = req.params
       const updateData = req.body as UpdateAsignaturaDto
+
+      // Validar longitud del código si se está actualizando (máximo 10 caracteres)
+      if (updateData.codigo && updateData.codigo.length > 10) {
+        return res.status(400).json({
+          error: 'El código de la asignatura no puede tener más de 10 caracteres'
+        })
+      }
 
       const client = supabaseAdmin || supabase
 
@@ -532,6 +575,161 @@ export class AsignaturaController {
       })
     } catch (error) {
       console.error('Error en getByProfesor:', error)
+      return res.status(500).json({
+        error: 'Error interno del servidor'
+      })
+    }
+  }
+
+  /**
+   * Obtener reporte de asistencia de una asignatura
+   * GET /asignaturas/:id/attendance-report?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
+   */
+  async getAttendanceReport(req: Request, res: Response) {
+    try {
+      const { id } = req.params
+      const { start_date, end_date } = req.query
+
+      if (!start_date || !end_date) {
+        return res.status(400).json({
+          error: 'Las fechas de inicio y fin son requeridas'
+        })
+      }
+
+      const client = supabaseAdmin || supabase
+
+      // Obtener información de la asignatura
+      const { data: asignatura, error: asignaturaError } = await client
+        .from('Asignatura')
+        .select('*, Curso:curso_id(nombre), Materia:materia_id(nombre)')
+        .eq('asignatura_id', id)
+        .single()
+
+      if (asignaturaError || !asignatura) {
+        return res.status(404).json({
+          error: 'Asignatura no encontrada'
+        })
+      }
+
+      // Obtener estudiantes matriculados en la asignatura
+      const { data: matriculas, error: matriculasError } = await client
+        .from('Matricula')
+        .select(`
+          *,
+          Estudiante:estudiante_id (
+            estudiante_id,
+            nombre_completo,
+            rut
+          )
+        `)
+        .eq('asignatura_id', id)
+        .eq('estado_matricula_id', 1)
+
+      if (matriculasError) {
+        return res.status(500).json({
+          error: 'Error al obtener estudiantes',
+          details: matriculasError.message
+        })
+      }
+
+      // Obtener clases en el rango de fechas
+      const { data: clases, error: clasesError } = await client
+        .from('Clase')
+        .select('clase_id, fecha')
+        .eq('asignatura_id', id)
+        .gte('fecha', start_date)
+        .lte('fecha', end_date)
+        .order('fecha', { ascending: true })
+
+      if (clasesError) {
+        return res.status(500).json({
+          error: 'Error al obtener clases',
+          details: clasesError.message
+        })
+      }
+
+      const claseIds = clases?.map(c => c.clase_id) || []
+
+      if (claseIds.length === 0) {
+        return res.status(200).json({
+          report: {
+            asignatura: {
+              nombre: asignatura.Materia?.nombre,
+              curso: asignatura.Curso?.nombre
+            },
+            estudiantes: [],
+            promedios: {
+              asistencia_curso: 0
+            },
+            periodo: {
+              inicio: start_date,
+              fin: end_date
+            }
+          }
+        })
+      }
+
+      // Obtener asistencias para las clases
+      const { data: asistencias, error: asistenciasError } = await client
+        .from('Asistencia')
+        .select('*')
+        .in('clase_id', claseIds)
+
+      if (asistenciasError) {
+        return res.status(500).json({
+          error: 'Error al obtener asistencias',
+          details: asistenciasError.message
+        })
+      }
+
+      // Calcular estadísticas por estudiante
+      const estudiantesData = matriculas?.map((matricula: any) => {
+        const estudianteId = matricula.Estudiante.estudiante_id
+        const asistenciasEstudiante = asistencias?.filter(
+          (a: any) => a.estudiante_id === estudianteId
+        ) || []
+
+        const total_clases = clases?.length || 0
+        const presentes = asistenciasEstudiante.filter((a: any) => a.presente).length
+        const ausentes = asistenciasEstudiante.filter((a: any) => !a.presente && !a.retrasado).length
+        const retrasos = asistenciasEstudiante.filter((a: any) => a.retrasado).length
+        const porcentaje_asistencia = total_clases > 0 ? (presentes / total_clases) * 100 : 0
+
+        return {
+          estudiante_id: estudianteId,
+          nombre_completo: matricula.Estudiante.nombre_completo,
+          rut: matricula.Estudiante.rut,
+          total_clases,
+          presentes,
+          ausentes,
+          retrasos,
+          porcentaje_asistencia
+        }
+      }) || []
+
+      // Calcular promedio del curso
+      const promedioAsistenciaCurso = estudiantesData.length > 0
+        ? estudiantesData.reduce((sum, e) => sum + e.porcentaje_asistencia, 0) / estudiantesData.length
+        : 0
+
+      return res.status(200).json({
+        report: {
+          asignatura: {
+            nombre: asignatura.Materia?.nombre || 'Sin nombre',
+            curso: asignatura.Curso?.nombre || 'Sin curso'
+          },
+          estudiantes: estudiantesData,
+          promedios: {
+            asistencia_curso: promedioAsistenciaCurso
+          },
+          periodo: {
+            inicio: start_date,
+            fin: end_date
+          }
+        }
+      })
+    } catch (error) {
+      console.error('Error en getAttendanceReport:', error)
       return res.status(500).json({
         error: 'Error interno del servidor'
       })

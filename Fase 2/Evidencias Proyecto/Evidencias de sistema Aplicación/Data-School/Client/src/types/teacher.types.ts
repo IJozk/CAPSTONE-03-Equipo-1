@@ -128,7 +128,7 @@ export interface Schedule {
   };
 }
 
-export type ClassStatus = 'en_progreso' | 'proxima' | 'completada';
+export type ClassStatus = 'en_progreso' | 'proxima' | 'completada' | 'programada' | 'sin_asistencia';
 
 export interface TodayClass {
   horario_id?: number;
@@ -140,6 +140,25 @@ export interface TodayClass {
   sala: string;
   estado?: ClassStatus;
   asistencia_registrada?: boolean;
+}
+
+export interface WeeklyClass {
+  clase_id?: string;
+  horario_id: number;
+  asignatura_id: string;
+  asignatura_nombre: string;
+  curso_nombre: string;
+  curso_nivel: string;
+  sala: string;
+  fecha: string; // YYYY-MM-DD
+  dia_semana: number; // 1-7
+  hora_inicio: string;
+  hora_termino: string;
+  estado: ClassStatus;
+  asistencia_registrada: boolean;
+  total_estudiantes?: number;
+  presentes?: number;
+  ausentes?: number;
 }
 
 export type EvaluationStatus = 'por_aplicar' | 'por_revisar' | 'completada';
