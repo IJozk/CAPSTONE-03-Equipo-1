@@ -25,6 +25,15 @@ class AuthService {
     }
   }
 
+  async getUserProfile() {
+    try {
+      const response = await apiClient.get('/auth/me');
+      return response.data; // <-- Aquí vienen todos los datos ya fusionados
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Error al obtener perfil del usuario');
+    }
+  }
+
   /**
    * Logout: limpia datos de autenticación del localStorage
    */
